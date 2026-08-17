@@ -1,0 +1,274 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>CampusFlow - Focus Session</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#38485d",
+                    "on-secondary-fixed": "#0b1c30",
+                    "surface-container": "#eceef0",
+                    "on-error": "#ffffff",
+                    "primary-container": "#1e293b",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#061525",
+                    "primary-fixed": "#d8e3fb",
+                    "border-subtle": "#E2E8F0",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#8590a6",
+                    "secondary-container": "#d0e1fb",
+                    "on-surface": "#191c1e",
+                    "on-tertiary-container": "#8291a6",
+                    "primary": "#091426",
+                    "on-background": "#191c1e",
+                    "on-tertiary-fixed": "#0d1c2d",
+                    "outline": "#75777d",
+                    "surface-alt": "#E8EAF0",
+                    "surface-dim": "#d8dadc",
+                    "tertiary-fixed": "#d4e4fa",
+                    "surface-variant": "#e0e3e5",
+                    "surface-container-highest": "#e0e3e5",
+                    "inverse-surface": "#2d3133",
+                    "surface-container-high": "#e6e8ea",
+                    "text-high-contrast": "#0F172A",
+                    "on-error-container": "#93000a",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed": "#d3e4fe",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#f2f4f6",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "on-surface-variant": "#45474c",
+                    "surface-bright": "#f7f9fb",
+                    "on-secondary-container": "#54647a",
+                    "inverse-on-surface": "#eff1f3",
+                    "surface": "#f7f9fb",
+                    "inverse-primary": "#bcc7de",
+                    "outline-variant": "#c5c6cd",
+                    "primary-fixed-dim": "#bcc7de",
+                    "surface-tint": "#545f73",
+                    "tertiary-fixed-dim": "#b9c8de",
+                    "on-primary-fixed-variant": "#3c475a",
+                    "on-tertiary-fixed-variant": "#39485a",
+                    "secondary": "#505f76",
+                    "on-primary-fixed": "#111c2d",
+                    "tertiary-container": "#1b2a3b",
+                    "background": "#f7f9fb",
+                    "error": "#ba1a1a",
+                    "surface-container-lowest": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "stack-sm": "12px",
+                    "margin-page": "64px",
+                    "unit": "8px",
+                    "stack-lg": "48px",
+                    "stack-md": "24px",
+                    "gutter": "24px",
+                    "section-gap": "80px"
+            },
+            "fontFamily": {
+                    "body-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "label-sm": ["11px", {"lineHeight": "1", "fontWeight": "500"}],
+                    "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Minimalist timer ring style */
+        .timer-ring {
+            stroke-dasharray: 879; /* 2 * pi * r (r=140) */
+            stroke-dashoffset: 220; /* ~25% complete */
+            transition: stroke-dashoffset 1s linear;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased overflow-hidden selection:bg-primary-fixed selection:text-on-primary-fixed h-screen flex">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-low text-primary font-body-md h-screen w-64 border-r border-border-subtle flex flex-col h-full py-stack-md px-gutter overflow-y-auto hidden md:flex shrink-0">
+<div class="mb-stack-lg">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">CampusFlow</h1>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">Academic Management</p>
+</div>
+<button class="w-full bg-primary text-on-primary py-3 rounded hover:bg-tertiary-container transition-colors mb-stack-lg font-label-md text-label-md flex justify-center items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+            Focus Session
+        </button>
+<div class="flex-grow flex flex-col gap-1"><a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+                Calendar
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined">checklist</span>
+                Tasks
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+                Disciplines
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined">description</span>
+                Notes/Materials
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+                Performance
+            </a></div>
+<div class="mt-auto pt-stack-md border-t border-border-subtle flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined">notifications</span>
+                Notifications
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+                Profile
+            </a>
+</div>
+</nav>
+<!-- Main Canvas -->
+<main class="flex-grow flex overflow-hidden">
+<!-- Focus Area (Center) -->
+<div class="flex-grow flex flex-col items-center justify-center p-margin-page relative">
+<!-- Cycle Indicators -->
+<div class="absolute top-margin-page flex items-center gap-4">
+<div class="w-12 h-1 bg-primary rounded-full"></div>
+<div class="w-12 h-1 bg-surface-dim rounded-full"></div>
+<div class="w-12 h-1 bg-surface-dim rounded-full"></div>
+<div class="w-12 h-1 bg-surface-dim rounded-full"></div>
+<span class="font-label-md text-label-md text-on-surface-variant ml-2 uppercase tracking-wider">Cycle 1 of 4</span>
+</div>
+<!-- Timer -->
+<div class="relative w-80 h-80 flex items-center justify-center mb-stack-lg">
+<svg class="w-full h-full absolute inset-0" viewBox="0 0 300 300">
+<circle cx="150" cy="150" fill="none" r="140" stroke="#E2E8F0" stroke-width="2"></circle>
+<circle class="timer-ring" cx="150" cy="150" fill="none" r="140" stroke="#1E293B" stroke-linecap="round" stroke-width="4"></circle>
+</svg>
+<div class="text-center z-10 flex flex-col items-center">
+<span class="font-display-lg text-display-lg text-primary tabular-nums tracking-tighter" style="font-size: 80px;">25:00</span>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest mt-2">Deep Work</span>
+</div>
+</div>
+<!-- Controls -->
+<div class="flex items-center gap-6 mb-section-gap">
+<button class="w-12 h-12 rounded-full border border-border-subtle flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">stop</span>
+</button>
+<button class="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-tertiary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined" style="font-size: 32px; font-variation-settings: 'FILL' 1;">pause</span>
+</button>
+<button class="w-12 h-12 rounded-full border border-border-subtle flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">skip_next</span>
+</button>
+</div>
+<!-- Intention & Task Mapping -->
+<div class="w-full max-w-md bg-surface-alt rounded-lg p-stack-md border border-border-subtle">
+<div class="mb-stack-sm">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Current Intention</label>
+<input class="w-full bg-transparent border-b border-border-subtle pb-2 focus:outline-none focus:border-primary font-body-lg text-body-lg text-primary placeholder:text-surface-tint" placeholder="What will you focus on?" type="text" value="Finish Calculus Exercises">
+</div>
+<div class="flex items-center justify-between mt-stack-md pt-stack-sm border-t border-border-subtle">
+<div class="flex items-center gap-2">
+<div class="w-1 h-4 bg-primary rounded-full"></div>
+<span class="font-body-sm text-body-sm text-on-surface">Calculus II</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 font-label-sm text-label-sm">
+<span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+                        Change
+                    </button>
+</div>
+</div>
+</div>
+<!-- Right Sidebar (History) -->
+<aside class="w-80 bg-surface-alt border-l border-border-subtle h-full flex flex-col shrink-0">
+<div class="p-stack-md border-b border-border-subtle">
+<h2 class="font-headline-sm text-headline-sm font-semibold text-primary">Session History</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Today's Focus Logs</p>
+</div>
+<div class="flex-grow overflow-y-auto p-stack-md flex flex-col gap-unit">
+<!-- History Item -->
+<div class="bg-background rounded border border-border-subtle p-3 flex flex-col gap-2">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-primary">09:00 - 09:25</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded">25m</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">Read Chapter 4: Thermodynamics</p>
+<div class="flex items-center gap-2 mt-1">
+<div class="w-1 h-3 bg-secondary rounded-full"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Physics 101</span>
+</div>
+</div>
+<!-- History Item -->
+<div class="bg-background rounded border border-border-subtle p-3 flex flex-col gap-2">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-primary">09:30 - 09:55</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded">25m</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">Practice Problems 1-15</p>
+<div class="flex items-center gap-2 mt-1">
+<div class="w-1 h-3 bg-secondary rounded-full"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Physics 101</span>
+</div>
+</div>
+<!-- Break Item -->
+<div class="flex items-center gap-3 py-2 px-1">
+<span class="material-symbols-outlined text-surface-tint" style="font-size: 16px;">local_cafe</span>
+<span class="font-body-sm text-body-sm text-surface-tint italic">Long Break (15m)</span>
+</div>
+<!-- History Item -->
+<div class="bg-background rounded border border-border-subtle p-3 flex flex-col gap-2">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-primary">10:10 - 10:35</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded">25m</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">Review Integration Methods</p>
+<div class="flex items-center gap-2 mt-1">
+<div class="w-1 h-3 bg-primary rounded-full"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Calculus II</span>
+</div>
+</div>
+</div>
+</aside>
+</main>
+
+
+</body></html>

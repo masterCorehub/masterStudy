@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CampusFlow - My Projects</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#ffdad6",
+                        "outline": "#75777d",
+                        "on-primary-fixed-variant": "#3c475a",
+                        "surface-bright": "#f7f9fb",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-container": "#eceef0",
+                        "tertiary": "#061525",
+                        "surface-tint": "#545f73",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#54647a",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "text-high-contrast": "#0F172A",
+                        "surface-container-high": "#e6e8ea",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#2d3133",
+                        "inverse-primary": "#bcc7de",
+                        "primary-fixed-dim": "#bcc7de",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e0e3e5",
+                        "primary": "#091426",
+                        "on-error-container": "#93000a",
+                        "secondary": "#505f76",
+                        "tertiary-fixed": "#d4e4fa",
+                        "primary-container": "#1e293b",
+                        "tertiary-fixed-dim": "#b9c8de",
+                        "surface": "#f7f9fb",
+                        "on-tertiary-fixed-variant": "#39485a",
+                        "border-subtle": "#E2E8F0",
+                        "on-background": "#191c1e",
+                        "secondary-container": "#d0e1fb",
+                        "on-primary-container": "#8590a6",
+                        "on-tertiary-container": "#8291a6",
+                        "surface-alt": "#E8EAF0",
+                        "on-surface": "#191c1e",
+                        "surface-container-highest": "#e0e3e5",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#111c2d",
+                        "surface-container-low": "#f2f4f6",
+                        "background": "#f7f9fb",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#0d1c2d",
+                        "on-surface-variant": "#45474c",
+                        "surface-dim": "#d8dadc",
+                        "secondary-fixed": "#d3e4fe",
+                        "tertiary-container": "#1b2a3b",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#d8e3fb",
+                        "outline-variant": "#c5c6cd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-sm": "12px",
+                        "margin-page": "64px",
+                        "unit": "8px",
+                        "stack-lg": "48px",
+                        "gutter": "24px",
+                        "stack-md": "24px",
+                        "section-gap": "80px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "1", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen">
+<!-- SideNavBar (Desktop) -->
+<nav class="h-screen w-64 fixed left-0 top-0 hidden md:flex flex-col bg-surface-container-low border-r border-border-subtle z-40">
+<div class="flex flex-col h-full py-stack-md px-4">
+<div class="mb-stack-lg px-2 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-alt overflow-hidden border border-border-subtle flex-shrink-0">
+<img alt="CampusFlow User Profile" class="w-full h-full object-cover" data-alt="A minimalist, professional headshot of a student in a bright, modern library setting. High contrast, sharp focus, geometric framing, cool academic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuApxEiqKGkee1Cu0_VjbFHV40sSM30tSWncd7UPo9eX_6O1352HCsAGMSGUi1iG341z-plua3Ekkv6o0nHT00-8RK2eMuIfrphqsq7oJTQrI3rOE6f52L6l57q0LWJ9pI5lOu69aRdo1duLAv2J9y_930ZJOLx1QG3QLU46X3kfOpLennW2GaZfo22QUbeUfHVfMmlgMAiLQS2yE_AVZMsrZqBlWgxuwH4CHEHPLO53Uks1c7tanK-cL__wlJEclDg8EmsSmCGoVMuz"/>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">CampusFlow</h1>
+<p class="font-label-sm text-label-sm text-secondary">Academic Management</p>
+</div>
+</div>
+<ul class="flex-1 space-y-2">
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-surface-container-highest transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-surface-container-highest transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+<span class="font-body-md text-body-md">Calendar</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary font-semibold border-r-4 border-primary bg-surface-container-high transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">assignment</span>
+<span class="font-body-md text-body-md">Tasks</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-surface-container-highest transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">school</span>
+<span class="font-body-md text-body-md">Disciplines</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-surface-container-highest transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">description</span>
+<span class="font-body-md text-body-md">Notes/Materials</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-surface-container-highest transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">monitoring</span>
+<span class="font-body-md text-body-md">Performance</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto pt-stack-md border-t border-border-subtle">
+<button class="w-full bg-primary-container text-on-primary py-3 rounded-lg font-label-md text-label-md flex justify-center items-center gap-2 hover:bg-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    New Entry
+                </button>
+</div>
+</div>
+</nav>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full h-16 bg-surface border-b border-border-subtle z-30 ml-0 md:ml-64 max-w-[calc(100%-16rem)] hidden md:flex justify-between items-center px-margin-page">
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-[18px]">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-alt border-none focus:ring-2 focus:ring-primary rounded text-sm w-64 outline-none font-body-sm text-body-sm placeholder-secondary" placeholder="Search tasks..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-secondary hover:text-primary transition-colors duration-200 ease-in-out">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-secondary hover:text-primary transition-colors duration-200 ease-in-out">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-alt overflow-hidden border border-border-subtle ml-2">
+<img alt="User profile photo" class="w-full h-full object-cover" data-alt="A minimalist, professional headshot of a student in a bright, modern library setting. High contrast, sharp focus, geometric framing, cool academic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQGWL4f72BjOGcaIJcOBI6JE-aR_RT9JUWGOHpAoP5Yx8sEFLj1b578Nr3sNP5IhG0pmhGe99jZfIja_8sNiVGX-sqlRzQW98rcynRzGR2aADnMnG5j7cnCNLr-Ei2y7-lqw-DCv19zaJ9p6Q6K1EvZf7TdBalRAnRI6zXycE-OJAbuFOOf77cQM4DvYjhavuTpDDySl65BNIz13eriqwtw5TUMHCy3M9eTIM3bKRjCBdgznuOMT8gOqUIWNXDH68jGOONIYjKryk4"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="md:ml-64 pt-16 md:pt-24 pb-24 md:pb-12 px-6 md:px-margin-page min-h-screen">
+<div class="max-w-6xl mx-auto w-full">
+<header class="flex flex-col md:flex-row md:items-end justify-between mb-section-gap gap-6">
+<div>
+<h2 class="font-display-lg text-display-lg text-text-high-contrast mb-2">My Projects</h2>
+<p class="font-body-lg text-body-lg text-secondary">Ongoing programming and academic deliverables.</p>
+</div>
+<button class="bg-primary-container text-on-primary px-6 py-3 rounded hover:bg-primary transition-colors flex items-center gap-2 self-start md:self-auto shadow-none">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span class="font-label-md text-label-md">New Project</span>
+</button>
+</header>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Project Card 1 -->
+<article class="bg-surface-alt rounded border border-border-subtle p-6 flex flex-col relative group">
+<div class="absolute left-0 top-6 bottom-6 w-1 bg-secondary-fixed rounded-r-full"></div>
+<div class="pl-4">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-sm text-label-sm text-secondary tracking-widest uppercase">CS402 • Machine Learning</span>
+<span class="material-symbols-outlined text-secondary text-[20px] cursor-pointer hover:text-primary">more_horiz</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-text-high-contrast mb-2">Predictive Model Capstone</h3>
+<p class="font-body-sm text-body-sm text-secondary mb-6 line-clamp-2">Developing a neural network to predict student performance based on engagement metrics. Currently fine-tuning the dataset.</p>
+<div class="mb-4">
+<div class="flex justify-between font-label-sm text-label-sm mb-2">
+<span class="text-secondary">Progress</span>
+<span class="text-primary font-bold">65%</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary-container h-1.5 rounded-full" style="width: 65%"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-border-subtle">
+<div class="flex items-center gap-2 text-secondary">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span class="font-label-sm text-label-sm">Nov 15 (2 weeks)</span>
+</div>
+<div class="flex -space-x-2">
+<img alt="Collaborator" class="w-6 h-6 rounded-full border border-surface-alt" data-alt="Small round avatar of a student looking focused. Bright lighting, minimalist background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBohu5xL1CKWJrJYmJiN_fC_m12-pFuCKF_ja8sbjJoCsxtJNUAbiI3jIm-wcJzxfLZ-AdNWHTxY92MI-dJqVjHYVyMQOg_wvkfm9Y9vjMbT69iRWTBzFl_02MpPCM4KVx22LG6tlhqtUvCnteQuszGcaKw_m3lYrrY47elMND21yOvjpE1Ao2kV81orPCCKWqYIvguInmnGObQUAUMQ1avkyAbDqZxohyuyE1UefIeiiK0yS_FuTsCtCb10z4q8fuEcvAT8EyNWCnw"/>
+<img alt="Collaborator" class="w-6 h-6 rounded-full border border-surface-alt" data-alt="Small round avatar of a female student with glasses. Bright lighting, minimalist background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSqA6fCSP78pKKEWXVPSBMtrIAYkr5-NdPcD2RdzSJJMBJijy02AE3HsWL8cHTaAvdlzzY9JcQwlJMuZG5RAh1n6Hc49c3xzsBgLgQKeO1fLTgAoHxu59z727Yg-edOeLLTijLMrzwQ2PfoJHBwC0RRipv8OlBiRLCXwQoRTl0xSX1GD_l59Ss0DLUOK4sRqxgMX3xgoYp3qWNbsr0-5kWqauZyIzrs_dh9EzEnBXm4C4fx96Q2U0haHaSp_h-g3XL8FDvRWZy8-S-"/>
+</div>
+</div>
+</div>
+</article>
+<!-- Project Card 2 -->
+<article class="bg-surface-alt rounded border border-border-subtle p-6 flex flex-col relative group">
+<div class="absolute left-0 top-6 bottom-6 w-1 bg-tertiary-fixed rounded-r-full"></div>
+<div class="pl-4">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-sm text-label-sm text-secondary tracking-widest uppercase">LIT301 • Modernist Lit</span>
+<span class="material-symbols-outlined text-secondary text-[20px] cursor-pointer hover:text-primary">more_horiz</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-text-high-contrast mb-2">Joyce's Dubliners Analysis</h3>
+<p class="font-body-sm text-body-sm text-secondary mb-6 line-clamp-2">Thematic essay exploring the concept of paralysis across selected short stories. Final draft pending review.</p>
+<div class="mb-4">
+<div class="flex justify-between font-label-sm text-label-sm mb-2">
+<span class="text-secondary">Progress</span>
+<span class="text-primary font-bold">90%</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary-container h-1.5 rounded-full" style="width: 90%"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-border-subtle">
+<div class="flex items-center gap-2 text-secondary">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span class="font-label-sm text-label-sm text-error">Oct 28 (Tomorrow)</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Project Card 3 -->
+<article class="bg-surface-alt rounded border border-border-subtle p-6 flex flex-col relative group">
+<div class="absolute left-0 top-6 bottom-6 w-1 bg-outline-variant rounded-r-full"></div>
+<div class="pl-4">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-sm text-label-sm text-secondary tracking-widest uppercase">ENG250 • Data Structs</span>
+<span class="material-symbols-outlined text-secondary text-[20px] cursor-pointer hover:text-primary">more_horiz</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-text-high-contrast mb-2">Graph Traversal App</h3>
+<p class="font-body-sm text-body-sm text-secondary mb-6 line-clamp-2">Implementing Dijkstra's algorithm for a campus navigation tool. UI mockup completed, backend logic ongoing.</p>
+<div class="mb-4">
+<div class="flex justify-between font-label-sm text-label-sm mb-2">
+<span class="text-secondary">Progress</span>
+<span class="text-primary font-bold">30%</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary-container h-1.5 rounded-full" style="width: 30%"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-border-subtle">
+<div class="flex items-center gap-2 text-secondary">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span class="font-label-sm text-label-sm">Dec 01 (1 month)</span>
+</div>
+<div class="flex -space-x-2">
+<img alt="Collaborator" class="w-6 h-6 rounded-full border border-surface-alt" data-alt="Small round avatar of a student looking focused. Bright lighting, minimalist background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCf9rc5e17HkcH9J18SrCz0TbSCMtchWuvIYnQ7j-lJARW2N4nGh3LGYQdmVmEbakSYaGOYXPaQ6gZaCS2FtljgA9UX3q82xWGSdKRYJNXg45-Jfdvhcf6mU2nhCpm4-y7BLX8RptUSdd9POnw7GprVzGLPzlbo1QQNw3Xvm5WiAZVqYGlmRXUm0hlTp_8YnDFg1XJviGODTPjt6cjLD9sc4Gp0LuMZ02wis67I17-eEuvjG1wXImypTJOni4c7UcR5UzqtB22NdKH8"/>
+</div>
+</div>
+</div>
+</article>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="fixed bottom-0 w-full md:hidden bg-surface rounded-t-xl border-t border-border-subtle z-50 flex justify-around items-center h-16 px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+<a class="flex flex-col items-center justify-center text-secondary scale-90 duration-150 hover:bg-surface-container-highest rounded p-2" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary scale-90 duration-150 hover:bg-surface-container-highest rounded p-2" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-label-sm text-label-sm mt-1">Calendar</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold scale-90 duration-150 active:bg-surface-container-high rounded p-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+<span class="font-label-sm text-label-sm mt-1">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary scale-90 duration-150 hover:bg-surface-container-highest rounded p-2" href="#">
+<span class="material-symbols-outlined">edit_note</span>
+<span class="font-label-sm text-label-sm mt-1">Notes</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary scale-90 duration-150 hover:bg-surface-container-highest rounded p-2" href="#">
+<span class="material-symbols-outlined">trending_up</span>
+<span class="font-label-sm text-label-sm mt-1">Growth</span>
+</a>
+</nav>
+</body></html>

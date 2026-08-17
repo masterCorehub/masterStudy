@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CampusFlow - Biblioteca de Modelos</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-container": "#1e293b",
+                      "outline-variant": "#c5c6cd",
+                      "tertiary-fixed": "#d4e4fa",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "on-surface-variant": "#45474c",
+                      "on-error-container": "#93000a",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-primary": "#ffffff",
+                      "surface-bright": "#f7f9fb",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "on-primary-fixed": "#111c2d",
+                      "text-high-contrast": "#0F172A",
+                      "on-primary-container": "#8590a6",
+                      "on-tertiary-fixed-variant": "#39485a",
+                      "tertiary-container": "#1b2a3b",
+                      "on-primary-fixed-variant": "#3c475a",
+                      "surface-container-low": "#f2f4f6",
+                      "outline": "#75777d",
+                      "on-secondary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "primary": "#091426",
+                      "surface-alt": "#E8EAF0",
+                      "background": "#f7f9fb",
+                      "secondary-container": "#d0e1fb",
+                      "error": "#ba1a1a",
+                      "primary-fixed-dim": "#bcc7de",
+                      "tertiary-fixed-dim": "#b9c8de",
+                      "surface-variant": "#e0e3e5",
+                      "secondary": "#505f76",
+                      "surface": "#f7f9fb",
+                      "surface-container-high": "#e6e8ea",
+                      "inverse-primary": "#bcc7de",
+                      "on-tertiary-container": "#8291a6",
+                      "secondary-fixed": "#d3e4fe",
+                      "surface-dim": "#d8dadc",
+                      "primary-fixed": "#d8e3fb",
+                      "border-subtle": "#E2E8F0",
+                      "surface-tint": "#545f73",
+                      "on-surface": "#191c1e",
+                      "on-secondary-container": "#54647a",
+                      "surface-container-highest": "#e0e3e5",
+                      "inverse-surface": "#2d3133",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary-fixed": "#0b1c30",
+                      "surface-container": "#eceef0",
+                      "tertiary": "#061525",
+                      "on-background": "#191c1e",
+                      "on-tertiary-fixed": "#0d1c2d",
+                      "surface-container-lowest": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "margin-page": "64px",
+                      "stack-lg": "48px",
+                      "gutter": "24px",
+                      "stack-sm": "12px",
+                      "section-gap": "80px",
+                      "stack-md": "24px"
+              },
+              "fontFamily": {
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "1",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Minimalist scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #CBD5E1;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md antialiased h-full flex flex-col md:flex-row overflow-hidden">
+<!-- Mobile Top Navigation (md:hidden) -->
+<header class="md:hidden bg-surface flex items-center justify-between px-6 py-4 w-full sticky top-0 z-50 border-b border-border-subtle">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary font-headline-sm font-bold">C</div>
+<span class="font-headline-sm text-headline-sm font-bold text-text-high-contrast">CampusFlow</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-secondary hover:bg-surface-container-low transition-colors rounded p-2">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="text-secondary hover:bg-surface-container-low transition-colors rounded p-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<!-- Side Navigation (hidden md:flex) -->
+<aside class="hidden md:flex bg-surface-container-low flex flex-col h-full py-stack-md h-screen w-64 fixed left-0 top-0 border-r border-border-subtle z-40">
+<!-- Brand Header -->
+<div class="px-6 pb-stack-md flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded bg-primary flex items-center justify-center text-on-primary font-headline-md font-bold shrink-0">C</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm text-primary font-bold">CampusFlow</h1>
+<p class="font-label-sm text-label-sm text-secondary">Academic Workspace</p>
+</div>
+</div>
+<!-- Create Button -->
+<div class="px-6 mb-8">
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-3 px-4 rounded hover:bg-tertiary transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                Create New Template
+            </button>
+</div>
+<!-- Main Nav -->
+<nav class="flex-1 overflow-y-auto px-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded text-text-high-contrast font-label-md text-label-md font-bold bg-surface-alt border-l-4 border-primary transition-transform duration-150 active:scale-95 group" href="#">
+<span class="material-symbols-outlined icon-fill">book_5</span>
+                Library
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-secondary font-label-md text-label-md hover:bg-surface-container transition-all duration-150 active:scale-95 group border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">edit_document</span>
+                My Drafts
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-secondary font-label-md text-label-md hover:bg-surface-container transition-all duration-150 active:scale-95 group border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">group</span>
+                Collaborations
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-secondary font-label-md text-label-md hover:bg-surface-container transition-all duration-150 active:scale-95 group border-l-4 border-transparent mt-8" href="#">
+<span class="material-symbols-outlined">archive</span>
+                Archived
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-secondary font-label-md text-label-md hover:bg-surface-container transition-all duration-150 active:scale-95 group border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">delete</span>
+                Trash
+            </a>
+</nav>
+<!-- Footer Nav -->
+<div class="px-4 mt-auto pt-4 border-t border-border-subtle space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded text-secondary font-label-md text-label-md hover:bg-surface-container transition-all duration-150 active:scale-95 group" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-secondary font-label-md text-label-md hover:bg-surface-container transition-all duration-150 active:scale-95 group" href="#">
+<span class="material-symbols-outlined">help</span>
+                Support
+            </a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 h-full overflow-y-auto flex flex-col">
+<!-- Desktop Top App Bar Area (Search & Profile) -->
+<div class="hidden md:flex items-center justify-between px-margin-page py-6 w-full sticky top-0 z-30 bg-surface/90 backdrop-blur-sm border-b border-border-subtle">
+<div class="flex-1 max-w-2xl">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-secondary group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full bg-surface-alt border-none rounded py-3 pl-12 pr-4 font-body-sm text-body-sm text-text-high-contrast focus:ring-2 focus:ring-primary focus:bg-surface transition-all" placeholder="Search templates, guidelines, or formats..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4 ml-8">
+<button class="text-secondary hover:text-primary transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<div class="w-10 h-10 rounded-full bg-surface-alt border border-border-subtle overflow-hidden ml-2 cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="A minimalist avatar image featuring a subtle geometric pattern in shades of deep blue and crisp white, embodying a clean academic aesthetic, well-lit and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3RnRicf7d696FQ4kciU-OZeiZNoEw0W7Uo8MeE3jk8nE5wF5HnEq2j6aA_LvOIHCn68DTQ9yMGzD8mYd_Fz-7Q2nEiR8mF07kSzxpvYjO7jGPVpM5f9P5ezcQDxX87wrE5lj0FmV8nDjD85tRmf7YOAUzI1jnTTR4hPRux8qcgECoEuCIOrYy7jPFtxtVqjz_e_v9aRlKvWTYpzoBV4Golp_lW4qIVnp5AIMJGLBHRg4BULhR2uBJPS19Mt3iG0fXKDBrnA6MUuZI"/>
+</div>
+</div>
+</div>
+<!-- Page Content Canvas -->
+<div class="flex-1 px-6 md:px-margin-page py-8 md:py-12 pb-32">
+<!-- Page Header -->
+<div class="mb-section-gap max-w-4xl">
+<h2 class="font-display-lg text-display-lg text-text-high-contrast mb-4">Template Library</h2>
+<p class="font-body-lg text-body-lg text-secondary">A curated collection of meticulously formatted structural models for academic, technical, and managerial documentation.</p>
+</div>
+<!-- Library Interface (Tabs & Grid Layout) -->
+<div class="flex flex-col lg:flex-row gap-gutter relative items-start">
+<!-- Category Sidebar -->
+<div class="w-full lg:w-64 shrink-0 lg:sticky lg:top-32 space-y-8 mb-8 lg:mb-0">
+<div>
+<h3 class="font-label-md text-label-md text-secondary uppercase tracking-wider mb-4 px-2">Disciplines</h3>
+<div class="space-y-1">
+<button class="w-full text-left px-4 py-2 rounded bg-surface-alt text-primary font-label-md text-label-md font-bold flex items-center justify-between group">
+                                Academic
+                                <span class="bg-surface text-secondary px-2 py-0.5 rounded text-[10px]">12</span>
+</button>
+<button class="w-full text-left px-4 py-2 rounded hover:bg-surface-container-low text-secondary font-label-md text-label-md flex items-center justify-between group transition-colors">
+                                Technical
+                                <span class="bg-surface-alt text-secondary px-2 py-0.5 rounded text-[10px] group-hover:bg-surface-container">8</span>
+</button>
+<button class="w-full text-left px-4 py-2 rounded hover:bg-surface-container-low text-secondary font-label-md text-label-md flex items-center justify-between group transition-colors">
+                                Management
+                                <span class="bg-surface-alt text-secondary px-2 py-0.5 rounded text-[10px] group-hover:bg-surface-container">5</span>
+</button>
+</div>
+</div>
+<div>
+<h3 class="font-label-md text-label-md text-secondary uppercase tracking-wider mb-4 px-2">Format Standard</h3>
+<div class="space-y-1">
+<label class="flex items-center gap-3 px-4 py-2 hover:bg-surface-container-low rounded cursor-pointer transition-colors">
+<input checked="" class="rounded border-secondary text-primary focus:ring-primary w-4 h-4 bg-transparent" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-text-high-contrast">ABNT</span>
+</label>
+<label class="flex items-center gap-3 px-4 py-2 hover:bg-surface-container-low rounded cursor-pointer transition-colors">
+<input class="rounded border-secondary text-primary focus:ring-primary w-4 h-4 bg-transparent" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-text-high-contrast">IEEE</span>
+</label>
+<label class="flex items-center gap-3 px-4 py-2 hover:bg-surface-container-low rounded cursor-pointer transition-colors">
+<input class="rounded border-secondary text-primary focus:ring-primary w-4 h-4 bg-transparent" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-text-high-contrast">Vancouver</span>
+</label>
+<label class="flex items-center gap-3 px-4 py-2 hover:bg-surface-container-low rounded cursor-pointer transition-colors">
+<input class="rounded border-secondary text-primary focus:ring-primary w-4 h-4 bg-transparent" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-text-high-contrast">APA</span>
+</label>
+</div>
+</div>
+</div>
+<!-- Template Grid -->
+<div class="flex-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
+<!-- Template Card 1 -->
+<div class="group flex flex-col bg-surface-alt border border-border-subtle rounded hover:border-outline transition-colors relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded bg-surface border border-border-subtle flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">article</span>
+</div>
+<span class="px-2 py-1 bg-surface border border-border-subtle text-secondary font-label-sm text-label-sm rounded uppercase">ABNT</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-text-high-contrast font-semibold mb-2 line-clamp-1">Monograph Base</h4>
+<p class="font-body-sm text-body-sm text-secondary mb-6 line-clamp-3 flex-1">Complete structural foundation for undergraduate monographs, compliant with the latest ABNT formatting guidelines including preliminary, textual, and post-textual elements.</p>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-border-subtle">
+<button class="flex-1 bg-primary text-on-primary font-label-md text-label-md py-2 rounded hover:bg-tertiary transition-colors">Use Template</button>
+<button class="p-2 border border-secondary text-secondary rounded hover:bg-surface transition-colors" title="Preview">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Template Card 2 -->
+<div class="group flex flex-col bg-surface-alt border border-border-subtle rounded hover:border-outline transition-colors relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary-fixed-dim"></div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded bg-surface border border-border-subtle flex items-center justify-center text-secondary-fixed-dim">
+<span class="material-symbols-outlined text-[24px]">science</span>
+</div>
+<span class="px-2 py-1 bg-surface border border-border-subtle text-secondary font-label-sm text-label-sm rounded uppercase">IEEE</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-text-high-contrast font-semibold mb-2 line-clamp-1">Conference Paper</h4>
+<p class="font-body-sm text-body-sm text-secondary mb-6 line-clamp-3 flex-1">Standard double-column format required for IEEE transactions, journals, and conferences. Includes predefined styles for equations and figures.</p>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-border-subtle">
+<button class="flex-1 bg-primary text-on-primary font-label-md text-label-md py-2 rounded hover:bg-tertiary transition-colors">Use Template</button>
+<button class="p-2 border border-secondary text-secondary rounded hover:bg-surface transition-colors" title="Preview">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Template Card 3 -->
+<div class="group flex flex-col bg-surface-alt border border-border-subtle rounded hover:border-outline transition-colors relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-fixed-dim"></div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded bg-surface border border-border-subtle flex items-center justify-center text-primary-fixed-dim">
+<span class="material-symbols-outlined text-[24px]">biotech</span>
+</div>
+<span class="px-2 py-1 bg-surface border border-border-subtle text-secondary font-label-sm text-label-sm rounded uppercase">Vancouver</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-text-high-contrast font-semibold mb-2 line-clamp-1">Clinical Report</h4>
+<p class="font-body-sm text-body-sm text-secondary mb-6 line-clamp-3 flex-1">Structured framework for biomedical journals using the Vancouver referencing style, optimized for clinical trial reporting and case studies.</p>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-border-subtle">
+<button class="flex-1 bg-primary text-on-primary font-label-md text-label-md py-2 rounded hover:bg-tertiary transition-colors">Use Template</button>
+<button class="p-2 border border-secondary text-secondary rounded hover:bg-surface transition-colors" title="Preview">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Template Card 4 -->
+<div class="group flex flex-col bg-surface-alt border border-border-subtle rounded hover:border-outline transition-colors relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded bg-surface border border-border-subtle flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">menu_book</span>
+</div>
+<span class="px-2 py-1 bg-surface border border-border-subtle text-secondary font-label-sm text-label-sm rounded uppercase">ABNT</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-text-high-contrast font-semibold mb-2 line-clamp-1">Dissertation Proposal</h4>
+<p class="font-body-sm text-body-sm text-secondary mb-6 line-clamp-3 flex-1">A rigorous structural outline for master's degree research proposals, detailing methodology, justification, and literature review sections.</p>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-border-subtle">
+<button class="flex-1 bg-primary text-on-primary font-label-md text-label-md py-2 rounded hover:bg-tertiary transition-colors">Use Template</button>
+<button class="p-2 border border-secondary text-secondary rounded hover:bg-surface transition-colors" title="Preview">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom Navigation (md:hidden) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-border-subtle flex justify-around items-center py-3 px-2 z-50">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined icon-fill">book_5</span>
+<span class="font-label-sm text-label-sm">Library</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-secondary hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">edit_document</span>
+<span class="font-label-sm text-label-sm">Drafts</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-secondary hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-sm text-label-sm">Collab</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-secondary hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</nav>
+</body></html>

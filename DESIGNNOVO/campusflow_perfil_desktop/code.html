@@ -1,0 +1,324 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>CampusFlow - Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed": "#d3e4fe",
+                      "outline": "#75777d",
+                      "surface-dim": "#d8dadc",
+                      "outline-variant": "#c5c6cd",
+                      "on-primary-fixed": "#111c2d",
+                      "surface-container": "#eceef0",
+                      "on-background": "#191c1e",
+                      "surface-container-lowest": "#ffffff",
+                      "border-subtle": "#E2E8F0",
+                      "surface-container-high": "#e6e8ea",
+                      "on-secondary-container": "#54647a",
+                      "on-secondary-fixed": "#0b1c30",
+                      "surface-container-highest": "#e0e3e5",
+                      "surface-tint": "#545f73",
+                      "primary-fixed-dim": "#bcc7de",
+                      "text-high-contrast": "#0F172A",
+                      "surface-alt": "#E8EAF0",
+                      "primary-fixed": "#d8e3fb",
+                      "on-primary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "tertiary-fixed": "#d4e4fa",
+                      "on-tertiary-fixed-variant": "#39485a",
+                      "primary": "#091426",
+                      "on-error-container": "#93000a",
+                      "secondary-container": "#d0e1fb",
+                      "tertiary-fixed-dim": "#b9c8de",
+                      "on-primary-container": "#8590a6",
+                      "primary-container": "#1e293b",
+                      "surface": "#f7f9fb",
+                      "surface-variant": "#e0e3e5",
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#191c1e",
+                      "on-tertiary-container": "#8291a6",
+                      "on-secondary": "#ffffff",
+                      "tertiary": "#061525",
+                      "secondary": "#505f76",
+                      "inverse-surface": "#2d3133",
+                      "inverse-primary": "#bcc7de",
+                      "on-tertiary-fixed": "#0d1c2d",
+                      "surface-bright": "#f7f9fb",
+                      "surface-container-low": "#f2f4f6",
+                      "background": "#f7f9fb",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "on-error": "#ffffff",
+                      "on-primary-fixed-variant": "#3c475a",
+                      "error-container": "#ffdad6",
+                      "on-surface-variant": "#45474c",
+                      "tertiary-container": "#1b2a3b"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-lg": "48px",
+                      "unit": "8px",
+                      "margin-page": "64px",
+                      "stack-sm": "12px",
+                      "stack-md": "24px",
+                      "gutter": "24px",
+                      "section-gap": "80px"
+              },
+              "fontFamily": {
+                      "headline-sm": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "label-md": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "body-md": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                      "label-sm": ["11px", {"lineHeight": "1", "fontWeight": "500"}],
+                      "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        body { background-color: #f7f9fb; color: #191c1e; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden antialiased font-body-md text-body-md">
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden md:flex flex-col h-screen py-stack-md gap-4 docked left-0 w-64 bg-surface-container border-r border-border-subtle shrink-0">
+<div class="px-gutter mb-stack-md">
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">CampusFlow</h1>
+<p class="font-label-sm text-label-sm text-on-secondary-container mt-1">Academic Workspace</p>
+</div>
+<ul class="flex flex-col w-full"><li class="">
+<a class="flex items-center gap-3 px-gutter py-3 text-secondary hover:text-primary hover:bg-surface-container-high transition-all duration-150 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+<span class="">Dashboard</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-gutter py-3 text-secondary hover:text-primary hover:bg-surface-container-high transition-all duration-150 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="calendar_today">calendar_today</span>
+<span class="">Calendar</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-gutter py-3 text-secondary hover:text-primary hover:bg-surface-container-high transition-all duration-150 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="check_circle">check_circle</span>
+<span class="">Tasks</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-gutter py-3 text-secondary hover:text-primary hover:bg-surface-container-high transition-all duration-150 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="school">school</span>
+<span class="">Disciplines</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-gutter py-3 text-secondary hover:text-primary hover:bg-surface-container-high transition-all duration-150 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="description">description</span>
+<span class="">Notes/Materials</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-gutter py-3 text-primary font-bold border-l-4 border-primary bg-surface-container-high transition-all duration-150 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="trending_up">trending_up</span>
+<span class="">Performance</span>
+</a>
+</li></ul>
+<div class="mt-auto px-gutter pb-4">
+<a class="flex items-center gap-3 py-2 text-secondary hover:text-primary transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+<span class="">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen overflow-y-auto bg-surface relative">
+<!-- TopNavBar (Web Full Nav hidden, just actions as requested by JSON) -->
+<header class="flex justify-between items-center w-full px-margin-page py-4 bg-surface border-b border-border-subtle docked full-width top-0 sticky z-10">
+<div class="md:hidden">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">CampusFlow</h1>
+</div>
+<div class="hidden md:flex flex-1 max-w-md mx-auto items-center">
+<!-- Search Bar -->
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-secondary-container text-[18px]">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container border border-border-subtle rounded text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-on-secondary-container" placeholder="Search..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-4 ml-auto">
+<button class="text-secondary hover:bg-surface-container p-2 rounded-full transition-colors cursor-pointer duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-border-subtle cursor-pointer hover:border-primary transition-colors">
+<img alt="Student Profile Avatar" class="w-full h-full object-cover" data-alt="A minimalist, professional headshot of a student in a bright, modern library setting. The lighting is soft and natural, emphasizing a stoic and focused academic mood. Clean white and light gray background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQUJ4aqw3Ca7dPVRN_7K84kvrAsR-6rUwIGtVK8BorxrFGq862tI1QGVck8YHo5gUAdkvVXA-PXq7cjce7bdpMOId_sRbJ9LBEqDc3X_Di9vdDJv3RJFq6jabBiXBa-bqc5JP-MYS3ixzSOsVemxahNTbihXH2ugt_lG-o73aOGQ1l_Rlo6CEvfI0QfyWBJbTHvgogVnC3-Pqlfe8St8Jz48C5eggo8TgYdQ5Oqm6Dmmyz6mRWJkko-uNxeQsvh-g2CP5PGvJ6sN9f">
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<div class="p-margin-page max-w-7xl mx-auto w-full">
+<!-- Hero Profile Section -->
+<section class="mb-section-gap flex flex-col md:flex-row items-start md:items-center gap-stack-lg">
+<div class="w-32 h-32 rounded-full overflow-hidden border border-border-subtle shrink-0">
+<img alt="Profile Picture" class="w-full h-full object-cover" data-alt="A clear, high-resolution portrait of a university student looking focused. They are wearing a simple, dark navy sweater against a pure, bright white studio background. The lighting is crisp and even, reflecting a highly disciplined and minimalist academic aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9F65z2eNh77hjGAxwuw0Ohx57fvIZQlfu_Y12gs8pVXVvvNABF9UAiColMGGy5mUShuQ5Eg_8pIiKws8UTMpIFCmk4bDOXkJbDPmcAcbB81NAmvvgLB4PdU6WAgsaytA-Lfm6zVO4BjNjNluy53rCDX6E7amIDk8FejJOf3Six1dwF7KKNd5jJHnXXzWj8NzPYClRulfTo6AXsmK4Nmp0bVRgNSu2W1Zz-L5obiew9N8i_BtLrJO7s0tBKzm3Bmqj8Thd0zHMZwJD">
+</div>
+<div class="flex-1">
+<h2 class="font-display-lg text-display-lg text-text-high-contrast mb-2">Alexandre Silva</h2>
+<p class="font-headline-sm text-headline-sm text-on-secondary-container mb-4">Engenharia de Computação • 6º Semestre</p>
+<div class="flex flex-wrap gap-4 mt-stack-sm">
+<button class="bg-primary-container text-on-primary font-label-md text-label-md px-6 py-2 rounded border border-transparent hover:bg-tertiary transition-colors">
+                            Editar Perfil
+                        </button>
+<button class="bg-transparent text-secondary font-label-md text-label-md px-6 py-2 rounded border border-outline hover:bg-surface-container-low transition-colors">
+                            Ver Currículo
+                        </button>
+</div>
+</div>
+</section>
+<!-- Main Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column (Wider) -->
+<div class="lg:col-span-8 flex flex-col gap-stack-lg">
+<!-- Resumo Acadêmico -->
+<section class="bg-surface-alt border border-border-subtle rounded-DEFAULT p-6">
+<div class="flex justify-between items-center mb-stack-md border-b border-border-subtle pb-4">
+<h3 class="font-headline-md text-headline-md text-text-high-contrast flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">analytics</span>
+                                Resumo Acadêmico
+                            </h3>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-secondary-container uppercase tracking-wider mb-1">CR Atual</span>
+<span class="font-display-lg text-display-lg text-primary">8.7</span>
+</div>
+<div class="flex flex-col border-l border-border-subtle pl-6">
+<span class="font-label-sm text-label-sm text-on-secondary-container uppercase tracking-wider mb-1">Créditos</span>
+<span class="font-display-lg text-display-lg text-primary">120<span class="font-headline-md text-headline-md text-on-secondary-container ml-1">/240</span></span>
+</div>
+<div class="flex flex-col border-l border-border-subtle pl-6">
+<span class="font-label-sm text-label-sm text-on-secondary-container uppercase tracking-wider mb-1">Horas Extensão</span>
+<span class="font-display-lg text-display-lg text-primary">45<span class="font-headline-md text-headline-md text-on-secondary-container ml-1">/100</span></span>
+</div>
+</div>
+</section>
+<!-- Metas Atuais (Kanban-ish look) -->
+<section>
+<h3 class="font-headline-md text-headline-md text-text-high-contrast mb-stack-md flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">flag</span>
+                            Metas Atuais
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Goal Card -->
+<div class="bg-surface-alt border border-border-subtle rounded-DEFAULT p-5 border-l-4 border-l-secondary-fixed">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-headline-sm text-headline-sm text-text-high-contrast">Finalizar TCC Pt.1</h4>
+<span class="material-symbols-outlined text-on-secondary-container text-[18px]">more_horiz</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-secondary-container mb-4">Revisão bibliográfica e definição da metodologia.</p>
+<div class="w-full bg-surface-container rounded-full h-1.5 mb-2">
+<div class="bg-primary h-1.5 rounded-full" style="width: 45%"></div>
+</div>
+<div class="flex justify-between text-label-sm text-on-secondary-container">
+<span class="">45%</span>
+<span class="">Prazo: 15 Nov</span>
+</div>
+</div>
+<!-- Goal Card -->
+<div class="bg-surface-alt border border-border-subtle rounded-DEFAULT p-5 border-l-4 border-l-tertiary-fixed">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-headline-sm text-headline-sm text-text-high-contrast">Publicar Artigo</h4>
+<span class="material-symbols-outlined text-on-secondary-container text-[18px]">more_horiz</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-secondary-container mb-4">Submissão para o simpósio de tecnologia.</p>
+<div class="w-full bg-surface-container rounded-full h-1.5 mb-2">
+<div class="bg-primary h-1.5 rounded-full" style="width: 80%"></div>
+</div>
+<div class="flex justify-between text-label-sm text-on-secondary-container">
+<span class="">80%</span>
+<span class="">Prazo: 30 Out</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column (Narrower) -->
+<div class="lg:col-span-4 flex flex-col gap-stack-lg">
+<!-- Últimas Conquistas -->
+<section class="bg-surface-alt border border-border-subtle rounded-DEFAULT p-6 h-full">
+<h3 class="font-headline-md text-headline-md text-text-high-contrast mb-stack-md flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">workspace_premium</span>
+                            Últimas Conquistas
+                        </h3>
+<div class="flex flex-col gap-4">
+<!-- Badge Item -->
+<div class="flex items-center gap-4 p-3 border border-border-subtle rounded bg-surface hover:bg-surface-container transition-colors">
+<div class="w-12 h-12 bg-secondary-container rounded flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-[24px]">local_library</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-semibold text-text-high-contrast">Leitor Voraz</h4>
+<p class="font-label-sm text-label-sm text-on-secondary-container">10+ artigos lidos na semana</p>
+</div>
+</div>
+<!-- Badge Item -->
+<div class="flex items-center gap-4 p-3 border border-border-subtle rounded bg-surface hover:bg-surface-container transition-colors">
+<div class="w-12 h-12 bg-tertiary-fixed rounded flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-[24px]">bolt</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-semibold text-text-high-contrast">Foco Profundo</h4>
+<p class="font-label-sm text-label-sm text-on-secondary-container">50h de Pomodoro registradas</p>
+</div>
+</div>
+<!-- Badge Item -->
+<div class="flex items-center gap-4 p-3 border border-border-subtle rounded bg-surface hover:bg-surface-container transition-colors opacity-60 grayscale">
+<div class="w-12 h-12 bg-surface-container-high rounded flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-secondary-container text-[24px]">lock</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-semibold text-text-high-contrast text-on-secondary-container">Mestre da Organização</h4>
+<p class="font-label-sm text-label-sm text-on-secondary-container">Completar todas as tarefas no prazo</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+
+
+</body></html>

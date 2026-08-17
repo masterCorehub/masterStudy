@@ -1,0 +1,336 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Minhas Disciplinas - CampusFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#1e293b",
+                        "secondary-container": "#d0e1fb",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#39485a",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#bcc7de",
+                        "surface-alt": "#E8EAF0",
+                        "surface": "#f7f9fb",
+                        "text-high-contrast": "#0F172A",
+                        "secondary": "#505f76",
+                        "on-tertiary-fixed": "#0d1c2d",
+                        "surface-tint": "#545f73",
+                        "border-subtle": "#E2E8F0",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#1b2a3b",
+                        "surface-container": "#eceef0",
+                        "on-primary-fixed": "#111c2d",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#061525",
+                        "surface-container-highest": "#e0e3e5",
+                        "tertiary-fixed": "#d4e4fa",
+                        "outline": "#75777d",
+                        "surface-variant": "#e0e3e5",
+                        "on-primary-fixed-variant": "#3c475a",
+                        "inverse-on-surface": "#eff1f3",
+                        "inverse-primary": "#bcc7de",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#0b1c30",
+                        "tertiary-fixed-dim": "#b9c8de",
+                        "on-primary-container": "#8590a6",
+                        "inverse-surface": "#2d3133",
+                        "surface-container-high": "#e6e8ea",
+                        "on-tertiary-container": "#8291a6",
+                        "on-surface": "#191c1e",
+                        "primary": "#091426",
+                        "outline-variant": "#c5c6cd",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#f7f9fb",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#d3e4fe",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "surface-bright": "#f7f9fb",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-background": "#191c1e",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f2f4f6",
+                        "primary-fixed": "#d8e3fb",
+                        "on-secondary-container": "#54647a",
+                        "on-surface-variant": "#45474c",
+                        "surface-dim": "#d8dadc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-md": "24px",
+                        "gutter": "24px",
+                        "stack-lg": "48px",
+                        "section-gap": "80px",
+                        "unit": "8px",
+                        "stack-sm": "12px",
+                        "margin-page": "64px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-sm": ["11px", { "lineHeight": "1", "fontWeight": "500" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface-bright text-on-surface h-screen overflow-hidden flex">
+<!-- SideNavBar Component (Semantic Match: Disciplines -> Disciplines) -->
+<nav class="hidden md:flex flex-col h-screen w-64 border-r border-border-subtle bg-surface-container-low py-stack-md px-gutter overflow-y-auto">
+<div class="mb-stack-lg flex flex-col gap-unit">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">CampusFlow</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Academic Management</p>
+</div>
+<button class="w-full bg-primary-container text-on-primary font-label-md text-label-md py-stack-sm rounded hover:bg-tertiary-container transition-all duration-200 mb-stack-lg">
+            Focus Session
+        </button>
+<ul class="flex-1 flex flex-col gap-unit"><li class=""><a class="flex items-center gap-unit p-unit rounded text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#"><span class="material-symbols-outlined" data-icon="dashboard">dashboard</span><span class="font-body-md text-body-md">Dashboard</span></a></li><li class=""><a class="flex items-center gap-unit p-unit rounded text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#"><span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span><span class="font-body-md text-body-md">Calendar</span></a></li><li class=""><a class="flex items-center gap-unit p-unit rounded text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#"><span class="material-symbols-outlined" data-icon="checklist">checklist</span><span class="font-body-md text-body-md">Tasks</span></a></li><li class=""><a class="flex items-center gap-unit p-unit rounded text-primary font-bold border-r-2 border-primary bg-surface-container transition-all duration-200" href="#" style="transform: scale(0.98);"><span class="material-symbols-outlined" data-icon="menu_book">menu_book</span><span class="font-body-md text-body-md">Disciplines</span></a></li><li class=""><a class="flex items-center gap-unit p-unit rounded text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#"><span class="material-symbols-outlined" data-icon="description">description</span><span class="font-body-md text-body-md">Notes/Materials</span></a></li><li class=""><a class="flex items-center gap-unit p-unit rounded text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#"><span class="material-symbols-outlined" data-icon="query_stats">query_stats</span><span class="font-body-md text-body-md">Performance</span></a></li></ul>
+<div class="mt-auto pt-stack-md border-t border-border-subtle">
+<ul class="flex flex-col gap-unit">
+<li class="">
+<a class="flex items-center gap-unit p-unit rounded text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-body-md text-body-md">Notifications</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-unit p-unit rounded text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-unit p-unit rounded text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="font-body-md text-body-md">Profile</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto p-margin-page bg-surface-bright">
+<!-- Header -->
+<header class="mb-section-gap">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-display-lg text-display-lg text-text-high-contrast mb-unit">Minhas Disciplinas</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">2024.1 — 5 Disciplinas Ativas</p>
+</div>
+<button class="bg-primary-container text-on-primary font-label-md text-label-md px-stack-md py-stack-sm rounded hover:bg-tertiary-container transition-colors flex items-center gap-unit">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Adicionar Disciplina
+                </button>
+</div>
+</header>
+<!-- Search & Filter Bar -->
+<section class="mb-stack-lg flex gap-gutter items-center">
+<div class="relative flex-1 max-w-md">
+<span class="material-symbols-outlined absolute left-stack-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-alt border-none border-b border-border-subtle pl-10 py-stack-sm focus:ring-0 focus:border-b-2 focus:border-primary-container font-body-md text-body-md rounded-t transition-all" placeholder="Buscar disciplina, professor..." type="text">
+</div>
+<div class="flex gap-unit">
+<select class="bg-surface-alt border-none border-b border-border-subtle py-stack-sm pl-stack-sm pr-10 focus:ring-0 focus:border-b-2 focus:border-primary-container font-body-md text-body-md rounded-t appearance-none text-on-surface-variant">
+<option>Status: Ativas</option>
+<option>Status: Concluídas</option>
+<option>Status: Trancadas</option>
+</select>
+<select class="bg-surface-alt border-none border-b border-border-subtle py-stack-sm pl-stack-sm pr-10 focus:ring-0 focus:border-b-2 focus:border-primary-container font-body-md text-body-md rounded-t appearance-none text-on-surface-variant">
+<option>Categoria: Todas</option>
+<option>Exatas</option>
+<option>Humanas</option>
+<option>Biológicas</option>
+</select>
+</div>
+</section>
+<!-- Disciplines Grid (Bento/Card Style) -->
+<section class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-gutter">
+<!-- Card 1 -->
+<article class="bg-surface-alt border border-border-subtle rounded-lg p-stack-md relative overflow-hidden flex flex-col">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary-container"></div>
+<div class="flex justify-between items-start mb-stack-md">
+<div>
+<h3 class="font-headline-md text-headline-md text-text-high-contrast mb-1">Cálculo II</h3>
+<p class="font-body-sm text-body-sm text-secondary">Prof. Dr. Marcos Silva</p>
+</div>
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded font-label-sm text-label-sm">EXA002</span>
+</div>
+<div class="grid grid-cols-2 gap-stack-md mb-stack-lg flex-1">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Média Atual</p>
+<p class="font-headline-lg text-headline-lg text-text-high-contrast">8.5</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Frequência</p>
+<p class="font-headline-lg text-headline-lg text-text-high-contrast">92%</p>
+<div class="w-full bg-border-subtle h-1 mt-2 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full w-[92%]"></div>
+</div>
+</div>
+</div>
+<div class="border-t border-border-subtle pt-stack-md mt-auto">
+<div class="flex items-center gap-unit text-error">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="font-label-md text-label-md">Prova 2 (P2) em 4 dias</span>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-surface-alt border border-border-subtle rounded-lg p-stack-md relative overflow-hidden flex flex-col">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-outline"></div>
+<div class="flex justify-between items-start mb-stack-md">
+<div>
+<h3 class="font-headline-md text-headline-md text-text-high-contrast mb-1">Física Experimental</h3>
+<p class="font-body-sm text-body-sm text-secondary">Profa. Dra. Ana Costa</p>
+</div>
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded font-label-sm text-label-sm">EXA015</span>
+</div>
+<div class="grid grid-cols-2 gap-stack-md mb-stack-lg flex-1">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Média Atual</p>
+<p class="font-headline-lg text-headline-lg text-text-high-contrast">9.2</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Frequência</p>
+<p class="font-headline-lg text-headline-lg text-text-high-contrast">100%</p>
+<div class="w-full bg-border-subtle h-1 mt-2 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full w-full"></div>
+</div>
+</div>
+</div>
+<div class="border-t border-border-subtle pt-stack-md mt-auto">
+<div class="flex items-center gap-unit text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">assignment</span>
+<span class="font-label-md text-label-md">Relatório 3 na próxima semana</span>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-surface-alt border border-border-subtle rounded-lg p-stack-md relative overflow-hidden flex flex-col">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-fixed-dim"></div>
+<div class="flex justify-between items-start mb-stack-md">
+<div>
+<h3 class="font-headline-md text-headline-md text-text-high-contrast mb-1">Estrutura de Dados</h3>
+<p class="font-body-sm text-body-sm text-secondary">Prof. Me. Carlos Souza</p>
+</div>
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded font-label-sm text-label-sm">CMP042</span>
+</div>
+<div class="grid grid-cols-2 gap-stack-md mb-stack-lg flex-1">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Média Atual</p>
+<p class="font-headline-lg text-headline-lg text-text-high-contrast">7.8</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Frequência</p>
+<p class="font-headline-lg text-headline-lg text-text-high-contrast">85%</p>
+<div class="w-full bg-border-subtle h-1 mt-2 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full w-[85%]"></div>
+</div>
+</div>
+</div>
+<div class="border-t border-border-subtle pt-stack-md mt-auto">
+<div class="flex items-center gap-unit text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span class="font-label-md text-label-md">Sem pendências urgentes</span>
+</div>
+</div>
+</article>
+<!-- Card 4 -->
+<article class="bg-surface-alt border border-border-subtle rounded-lg p-stack-md relative overflow-hidden flex flex-col">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint"></div>
+<div class="flex justify-between items-start mb-stack-md">
+<div>
+<h3 class="font-headline-md text-headline-md text-text-high-contrast mb-1">Algoritmos</h3>
+<p class="font-body-sm text-body-sm text-secondary">Profa. Dra. Julia Mendes</p>
+</div>
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded font-label-sm text-label-sm">CMP010</span>
+</div>
+<div class="grid grid-cols-2 gap-stack-md mb-stack-lg flex-1">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Média Atual</p>
+<p class="font-headline-lg text-headline-lg text-text-high-contrast">8.0</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Frequência</p>
+<p class="font-headline-lg text-headline-lg text-text-high-contrast">88%</p>
+<div class="w-full bg-border-subtle h-1 mt-2 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full w-[88%]"></div>
+</div>
+</div>
+</div>
+<div class="border-t border-border-subtle pt-stack-md mt-auto">
+<div class="flex items-center gap-unit text-error">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="font-label-md text-label-md">Projeto Final amanhã</span>
+</div>
+</div>
+</article>
+<!-- Card 5 -->
+<article class="bg-surface-alt border border-border-subtle rounded-lg p-stack-md relative overflow-hidden flex flex-col">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+<div class="flex justify-between items-start mb-stack-md">
+<div>
+<h3 class="font-headline-md text-headline-md text-text-high-contrast mb-1">Eng. de Software</h3>
+<p class="font-body-sm text-body-sm text-secondary">Prof. Dr. Roberto Lima</p>
+</div>
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded font-label-sm text-label-sm">CMP105</span>
+</div>
+<div class="grid grid-cols-2 gap-stack-md mb-stack-lg flex-1">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Média Atual</p>
+<p class="font-headline-lg text-headline-lg text-text-high-contrast">--</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Frequência</p>
+<p class="font-headline-lg text-headline-lg text-text-high-contrast">100%</p>
+<div class="w-full bg-border-subtle h-1 mt-2 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full w-full"></div>
+</div>
+</div>
+</div>
+<div class="border-t border-border-subtle pt-stack-md mt-auto">
+<div class="flex items-center gap-unit text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">info</span>
+<span class="font-label-md text-label-md">Aguardando notas</span>
+</div>
+</div>
+</article>
+</section>
+</main>
+
+
+</body></html>

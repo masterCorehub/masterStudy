@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Module Details - Silk Learning</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary": "#7c3aed",
+                      "inverse-surface": "#2e3040",
+                      "on-tertiary-fixed": "#2e1065",
+                      "error-container": "#fee2e2",
+                      "surface-container-highest": "#d6d8de",
+                      "secondary-container": "#d8dae6",
+                      "primary-fixed": "#e0e2ff",
+                      "on-surface": "#2e3040",
+                      "on-background": "#2e3040",
+                      "inverse-primary": "#a5b4fc",
+                      "surface-bright": "#edeef4",
+                      "on-tertiary-container": "#3b1f63",
+                      "on-primary-fixed-variant": "#4338ca",
+                      "secondary-fixed-dim": "#b8baca",
+                      "on-secondary-fixed": "#1a1b26",
+                      "surface-container": "#e2e4ea",
+                      "primary-fixed-dim": "#a5b4fc",
+                      "on-secondary": "#ffffff",
+                      "on-secondary-fixed-variant": "#404252",
+                      "tertiary-fixed": "#ede9fe",
+                      "primary": "#6366f1",
+                      "outline-variant": "#d0d2dc",
+                      "on-tertiary-fixed-variant": "#5b21b6",
+                      "on-tertiary": "#ffffff",
+                      "secondary-fixed": "#d8dae6",
+                      "on-primary": "#ffffff",
+                      "on-surface-variant": "#585a68",
+                      "background": "#e8eaf0",
+                      "on-primary-fixed": "#1e1b4b",
+                      "surface-container-high": "#dcdee4",
+                      "on-primary-container": "#e0e2ff",
+                      "on-error": "#ffffff",
+                      "secondary": "#6c6e7e",
+                      "on-error-container": "#991b1b",
+                      "surface-tint": "#6366f1",
+                      "outline": "#8a8c9a",
+                      "on-secondary-container": "#585a68",
+                      "tertiary-fixed-dim": "#c4b5fd",
+                      "tertiary-container": "#a78bfa",
+                      "surface": "#e8eaf0",
+                      "surface-dim": "#d4d6dc",
+                      "error": "#dc2626",
+                      "inverse-on-surface": "#e8eaf0",
+                      "surface-container-lowest": "#f0f2f8",
+                      "surface-container-low": "#e5e7ed",
+                      "surface-variant": "#dcdee4",
+                      "primary-container": "#818cf8"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.5rem",
+                      "lg": "1rem",
+                      "xl": "1.5rem",
+                      "full": "9999px"
+              },
+              "fontFamily": {
+                      "headline": [
+                              "Plus Jakarta Sans", "sans-serif"
+                      ],
+                      "display": [
+                              "Plus Jakarta Sans", "sans-serif"
+                      ],
+                      "body": [
+                              "Plus Jakarta Sans", "sans-serif"
+                      ],
+                      "label": [
+                              "Plus Jakarta Sans", "sans-serif"
+                      ]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #e8eaf0; /* Fallback */
+            color: #2e3040;
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1;
+        }
+
+        /* Neomorphic Styles */
+        .neo-raised {
+            box-shadow: 6px 6px 12px rgba(0,0,0,0.08), -6px -6px 12px rgba(255,255,255,0.6);
+            background-color: #e8eaf0;
+            border-radius: 1.5rem;
+        }
+
+        .neo-pressed {
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5);
+            background-color: #e8eaf0;
+            border-radius: 1.5rem;
+        }
+        
+        .neo-raised-sm {
+            box-shadow: 4px 4px 8px rgba(0,0,0,0.06), -4px -4px 8px rgba(255,255,255,0.5);
+            background-color: #e8eaf0;
+            border-radius: 1rem;
+        }
+        
+        .neo-pressed-sm {
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.04), inset -2px -2px 4px rgba(255,255,255,0.4);
+            background-color: #e8eaf0;
+            border-radius: 1rem;
+        }
+
+        /* Custom Scrollbar for inner lists if needed */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e8eaf0; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d0d2dc; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a5b4fc; 
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-full py-6 bg-background border-r-0 w-64 h-screen rounded-r-xl shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] z-20 shrink-0">
+<!-- Header -->
+<div class="px-6 mb-8 flex flex-col items-center">
+<div class="w-16 h-16 rounded-full overflow-hidden neo-raised mb-4 border-4 border-background flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="A highly detailed 3D render of a stylized, futuristic brain glowing with neon violet and soft blue light, representing deep learning and neurology. Set against a clean, minimalist off-white background, creating a bright, modern aesthetic suitable for a sleek UI profile avatar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWIL-a1ZHdcAvL3jBYEqNRGOfiuNvX1vaejRgFogdFqHXnV1QFVREiWynt2b0Ca-l95Tt8GEOP87gZPIaCb1vkxbLOp5-tHWXenG1f-LvdUmRqRDECChdReN5iPSwwQtAVR2JR58mS9VFD8mT2F4KMfiPzOBCu1Y5WouUcNBxTH33hH5_4ENevug8NsFHSfS4Bow_6GMZI6Uy6s0w_pXDuTUenqBYNrK3eo68m8oJhj-1Pvmwp59Mawj6IX3n9gJAXukVNSvAdo7w"/>
+</div>
+<h1 class="text-lg font-semibold text-tertiary tracking-tight">IMERSÃO</h1>
+<p class="text-xs text-on-surface-variant font-medium mt-1 uppercase tracking-wider">Deep Study Flow</p>
+</div>
+<!-- Navigation Tabs -->
+<ul class="flex-1 px-4 space-y-2">
+<!-- Inactive -->
+<li>
+<a class="flex items-center space-x-3 px-4 py-3 text-on-surface-variant hover:text-primary rounded-lg m-2 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 active:scale-95 transform font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined">book</span>
+<span>My Courses</span>
+</a>
+</li>
+<!-- Active (Semantic match: Module Details) -->
+<li>
+<a class="flex items-center space-x-3 px-4 py-3 bg-background shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] text-primary rounded-lg m-2 transition-all duration-300 font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined filled" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span>Modules</span>
+</a>
+</li>
+<!-- Inactive -->
+<li>
+<a class="flex items-center space-x-3 px-4 py-3 text-on-surface-variant hover:text-primary rounded-lg m-2 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 active:scale-95 transform font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined">quiz</span>
+<span>Flashcards</span>
+</a>
+</li>
+<!-- Inactive -->
+<li>
+<a class="flex items-center space-x-3 px-4 py-3 text-on-surface-variant hover:text-primary rounded-lg m-2 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 active:scale-95 transform font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined">edit_note</span>
+<span>Notes</span>
+</a>
+</li>
+</ul>
+<!-- CTA -->
+<div class="px-6 mb-6">
+<button class="w-full py-3 neo-raised text-primary font-semibold text-sm rounded-xl hover:text-tertiary transition-colors duration-200 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] active:scale-95 flex items-center justify-center space-x-2">
+<span class="material-symbols-outlined text-lg">play_arrow</span>
+<span>Start Study Session</span>
+</button>
+</div>
+<!-- Footer Tabs -->
+<ul class="px-4 space-y-2 pb-4 border-t border-outline-variant/30 pt-4 mx-4">
+<li>
+<a class="flex items-center space-x-3 px-4 py-2 text-on-surface-variant hover:text-primary rounded-lg hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-sm">help_outline</span>
+<span>Help</span>
+</a>
+</li>
+<li>
+<a class="flex items-center space-x-3 px-4 py-2 text-on-surface-variant hover:text-error rounded-lg hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-sm">logout</span>
+<span>Sign Out</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center px-6 sticky top-0 z-50 bg-background w-full h-16 shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] shrink-0">
+<!-- Brand / Title -->
+<div class="flex items-center space-x-4">
+<span class="md:hidden material-symbols-outlined text-primary cursor-pointer active:scale-95">menu</span>
+<span class="text-xl font-semibold tracking-tight text-primary dark:text-inverse-primary font-body">Silk Learning</span>
+</div>
+<!-- Search & Actions -->
+<div class="flex items-center space-x-6">
+<!-- Search -->
+<div class="hidden md:flex items-center relative neo-pressed-sm h-10 px-4 w-64">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm text-on-surface w-full placeholder-on-surface-variant/70 font-body" placeholder="Search modules..." type="text"/>
+</div>
+<!-- Icons -->
+<div class="flex items-center space-x-3">
+<button class="w-10 h-10 rounded-full neo-raised-sm flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full neo-raised-sm flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]">
+<span class="material-symbols-outlined text-xl">settings</span>
+</button>
+<button class="hidden sm:flex w-10 h-10 rounded-full neo-raised-sm items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]">
+<span class="material-symbols-outlined text-xl">fullscreen</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<main class="flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth">
+<div class="max-w-6xl mx-auto space-y-8">
+<!-- Back Action -->
+<button class="flex items-center text-on-surface-variant hover:text-primary text-sm font-medium transition-colors font-body mb-2 group">
+<span class="material-symbols-outlined text-lg mr-1 group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                    Back to Medicine Course
+                </button>
+<!-- Top Section: Header & Quick Stats Bento -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Module Header (Spans 2 cols on lg) -->
+<div class="lg:col-span-2 neo-raised p-8 flex flex-col justify-between relative overflow-hidden">
+<!-- Decorative bg element -->
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+<div class="flex flex-col md:flex-row gap-6 items-start relative z-10">
+<!-- Large Icon/Cover -->
+<div class="w-24 h-24 shrink-0 rounded-2xl neo-pressed p-4 flex items-center justify-center text-primary bg-background">
+<span class="material-symbols-outlined" style="font-size: 3rem; font-variation-settings: 'wght' 300;">neurology</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center space-x-3 mb-2">
+<span class="px-3 py-1 rounded-full neo-raised-sm text-xs font-semibold text-tertiary uppercase tracking-wide">Module 4</span>
+<span class="text-sm text-on-surface-variant font-medium flex items-center"><span class="material-symbols-outlined text-sm mr-1">schedule</span> 12h 30m</span>
+</div>
+<h2 class="text-3xl font-bold font-headline text-on-surface mb-3 tracking-tight">Neuroanatomia Funcional</h2>
+<p class="text-on-surface-variant leading-relaxed text-sm max-w-2xl font-body">
+                                    Exploração aprofundada da estrutura e organização do sistema nervoso central e periférico, focando na correlação entre anatomia, vias neurais e funções cognitivas complexas.
+                                </p>
+</div>
+</div>
+<!-- Progress & Main CTA -->
+<div class="mt-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
+<!-- Progress Bar -->
+<div class="flex-1 w-full">
+<div class="flex justify-between items-end mb-2">
+<span class="text-sm font-semibold text-on-surface">Progresso do Módulo</span>
+<span class="text-lg font-bold text-primary">68%</span>
+</div>
+<div class="h-4 w-full rounded-full neo-pressed overflow-hidden p-[2px]">
+<div class="h-full bg-primary rounded-full" style="width: 68%;"></div>
+</div>
+</div>
+<!-- Main Action -->
+<button class="w-full sm:w-auto px-8 py-4 neo-raised bg-background text-primary font-semibold rounded-xl hover:text-tertiary transition-colors duration-200 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] active:scale-95 flex items-center justify-center space-x-2 shrink-0">
+<span class="material-symbols-outlined filled">play_circle</span>
+<span>Continuar Estudos</span>
+</button>
+</div>
+</div>
+<!-- Side Section: Tutors & Quick Stats (Bento Grid feel) -->
+<div class="flex flex-col gap-6">
+<!-- Tutor Card -->
+<div class="neo-raised p-6 flex flex-col justify-center items-center text-center flex-1">
+<div class="w-20 h-20 rounded-full overflow-hidden neo-pressed p-1 mb-4">
+<img class="w-full h-full rounded-full object-cover" data-alt="A professional, bright portrait of a female neuroscience professor in her 40s. She is smiling gently, wearing a tailored white lab coat over a neat blue blouse. The background is a brightly lit, modern medical library with soft focus. The aesthetic is clean, neomorphic, and light-mode friendly." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHHcf1Wws5FJEM9o8b3aFz_kIXs3BvNpn4LUJ5Z5n4KgLS14NuxowDLqBRcJvOsKgBdGq42kWOGofQRTJAZVRKC2m0np0sUjZ8GKTtDOYfO3gVKrhh8U6NJKK0ykP5wXzYlmbpC5eL3wocZpSeIsPIRbxoSrxf1XHBLo7NZ4UT3GQnQulu8PF9bSE85ZYnENxLi1rLpqS0bCT4rdO_77TJo-Fu8Pi2cgPX_7k_L2JTxmAQ7ubqMKpIH7NDuEJRy2f2K34mlty6OeM"/>
+</div>
+<h3 class="font-bold text-on-surface font-headline">Dra. Helena Voss</h3>
+<p class="text-xs text-on-surface-variant mt-1">Instrutora Principal</p>
+<button class="mt-4 px-4 py-2 neo-raised-sm text-xs font-medium text-primary active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.04),inset_-2px_-2px_4px_rgba(255,255,255,0.4)]">
+                                Ver Perfil
+                            </button>
+</div>
+<!-- Quick Stats Row -->
+<div class="grid grid-cols-2 gap-4">
+<div class="neo-raised p-4 flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-tertiary mb-2">description</span>
+<span class="text-xl font-bold text-on-surface">12</span>
+<span class="text-xs text-on-surface-variant">Materiais</span>
+</div>
+<div class="neo-raised p-4 flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-tertiary mb-2">military_tech</span>
+<span class="text-xl font-bold text-on-surface">350</span>
+<span class="text-xs text-on-surface-variant">XP Ganhos</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content Split -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
+<!-- Left Column: Lesson List (Takes up 2 cols) -->
+<div class="lg:col-span-2 space-y-6">
+<div class="flex justify-between items-center px-2">
+<h3 class="text-xl font-bold font-headline text-on-surface tracking-tight">Conteúdo das Aulas</h3>
+<span class="text-sm font-medium text-on-surface-variant">8 de 12 Concluídas</span>
+</div>
+<!-- Lesson List (Glassmorphism / Soft UI cards) -->
+<div class="space-y-4">
+<!-- Lesson Item: Completed -->
+<div class="neo-raised p-4 rounded-2xl flex items-center gap-4 transition-transform hover:-translate-y-1 cursor-pointer">
+<div class="w-12 h-12 rounded-xl neo-pressed flex items-center justify-center text-primary bg-background shrink-0">
+<span class="material-symbols-outlined filled">check_circle</span>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-base font-semibold text-on-surface truncate">1. Introdução ao Sistema Nervoso</h4>
+<div class="flex items-center text-xs text-on-surface-variant mt-1 space-x-3">
+<span class="flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">smart_display</span> Vídeo • 45m</span>
+<span class="flex items-center text-primary font-medium"><span class="material-symbols-outlined text-[14px] mr-1">done</span> Concluído</span>
+</div>
+</div>
+</div>
+<!-- Lesson Item: Completed -->
+<div class="neo-raised p-4 rounded-2xl flex items-center gap-4 transition-transform hover:-translate-y-1 cursor-pointer">
+<div class="w-12 h-12 rounded-xl neo-pressed flex items-center justify-center text-primary bg-background shrink-0">
+<span class="material-symbols-outlined filled">check_circle</span>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-base font-semibold text-on-surface truncate">2. Medula Espinhal e Tronco Encefálico</h4>
+<div class="flex items-center text-xs text-on-surface-variant mt-1 space-x-3">
+<span class="flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">smart_display</span> Vídeo • 52m</span>
+<span class="flex items-center text-primary font-medium"><span class="material-symbols-outlined text-[14px] mr-1">done</span> Concluído</span>
+</div>
+</div>
+</div>
+<!-- Lesson Item: Current (Active) -->
+<div class="neo-raised p-1 rounded-2xl bg-gradient-to-r from-primary/20 to-transparent">
+<div class="neo-raised p-4 rounded-xl flex items-center gap-4 bg-background relative overflow-hidden">
+<!-- Active indicator strip -->
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary rounded-l-xl"></div>
+<div class="w-12 h-12 rounded-xl neo-pressed flex items-center justify-center text-primary bg-background shrink-0 ml-2">
+<span class="material-symbols-outlined">play_arrow</span>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-base font-semibold text-primary truncate">3. Cerebelo e Vias Motoras</h4>
+<div class="flex items-center text-xs text-on-surface-variant mt-1 space-x-3">
+<span class="flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">smart_display</span> Vídeo • 1h 10m</span>
+<span class="flex items-center text-tertiary font-medium">Em andamento (25m)</span>
+</div>
+</div>
+<button class="hidden sm:flex w-10 h-10 rounded-full neo-raised-sm items-center justify-center text-primary hover:text-tertiary shrink-0 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.04),inset_-2px_-2px_4px_rgba(255,255,255,0.4)]">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Lesson Item: PDF Resource Pending -->
+<div class="neo-raised p-4 rounded-2xl flex items-center gap-4 opacity-75 hover:opacity-100 transition-opacity cursor-pointer">
+<div class="w-12 h-12 rounded-xl neo-pressed flex items-center justify-center text-on-surface-variant bg-background shrink-0">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-base font-medium text-on-surface truncate">Material Complementar: Vias Motoras</h4>
+<div class="flex items-center text-xs text-on-surface-variant mt-1 space-x-3">
+<span class="flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">description</span> Leitura • 15 Páginas</span>
+<span class="flex items-center">Pendente</span>
+</div>
+</div>
+</div>
+<!-- Lesson Item: Pending Video -->
+<div class="neo-raised p-4 rounded-2xl flex items-center gap-4 opacity-75 hover:opacity-100 transition-opacity cursor-pointer">
+<div class="w-12 h-12 rounded-xl neo-pressed flex items-center justify-center text-on-surface-variant bg-background shrink-0">
+<span class="material-symbols-outlined">lock</span>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-base font-medium text-on-surface truncate">4. Diencéfalo e Gânglios da Base</h4>
+<div class="flex items-center text-xs text-on-surface-variant mt-1 space-x-3">
+<span class="flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">smart_display</span> Vídeo • 58m</span>
+<span class="flex items-center">Bloqueado</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Tools Sidebar -->
+<div class="space-y-6">
+<h3 class="text-xl font-bold font-headline text-on-surface px-2">Ferramentas do Módulo</h3>
+<!-- Flashcards Widget -->
+<div class="neo-raised p-6 rounded-2xl flex flex-col h-auto">
+<div class="flex items-center space-x-3 mb-4 text-tertiary">
+<span class="material-symbols-outlined text-2xl">style</span>
+<h4 class="font-bold text-lg font-headline text-on-surface">Flashcards</h4>
+</div>
+<p class="text-sm text-on-surface-variant mb-4 flex-1">
+                                Revise 42 termos anatômicos chave deste módulo com repetição espaçada.
+                            </p>
+<div class="w-full neo-pressed h-32 rounded-xl mb-4 relative overflow-hidden flex items-center justify-center group cursor-pointer">
+<div class="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors"></div>
+<span class="material-symbols-outlined text-4xl text-primary/40 group-hover:scale-110 transition-transform">flip</span>
+<div class="absolute bottom-2 right-3 text-xs font-bold text-on-surface-variant">
+                                    Revisão diária pendente
+                                </div>
+</div>
+<button class="w-full py-3 neo-raised-sm text-primary font-semibold text-sm rounded-xl hover:text-tertiary active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.04),inset_-2px_-2px_4px_rgba(255,255,255,0.4)]">
+                                Iniciar Revisão
+                            </button>
+</div>
+<!-- Quick Notes Widget -->
+<div class="neo-raised p-6 rounded-2xl flex flex-col">
+<div class="flex items-center space-x-3 mb-4 text-primary">
+<span class="material-symbols-outlined text-2xl">edit_note</span>
+<h4 class="font-bold text-lg font-headline text-on-surface">Notas Rápidas</h4>
+</div>
+<div class="neo-pressed p-4 rounded-xl h-40 mb-4 overflow-y-auto text-sm text-on-surface-variant font-body">
+<p class="mb-2"><strong>Cerebelo:</strong> Manutenção do equilíbrio e postura.</p>
+<p class="mb-2">Lembrar da diferença entre vias aferentes e eferentes nos pedúnculos cerebelares.</p>
+<p><em>Dica da Dra. Helena:</em> Focar na organização somatotópica.</p>
+</div>
+<button class="w-full py-3 neo-raised-sm text-on-surface font-semibold text-sm rounded-xl hover:text-primary active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.04),inset_-2px_-2px_4px_rgba(255,255,255,0.4)] flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span> Adicionar Nota
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

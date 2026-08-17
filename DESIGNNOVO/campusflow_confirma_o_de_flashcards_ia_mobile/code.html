@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CampusFlow - Flashcards</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#8291a6",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#0d1c2d",
+                        "secondary-fixed": "#d3e4fe",
+                        "primary-container": "#1e293b",
+                        "on-surface-variant": "#45474c",
+                        "secondary-container": "#d0e1fb",
+                        "surface-variant": "#e0e3e5",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#39485a",
+                        "surface-container-low": "#f2f4f6",
+                        "surface": "#f7f9fb",
+                        "secondary": "#505f76",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-bright": "#f7f9fb",
+                        "on-background": "#191c1e",
+                        "tertiary-fixed": "#d4e4fa",
+                        "inverse-primary": "#bcc7de",
+                        "text-high-contrast": "#0F172A",
+                        "background": "#f7f9fb",
+                        "surface-container-highest": "#e0e3e5",
+                        "outline": "#75777d",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-primary-fixed-variant": "#3c475a",
+                        "border-subtle": "#E2E8F0",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "surface-container": "#eceef0",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#eff1f3",
+                        "tertiary-fixed-dim": "#b9c8de",
+                        "on-surface": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-alt": "#E8EAF0",
+                        "surface-tint": "#545f73",
+                        "primary-fixed": "#d8e3fb",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed-dim": "#bcc7de",
+                        "on-primary-fixed": "#111c2d",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#54647a",
+                        "tertiary-container": "#1b2a3b",
+                        "surface-dim": "#d8dadc",
+                        "primary": "#091426",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#8590a6",
+                        "tertiary": "#061525",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#c5c6cd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-lg": "48px",
+                        "margin-page": "64px",
+                        "unit": "8px",
+                        "stack-md": "24px",
+                        "stack-sm": "12px",
+                        "section-gap": "80px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["20px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "1", "fontWeight": "500" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-24 font-body-md">
+<!-- Top Navigation for Linear/Transactional Flow -->
+<header class="bg-surface sticky top-0 w-full border-b border-border-subtle z-50 flex items-center justify-between px-4 h-16">
+<button class="text-primary hover:bg-surface-container-low p-2 rounded-full transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">close</span>
+</button>
+<span class="text-headline-sm font-headline-sm text-primary font-semibold">Review Flashcards</span>
+<div class="w-10"></div> <!-- Placeholder for balance -->
+</header>
+<main class="px-4 py-stack-md flex flex-col gap-stack-sm max-w-md mx-auto">
+<!-- Summary Header -->
+<div class="mb-4">
+<h1 class="text-headline-md font-headline-md text-text-high-contrast mb-2">Biology 101: Cell Structure</h1>
+<p class="text-body-sm font-body-sm text-secondary">15 Flashcards generated from your recent notes.</p>
+</div>
+<!-- Flashcard List -->
+<div class="flex flex-col gap-unit">
+<!-- Card 1 -->
+<div class="bg-surface-alt border border-border-subtle rounded-lg p-6 relative">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-lg"></div>
+<div class="flex justify-between items-start mb-4">
+<span class="text-label-sm font-label-sm text-secondary uppercase tracking-wider">Front</span>
+<button class="text-secondary hover:text-error transition-colors">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">delete</span>
+</button>
+</div>
+<p class="text-body-md font-body-md text-text-high-contrast mb-6">What is the primary function of the mitochondria?</p>
+<div class="border-t border-border-subtle pt-4">
+<span class="text-label-sm font-label-sm text-secondary uppercase tracking-wider block mb-2">Back</span>
+<p class="text-body-sm font-body-sm text-on-surface-variant">To generate most of the chemical energy needed to power the cell's biochemical reactions (powerhouse of the cell).</p>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-alt border border-border-subtle rounded-lg p-6 relative">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-lg"></div>
+<div class="flex justify-between items-start mb-4">
+<span class="text-label-sm font-label-sm text-secondary uppercase tracking-wider">Front</span>
+<button class="text-secondary hover:text-error transition-colors">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">delete</span>
+</button>
+</div>
+<p class="text-body-md font-body-md text-text-high-contrast mb-6">Define apoptosis.</p>
+<div class="border-t border-border-subtle pt-4">
+<span class="text-label-sm font-label-sm text-secondary uppercase tracking-wider block mb-2">Back</span>
+<p class="text-body-sm font-body-sm text-on-surface-variant">The death of cells which occurs as a normal and controlled part of an organism's growth or development.</p>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-alt border border-border-subtle rounded-lg p-6 relative">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-lg"></div>
+<div class="flex justify-between items-start mb-4">
+<span class="text-label-sm font-label-sm text-secondary uppercase tracking-wider">Front</span>
+<button class="text-secondary hover:text-error transition-colors">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">delete</span>
+</button>
+</div>
+<p class="text-body-md font-body-md text-text-high-contrast mb-6">What differentiates rough ER from smooth ER?</p>
+<div class="border-t border-border-subtle pt-4">
+<span class="text-label-sm font-label-sm text-secondary uppercase tracking-wider block mb-2">Back</span>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Rough ER has ribosomes attached to its surface, making it appear 'rough', and is involved in protein synthesis. Smooth ER lacks ribosomes and is involved in lipid synthesis.</p>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-alt border border-border-subtle rounded-lg p-6 relative">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-lg opacity-50"></div>
+<div class="flex justify-between items-start mb-4">
+<span class="text-label-sm font-label-sm text-secondary uppercase tracking-wider">Front</span>
+<button class="text-secondary hover:text-error transition-colors">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">delete</span>
+</button>
+</div>
+<p class="text-body-md font-body-md text-text-high-contrast mb-6 text-opacity-70 italic">+ 12 more cards...</p>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (Contextual for this specific flow) -->
+<div class="fixed bottom-6 w-full px-4 max-w-md mx-auto left-0 right-0 z-50">
+<button class="w-full bg-primary-container text-on-primary h-14 rounded-full flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all font-label-md text-label-md shadow-[0_4px_14px_0_rgba(0,0,0,0.1)]">
+<span class="material-symbols-outlined text-lg">check</span>
+            Confirmar
+        </button>
+</div>
+</body></html>

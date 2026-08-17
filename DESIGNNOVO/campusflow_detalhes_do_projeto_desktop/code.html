@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CampusFlow - Project Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error-container": "#ffdad6",
+                      "outline": "#75777d",
+                      "on-primary-fixed-variant": "#3c475a",
+                      "surface-bright": "#f7f9fb",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "on-secondary-fixed": "#0b1c30",
+                      "surface-container": "#eceef0",
+                      "tertiary": "#061525",
+                      "surface-tint": "#545f73",
+                      "on-primary": "#ffffff",
+                      "on-secondary-container": "#54647a",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "text-high-contrast": "#0F172A",
+                      "surface-container-high": "#e6e8ea",
+                      "on-error": "#ffffff",
+                      "inverse-surface": "#2d3133",
+                      "inverse-primary": "#bcc7de",
+                      "primary-fixed-dim": "#bcc7de",
+                      "on-tertiary": "#ffffff",
+                      "surface-variant": "#e0e3e5",
+                      "primary": "#091426",
+                      "on-error-container": "#93000a",
+                      "secondary": "#505f76",
+                      "tertiary-fixed": "#d4e4fa",
+                      "primary-container": "#1e293b",
+                      "tertiary-fixed-dim": "#b9c8de",
+                      "surface": "#f7f9fb",
+                      "on-tertiary-fixed-variant": "#39485a",
+                      "border-subtle": "#E2E8F0",
+                      "on-background": "#191c1e",
+                      "secondary-container": "#d0e1fb",
+                      "on-primary-container": "#8590a6",
+                      "on-tertiary-container": "#8291a6",
+                      "surface-alt": "#E8EAF0",
+                      "on-surface": "#191c1e",
+                      "surface-container-highest": "#e0e3e5",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-secondary": "#ffffff",
+                      "on-primary-fixed": "#111c2d",
+                      "surface-container-low": "#f2f4f6",
+                      "background": "#f7f9fb",
+                      "error": "#ba1a1a",
+                      "on-tertiary-fixed": "#0d1c2d",
+                      "on-surface-variant": "#45474c",
+                      "surface-dim": "#d8dadc",
+                      "secondary-fixed": "#d3e4fe",
+                      "tertiary-container": "#1b2a3b",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-fixed": "#d8e3fb",
+                      "outline-variant": "#c5c6cd"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-sm": "12px",
+                      "margin-page": "64px",
+                      "unit": "8px",
+                      "stack-lg": "48px",
+                      "gutter": "24px",
+                      "stack-md": "24px",
+                      "section-gap": "80px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "1",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+    </style>
+</head>
+<body class="antialiased flex h-screen overflow-hidden">
+<!-- SideNavBar (Hidden on Mobile) -->
+<nav class="bg-surface-container-low dark:bg-surface-container-low font-body-md text-body-md h-screen w-64 fixed left-0 top-0 hidden md:flex flex-col border-r border-border-subtle dark:border-outline-variant z-20">
+<div class="flex flex-col h-full py-stack-md">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-sm">school</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">CampusFlow</h1>
+<p class="font-label-sm text-label-sm text-secondary">Academic Management</p>
+</div>
+</div>
+<div class="flex-1 flex flex-col gap-1 px-3">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary dark:text-on-secondary-container hover:bg-surface-container-highest dark:hover:bg-on-primary-container/10 transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary dark:text-on-secondary-container hover:bg-surface-container-highest dark:hover:bg-on-primary-container/10 transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span>Calendar</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-primary dark:text-primary-fixed font-semibold border-r-4 border-primary dark:border-primary-fixed bg-surface-container-high hover:bg-surface-container-highest dark:hover:bg-on-primary-container/10 transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span>Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary dark:text-on-secondary-container hover:bg-surface-container-highest dark:hover:bg-on-primary-container/10 transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined">school</span>
+<span>Disciplines</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary dark:text-on-secondary-container hover:bg-surface-container-highest dark:hover:bg-on-primary-container/10 transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined">description</span>
+<span>Notes/Materials</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-secondary dark:text-on-secondary-container hover:bg-surface-container-highest dark:hover:bg-on-primary-container/10 transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span>Performance</span>
+</a>
+</div>
+<div class="px-6 mt-auto">
+<button class="w-full bg-primary-container text-on-primary py-2 px-4 rounded-DEFAULT font-label-md text-label-md hover:bg-primary transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span>
+                    New Entry
+                </button>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 ml-0 md:ml-64 flex flex-col h-full relative overflow-y-auto bg-background">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface font-label-md text-label-md docked full-width top-0 h-16 border-b border-border-subtle dark:border-outline-variant sticky z-10">
+<div class="flex justify-between items-center px-margin-page w-full h-full">
+<!-- Search (Left) -->
+<div class="flex items-center relative w-64 hidden md:flex">
+<span class="material-symbols-outlined absolute left-3 text-secondary text-sm">search</span>
+<input class="w-full bg-surface-container-low border border-border-subtle rounded-DEFAULT py-1.5 pl-9 pr-3 text-body-sm focus:outline-none focus:border-primary transition-colors" placeholder="Search projects..." type="text"/>
+</div>
+<!-- Mobile Title -->
+<div class="md:hidden">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">CampusFlow</h1>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-4">
+<button class="text-secondary dark:text-on-secondary-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 ease-in-out">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-secondary dark:text-on-secondary-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 ease-in-out">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-border-subtle ml-2">
+<img alt="User profile photo" class="w-full h-full object-cover" data-alt="A minimalist, professional avatar image for a student or academic researcher, subtle gray background, high quality, soft lighting, minimalist aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeAb0mVgfDAbI0jxf_kDobqDoD29fRA3n_O4s1_QvL6HftXSd7jAsTNPOryPqmUnb6GA2tw9A673DbVwd13OxNeTapEYLARfKiSqmYlpbpRnwjIELAf2xHo09d9GFaCspM7agIlbSpAEbPyMLNnbTRETgMBHzGh-oqTCLuKAEZXJS4BrrdFZQvveZIA_Qh4Wv2mp9TJUEyj1eLz-MLaGrSMXo0nzzH7rupZGtq1SDx_cWVztZmzz0_onDwJ_jc8PPb8ma9VSS11ANP"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="p-gutter md:p-margin-page max-w-[1200px] mx-auto w-full pb-32 md:pb-margin-page">
+<!-- Project Header -->
+<div class="mb-section-gap">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-surface-alt text-secondary px-2 py-1 rounded-sm font-label-sm text-label-sm border border-border-subtle uppercase tracking-wider">Comp Sci 401</span>
+<span class="flex items-center gap-1 text-secondary text-body-sm">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+                                Due: Dec 15, 2024
+                            </span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-text-high-contrast mb-2">Distributed Systems Architecture Analysis</h1>
+<p class="font-body-lg text-body-lg text-secondary max-w-2xl">A comprehensive academic paper and prototype analyzing the consensus algorithms in modern distributed ledgers.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 border border-secondary text-secondary rounded-DEFAULT font-label-md hover:bg-surface-container-low transition-colors">Edit Details</button>
+<button class="px-4 py-2 bg-primary-container text-on-primary rounded-DEFAULT font-label-md hover:bg-primary transition-colors">Submit Project</button>
+</div>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Main Column (Tasks & Milestones) -->
+<div class="md:col-span-8 flex flex-col gap-gutter">
+<!-- Progress Overview -->
+<div class="bg-surface-alt border border-border-subtle rounded-DEFAULT p-stack-md">
+<h2 class="font-headline-sm text-headline-sm text-text-high-contrast mb-6 border-b border-border-subtle pb-4">Project Progress</h2>
+<div class="flex items-center gap-6 mb-6">
+<div class="flex-1">
+<div class="flex justify-between font-label-sm text-secondary mb-2">
+<span>Milestones Completed</span>
+<span>3 of 5</span>
+</div>
+<div class="w-full h-2 bg-surface-container-low border border-border-subtle rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[60%]"></div>
+</div>
+</div>
+<div class="w-16 h-16 rounded-full border-2 border-primary-container flex items-center justify-center font-headline-sm text-primary-container">
+                                60%
+                            </div>
+</div>
+<!-- Kanban Style Tasks -->
+<div class="space-y-3">
+<div class="flex items-start gap-4 p-4 bg-surface border border-border-subtle rounded-DEFAULT relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
+<span class="material-symbols-outlined text-outline mt-0.5">check_circle</span>
+<div class="flex-1">
+<h3 class="font-body-md font-semibold text-text-high-contrast line-through text-secondary">Literature Review</h3>
+<p class="font-body-sm text-secondary line-through">Compile and summarize 20 key papers on Paxos and Raft.</p>
+</div>
+</div>
+<div class="flex items-start gap-4 p-4 bg-surface border border-border-subtle border-l-4 border-l-primary-container rounded-DEFAULT relative group">
+<span class="material-symbols-outlined text-primary-container mt-0.5">radio_button_unchecked</span>
+<div class="flex-1">
+<h3 class="font-body-md font-semibold text-text-high-contrast">Prototype Implementation</h3>
+<p class="font-body-sm text-secondary mb-2">Build a minimal working Raft cluster in Go.</p>
+<div class="flex items-center gap-2">
+<span class="text-[10px] bg-surface-container-high px-1.5 py-0.5 rounded font-label-sm text-secondary border border-border-subtle">IN PROGRESS</span>
+<img alt="Assignee" class="w-5 h-5 rounded-full object-cover border border-border-subtle" data-alt="Small round avatar of a student working on code, minimalist style, light theme, professional look." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHMebM3mkzeb0DCsiNjmodAt_BXruNo8jUgecOg4SbMOqDgDV3bjU_qny2pmO9Eehrvtv2R4SSn-peOfrTYeNijjSuLThCrq1r5m68MetmGYPZLsbNk0ouoDDL6K2bXynPsgVQBfuOlMkZfaVR8jjmS2XFcXcx-dizYq_meVm7VrQyiugYCIEULcsTKNhc0WAJ53hcSjfKuZwD9ErEDNPOy_Pqu6w04mwZcIpfYHKD-f4YH-OMHf6TEUtW4pwjZq74dPH3DterNeya"/>
+</div>
+</div>
+<button class="text-secondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100"><span class="material-symbols-outlined">more_vert</span></button>
+</div>
+<div class="flex items-start gap-4 p-4 bg-surface border border-border-subtle rounded-DEFAULT relative group">
+<span class="material-symbols-outlined text-outline mt-0.5">radio_button_unchecked</span>
+<div class="flex-1">
+<h3 class="font-body-md font-semibold text-text-high-contrast">Data Analysis &amp; Drafting</h3>
+<p class="font-body-sm text-secondary">Analyze prototype performance metrics and begin paper draft.</p>
+</div>
+<button class="text-secondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100"><span class="material-symbols-outlined">more_vert</span></button>
+</div>
+</div>
+<button class="mt-4 w-full py-2 border border-dashed border-border-subtle text-secondary font-label-sm rounded-DEFAULT hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span> Add Task
+                        </button>
+</div>
+</div>
+<!-- Side Column (Resources, Team, Submission) -->
+<div class="md:col-span-4 flex flex-col gap-gutter">
+<!-- Resources -->
+<div class="bg-surface-alt border border-border-subtle rounded-DEFAULT p-stack-md">
+<h2 class="font-headline-sm text-headline-sm text-text-high-contrast mb-4">Resources</h2>
+<ul class="space-y-2">
+<li>
+<a class="flex items-center justify-between p-3 bg-surface border border-border-subtle rounded-DEFAULT hover:border-primary transition-colors group" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">folder</span>
+<span class="font-body-sm text-text-high-contrast">Google Drive Folder</span>
+</div>
+<span class="material-symbols-outlined text-sm text-secondary group-hover:text-primary transition-colors">open_in_new</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-between p-3 bg-surface border border-border-subtle rounded-DEFAULT hover:border-primary transition-colors group" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">code</span>
+<span class="font-body-sm text-text-high-contrast">GitHub Repository</span>
+</div>
+<span class="material-symbols-outlined text-sm text-secondary group-hover:text-primary transition-colors">open_in_new</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-between p-3 bg-surface border border-border-subtle rounded-DEFAULT hover:border-primary transition-colors group" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">article</span>
+<span class="font-body-sm text-text-high-contrast">Course Syllabus</span>
+</div>
+<span class="material-symbols-outlined text-sm text-secondary group-hover:text-primary transition-colors">download</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Team -->
+<div class="bg-surface-alt border border-border-subtle rounded-DEFAULT p-stack-md">
+<div class="flex items-center justify-between mb-4">
+<h2 class="font-headline-sm text-headline-sm text-text-high-contrast">Team</h2>
+<button class="text-secondary hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm">person_add</span></button>
+</div>
+<div class="flex flex-wrap gap-2">
+<div class="relative group">
+<img alt="Team member" class="w-10 h-10 rounded-full border border-border-subtle object-cover" data-alt="Headshot of a university student, wearing glasses, soft neutral background, professional academic portrait style, minimalist." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAznsfYJnIbsA_B7jZCVtsWOXMDIaoser25NTvAf99dAxsWEzrao23f0sRptnmLlduiaP002PVbuFX_wdLA_tFA7EGdhfCVYDFAVH9IxV1bUQssCLou-fSQlMULihXHTrazYDIssktP5WeSBnXqswb3qmyNxsCI5PsUMVQkadD7KRJH3EuAlgbyLE89S2znWcHMHoStlb3ehFwXVxGxnVPwS8eka0wud6RfzTpDl189qL0GlKHcm5BzTXunpbmKoA3xbXZiQRdyfI05"/>
+</div>
+<div class="relative group">
+<img alt="Team member" class="w-10 h-10 rounded-full border border-border-subtle object-cover" data-alt="Headshot of a female computer science student, studying in a bright minimalist library, clean modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA25Sbq-Hp3EbCrovCMo6jkaKqt89LoZ6Ca5537E3Nc0xMSD8fbELiUbcyJLqIJVWhbsXqVs8tmw3aXOv8GWa6QcgHUEOdWYPNdvVpLi42x6SkhWBXif5gDqaKLXY6yas2UETMm1VbbsijernbfdBlSBgJbr7EkEbENYj5IEUs0mHsqX8wK_V1hvGfStou_7zpx3bMttsku1XnkVjxMV4XS0JHWlp-7Z08yD92Almg3Ao45gpW9NNNrykHysFOxftInrmIcH6o4gL3p"/>
+</div>
+<div class="w-10 h-10 rounded-full border border-dashed border-border-subtle flex items-center justify-center text-secondary hover:bg-surface-container-low transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-sm">add</span>
+</div>
+</div>
+</div>
+<!-- Submission Area -->
+<div class="bg-surface-alt border border-border-subtle rounded-DEFAULT p-stack-md">
+<h2 class="font-headline-sm text-headline-sm text-text-high-contrast mb-4">Final Submission</h2>
+<div class="p-6 border-2 border-dashed border-border-subtle rounded-DEFAULT bg-surface text-center flex flex-col items-center justify-center mb-4">
+<span class="material-symbols-outlined text-secondary text-3xl mb-2">upload_file</span>
+<p class="font-body-sm text-secondary mb-1">Drag and drop final paper here</p>
+<p class="font-label-sm text-outline">or <span class="text-primary underline cursor-pointer">browse files</span> (PDF, DOCX)</p>
+</div>
+<div class="flex items-start gap-2 text-error text-sm font-body-sm">
+<span class="material-symbols-outlined text-[16px]">info</span>
+<p>Missing requirements: Final PDF upload.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="bg-surface dark:bg-surface-container-low font-label-sm text-label-sm fixed bottom-0 w-full md:hidden rounded-t-xl border-t border-border-subtle dark:border-outline-variant z-50">
+<div class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 px-4 pb-safe">
+<a class="flex flex-col items-center justify-center text-secondary dark:text-on-secondary-container active:bg-surface-container-high transition-all scale-90 duration-150 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span>Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-on-secondary-container active:bg-surface-container-high transition-all scale-90 duration-150 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">calendar_month</span>
+<span>Calendar</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed font-bold active:bg-surface-container-high transition-all scale-90 duration-150 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+<span>Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-on-secondary-container active:bg-surface-container-high transition-all scale-90 duration-150 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">edit_note</span>
+<span>Notes</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-on-secondary-container active:bg-surface-container-high transition-all scale-90 duration-150 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">trending_up</span>
+<span>Growth</span>
+</a>
+</div>
+</nav>
+</body></html>

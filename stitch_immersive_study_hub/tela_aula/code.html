@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="h-full antialiased" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aula 3: Cerebelo e Vias Motoras - Silk Learning</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#a5b4fc",
+                        "surface": "#e8eaf0",
+                        "secondary": "#6c6e7e",
+                        "primary-fixed": "#e0e2ff",
+                        "primary": "#6366f1",
+                        "on-secondary-fixed": "#1a1b26",
+                        "secondary-fixed": "#d8dae6",
+                        "outline-variant": "#d0d2dc",
+                        "on-error-container": "#991b1b",
+                        "on-primary-fixed": "#1e1b4b",
+                        "surface-container-lowest": "#f0f2f8",
+                        "on-tertiary-container": "#3b1f63",
+                        "inverse-on-surface": "#e8eaf0",
+                        "on-secondary-fixed-variant": "#404252",
+                        "tertiary-fixed-dim": "#c4b5fd",
+                        "on-secondary": "#ffffff",
+                        "background": "#e8eaf0",
+                        "on-tertiary-fixed": "#2e1065",
+                        "primary-container": "#818cf8",
+                        "on-surface-variant": "#585a68",
+                        "surface-container-highest": "#d6d8de",
+                        "surface-container": "#e2e4ea",
+                        "secondary-container": "#d8dae6",
+                        "on-surface": "#2e3040",
+                        "surface-dim": "#d4d6dc",
+                        "on-primary-container": "#e0e2ff",
+                        "on-primary-fixed-variant": "#4338ca",
+                        "surface-container-low": "#e5e7ed",
+                        "surface-tint": "#6366f1",
+                        "error": "#dc2626",
+                        "secondary-fixed-dim": "#b8baca",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#dcdee4",
+                        "surface-variant": "#dcdee4",
+                        "surface-bright": "#edeef4",
+                        "error-container": "#fee2e2",
+                        "on-tertiary": "#ffffff",
+                        "on-background": "#2e3040",
+                        "tertiary-fixed": "#ede9fe",
+                        "inverse-surface": "#2e3040",
+                        "tertiary-container": "#a78bfa",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#585a68",
+                        "tertiary": "#7c3aed",
+                        "on-tertiary-fixed-variant": "#5b21b6",
+                        "inverse-primary": "#a5b4fc",
+                        "outline": "#8a8c9a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "display": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .neo-raised {
+            box-shadow: 6px 6px 12px rgba(0,0,0,0.08), -6px -6px 12px rgba(255,255,255,0.6);
+        }
+        .neo-pressed {
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5);
+        }
+        .neo-interactive:active {
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5);
+            transform: scale(0.98);
+        }
+        .neo-track {
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.06), inset -2px -2px 4px rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body h-full flex overflow-hidden">
+<!-- TopNavBar (Rendered via JSON spec logic) -->
+<nav class="absolute top-0 w-full h-16 flex justify-between items-center px-6 z-50 bg-background shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)]">
+<div class="flex items-center gap-4">
+<button aria-label="Voltar" class="w-10 h-10 rounded-full bg-background flex items-center justify-center neo-raised neo-interactive text-on-surface-variant hover:text-primary transition-colors duration-200">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex items-center gap-2 text-sm font-medium">
+<span class="text-on-surface-variant cursor-pointer hover:text-primary transition-colors duration-200">Módulo 1: Neuroanatomia Básica</span>
+<span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+<span class="text-primary font-semibold">Aula 3: Cerebelo e Vias Motoras</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-xl font-semibold tracking-tight text-primary dark:text-inverse-primary hidden md:block">Silk Learning</span>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full bg-background flex items-center justify-center neo-raised neo-interactive text-on-surface-variant hover:text-primary transition-colors duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-background flex items-center justify-center neo-raised neo-interactive text-on-surface-variant hover:text-primary transition-colors duration-200">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-background flex items-center justify-center neo-raised neo-interactive text-on-surface-variant hover:text-primary transition-colors duration-200">
+<span class="material-symbols-outlined">fullscreen</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-background neo-raised overflow-hidden ml-2">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A small, professional portrait photograph of an adult individual acting as an avatar placeholder, set against a soft, bright neomorphic background in light grey #e8eaf0. High key lighting, modern, clean aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoiF0NWVCAtsEYPaINbYpYTZaCnYMwCFheMEwfkHG5JlxKNEbvlnVFGED8d-ASVup56wO_zCjx1d8tpUBx47vEfDZJuEtpMkBPiPCwP-YgkJyHcl9n8_E_wpEmyc4bl38epbl0BUjcUFmOgKcU3xIlsWit2Ed3QS2dhorn4oycIczXUnrT3CnsO5z8eDLg1i74ainj2Ze_jANQLH7OqNgx7JLqCDpBmY8Tl3tcTGCpSG4AqVXivUdmHCbhFaEO0q1gnM2E7LzNynE"/>
+</div>
+</div>
+</div>
+</nav>
+<!-- Side Panel (Lesson Index) -->
+<aside class="w-80 h-full bg-background pt-20 pb-6 px-4 flex flex-col z-40 relative shadow-[6px_0px_12px_rgba(0,0,0,0.05)] border-r border-outline-variant/30 hidden lg:flex">
+<div class="flex items-center justify-between mb-6 px-2">
+<h2 class="font-semibold text-lg text-on-surface">Conteúdo do Módulo</h2>
+<span class="text-xs font-medium bg-primary-fixed text-on-primary-fixed-variant px-2 py-1 rounded-full neo-raised">3/8</span>
+</div>
+<div class="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+<!-- Completed Lesson -->
+<button class="w-full text-left bg-background p-3 rounded-xl neo-raised hover:text-primary transition-all duration-300 group flex items-start gap-3">
+<div class="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center neo-pressed">
+<span class="material-symbols-outlined" style="font-size: 16px;">check</span>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface-variant group-hover:text-primary">Aula 1: Tronco Encefálico</p>
+<p class="text-xs text-secondary mt-1">12 min • Vídeo</p>
+</div>
+</button>
+<!-- Completed Lesson -->
+<button class="w-full text-left bg-background p-3 rounded-xl neo-raised hover:text-primary transition-all duration-300 group flex items-start gap-3">
+<div class="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center neo-pressed">
+<span class="material-symbols-outlined" style="font-size: 16px;">check</span>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface-variant group-hover:text-primary">Aula 2: Nervos Cranianos</p>
+<p class="text-xs text-secondary mt-1">18 min • Vídeo</p>
+</div>
+</button>
+<!-- Active Lesson -->
+<div class="w-full text-left bg-background p-3 rounded-xl neo-pressed flex items-start gap-3 border border-primary/20">
+<div class="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center neo-raised shadow-primary/30">
+<span class="material-symbols-outlined" style="font-size: 16px; font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-primary">Aula 3: Cerebelo e Vias Motoras</p>
+<p class="text-xs text-primary/70 mt-1">24 min • Vídeo</p>
+</div>
+</div>
+<!-- Upcoming Lesson -->
+<button class="w-full text-left bg-background p-3 rounded-xl neo-raised hover:text-primary transition-all duration-300 group flex items-start gap-3 opacity-70">
+<div class="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center neo-pressed">
+<span class="material-symbols-outlined" style="font-size: 16px;">lock</span>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface-variant group-hover:text-primary">Aula 4: Diencéfalo e Gânglios</p>
+<p class="text-xs text-secondary mt-1">15 min • Leitura</p>
+</div>
+</button>
+<!-- Upcoming Lesson -->
+<button class="w-full text-left bg-background p-3 rounded-xl neo-raised hover:text-primary transition-all duration-300 group flex items-start gap-3 opacity-70">
+<div class="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center neo-pressed">
+<span class="material-symbols-outlined" style="font-size: 16px;">lock</span>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface-variant group-hover:text-primary">Quiz: Consolidação</p>
+<p class="text-xs text-secondary mt-1">10 questões • Exercício</p>
+</div>
+</button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 h-full pt-16 flex flex-col relative bg-background">
+<!-- Canvas Content Container -->
+<div class="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col max-w-6xl mx-auto w-full pb-32">
+<!-- Video Player Frame -->
+<div class="w-full aspect-video bg-background rounded-2xl neo-raised p-2 mb-8">
+<div class="w-full h-full rounded-xl overflow-hidden relative bg-black neo-pressed group">
+<!-- Video Placeholder Image -->
+<img alt="Video frame" class="w-full h-full object-cover opacity-80" data-alt="A highly detailed still frame from a professional educational video about human neuroanatomy, specifically focusing on the cerebellum and motor pathways. A 3D translucent medical model of a brain is visible on screen, glowing softly with blue and purple highlights. The background is a sophisticated studio environment. Modern, sleek aesthetic with subtle neomorphic lighting cues in the UI overlays." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_JNHPMRjX9o-Q9PrSGL4uMF67-vehXzsfGCzaBrQbPuy_uJ1Xhq25H5FoKT2_8ZeKOz5s5VQVV0HsHZFdCb7IqAnaCEduBneEy7NCzmJ8t2Vn7N3FB6ThJeM8g8OmLcJ1XNf-WRY5__lO3N6erUuVHwUzE2s7Dz7b9XGvVuV-I1NdNX-6trY_h0nHTl6ETPj2uv5X_zTduRTuC-cWyjbKYBuAyr_CcJBvciFDUWwdwtRRiGY9Lg82fVDoRBaZC0creWURuXGOcFo"/>
+<!-- Overlay Controls (Hover) -->
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+<!-- Progress Bar -->
+<div class="w-full h-2 bg-surface/30 rounded-full mb-4 cursor-pointer relative">
+<div class="absolute top-0 left-0 h-full w-1/3 bg-primary rounded-full"></div>
+<div class="absolute top-1/2 left-1/3 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg"></div>
+</div>
+<!-- Bottom Controls -->
+<div class="flex items-center justify-between text-white">
+<div class="flex items-center gap-6">
+<button class="hover:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1; font-size: 28px;">pause</span>
+</button>
+<button class="hover:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">skip_next</span>
+</button>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined">volume_up</span>
+<div class="w-20 h-1 bg-surface/30 rounded-full">
+<div class="h-full w-3/4 bg-white rounded-full"></div>
+</div>
+</div>
+<span class="text-sm font-medium opacity-80 font-mono">08:14 / 24:00</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="hover:text-primary transition-colors text-sm font-medium flex items-center gap-1">
+                                    1.25x
+                                </button>
+<button class="hover:text-primary transition-colors">
+<span class="material-symbols-outlined">closed_caption</span>
+</button>
+<button class="hover:text-primary transition-colors">
+<span class="material-symbols-outlined">fullscreen</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Content Details & Actions -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+<div>
+<h1 class="text-3xl font-semibold text-on-surface mb-2 font-headline">Aula 3: Cerebelo e Vias Motoras</h1>
+<p class="text-on-surface-variant max-w-2xl">
+                        Explore as estruturas do cerebelo e como elas se integram às vias motoras para coordenar o movimento suave e o equilíbrio.
+                    </p>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-3 bg-background rounded-xl text-primary font-semibold flex items-center gap-2 neo-raised neo-interactive hover:text-primary-container transition-colors duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                        Marcar como Concluída
+                    </button>
+</div>
+</div>
+<!-- Additional Resources Bento Grid -->
+<h3 class="text-lg font-semibold text-on-surface mb-4">Recursos da Aula</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Notes Card -->
+<div class="bg-background rounded-2xl p-6 neo-raised flex flex-col h-full">
+<div class="w-12 h-12 rounded-xl bg-background neo-pressed flex items-center justify-center text-tertiary mb-4">
+<span class="material-symbols-outlined">edit_note</span>
+</div>
+<h4 class="font-semibold text-on-surface mb-2">Anotações</h4>
+<p class="text-sm text-on-surface-variant mb-4 flex-1">Acesse o quadro branco virtual com as anotações geradas durante a aula.</p>
+<button class="text-primary text-sm font-medium hover:underline self-start">Abrir Anotações</button>
+</div>
+<!-- PDF Card -->
+<div class="bg-background rounded-2xl p-6 neo-raised flex flex-col h-full">
+<div class="w-12 h-12 rounded-xl bg-background neo-pressed flex items-center justify-center text-primary mb-4">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<h4 class="font-semibold text-on-surface mb-2">Material Complementar</h4>
+<p class="text-sm text-on-surface-variant mb-4 flex-1">Diagramas detalhados das vias eferentes e aferentes do cerebelo.</p>
+<button class="text-primary text-sm font-medium hover:underline self-start">Download PDF (2.4 MB)</button>
+</div>
+<!-- Flashcards Card -->
+<div class="bg-background rounded-2xl p-6 neo-raised flex flex-col h-full">
+<div class="w-12 h-12 rounded-xl bg-background neo-pressed flex items-center justify-center text-secondary mb-4">
+<span class="material-symbols-outlined">quiz</span>
+</div>
+<h4 class="font-semibold text-on-surface mb-2">Flashcards</h4>
+<p class="text-sm text-on-surface-variant mb-4 flex-1">Teste sua retenção com 15 cards sobre este tópico.</p>
+<button class="text-primary text-sm font-medium hover:underline self-start">Iniciar Revisão</button>
+</div>
+</div>
+</div>
+<!-- Bottom Action Bar (Fixed) -->
+<div class="absolute bottom-0 w-full h-20 bg-background/80 backdrop-blur-md border-t border-outline-variant/20 flex items-center justify-between px-8 z-30">
+<button class="px-5 py-2.5 bg-background rounded-lg text-on-surface-variant font-medium flex items-center gap-2 neo-raised neo-interactive hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+                Anterior
+            </button>
+<button class="px-6 py-3 bg-background rounded-xl text-primary font-semibold flex items-center gap-2 neo-raised neo-interactive hover:text-primary-container transition-colors shadow-[6px_6px_12px_rgba(99,102,241,0.2),-6px_-6px_12px_rgba(255,255,255,0.6)]">
+                Próxima Aula
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Project Detail - CampusFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "error-container": "#ffdad6",
+                        "outline": "#75777d",
+                        "on-primary-fixed-variant": "#3c475a",
+                        "surface-bright": "#f7f9fb",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-container": "#eceef0",
+                        "tertiary": "#061525",
+                        "surface-tint": "#545f73",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#54647a",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "text-high-contrast": "#0F172A",
+                        "surface-container-high": "#e6e8ea",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#2d3133",
+                        "inverse-primary": "#bcc7de",
+                        "primary-fixed-dim": "#bcc7de",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e0e3e5",
+                        "primary": "#091426",
+                        "on-error-container": "#93000a",
+                        "secondary": "#505f76",
+                        "tertiary-fixed": "#d4e4fa",
+                        "primary-container": "#1e293b",
+                        "tertiary-fixed-dim": "#b9c8de",
+                        "surface": "#f7f9fb",
+                        "on-tertiary-fixed-variant": "#39485a",
+                        "border-subtle": "#E2E8F0",
+                        "on-background": "#191c1e",
+                        "secondary-container": "#d0e1fb",
+                        "on-primary-container": "#8590a6",
+                        "on-tertiary-container": "#8291a6",
+                        "surface-alt": "#E8EAF0",
+                        "on-surface": "#191c1e",
+                        "surface-container-highest": "#e0e3e5",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#111c2d",
+                        "surface-container-low": "#f2f4f6",
+                        "background": "#f7f9fb",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#0d1c2d",
+                        "on-surface-variant": "#45474c",
+                        "surface-dim": "#d8dadc",
+                        "secondary-fixed": "#d3e4fe",
+                        "tertiary-container": "#1b2a3b",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#d8e3fb",
+                        "outline-variant": "#c5c6cd"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "stack-sm": "12px",
+                        "margin-page": "24px", /* Adjusted for mobile */
+                        "unit": "8px",
+                        "stack-lg": "48px",
+                        "gutter": "16px", /* Adjusted for mobile */
+                        "stack-md": "24px",
+                        "section-gap": "48px", /* Adjusted for mobile */
+                        "safe": "env(safe-area-inset-bottom)"
+                    },
+                    fontFamily: {
+                        "headline-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"]
+                    },
+                    fontSize: {
+                        "headline-lg": ["32px", { lineHeight: "1.2", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "headline-sm": ["20px", { lineHeight: "1.4", fontWeight: "500" }],
+                        "headline-md": ["24px", { lineHeight: "1.3", fontWeight: "600" }],
+                        "display-lg": ["48px", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "body-md": ["16px", { lineHeight: "1.6", fontWeight: "400" }],
+                        "label-md": ["12px", { lineHeight: "1", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "label-sm": ["11px", { lineHeight: "1", fontWeight: "500" }],
+                        "body-lg": ["18px", { lineHeight: "1.6", fontWeight: "400" }],
+                        "body-sm": ["14px", { lineHeight: "1.5", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">
+<!-- TopAppBar (Mobile Details View - Suppressed global nav, transactional intent) -->
+<header class="bg-surface docked full-width top-0 h-16 border-b border-border-subtle flex justify-between items-center px-4 w-full sticky z-40">
+<button class="text-secondary p-2 -ml-2 rounded-full hover:bg-surface-container-high transition-colors" onclick="history.back()">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<div class="font-headline-sm text-headline-sm text-primary font-semibold truncate px-4">
+            Neural Network Optimization
+        </div>
+<button class="text-secondary p-2 -mr-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">more_vert</span>
+</button>
+</header>
+<main class="w-full max-w-3xl mx-auto flex flex-col gap-stack-md pt-stack-md px-4">
+<!-- Project Header / Status -->
+<section class="flex flex-col gap-stack-sm">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm uppercase tracking-wider">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                    In Progress
+                </span>
+<span class="font-body-sm text-body-sm text-secondary">Due: Nov 15</span>
+</div>
+<h1 class="font-headline-md text-headline-md text-high-contrast">Neural Network Optimization for Embedded Systems</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                Research and implement pruning techniques to deploy transformer models on low-power ARM architecture without significant accuracy loss.
+            </p>
+<div class="flex gap-2 mt-2">
+<span class="px-2 py-1 border border-border-subtle rounded text-secondary font-label-md text-label-md">CS499</span>
+<span class="px-2 py-1 border border-border-subtle rounded text-secondary font-label-md text-label-md">Thesis</span>
+</div>
+</section>
+<!-- Progress Overview -->
+<section class="bg-surface-alt rounded-lg p-4 border border-border-subtle flex flex-col gap-4">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-label-md text-label-md text-secondary uppercase tracking-wider mb-1">Overall Progress</h2>
+<div class="font-headline-sm text-headline-sm text-primary">68%</div>
+</div>
+<div class="text-right">
+<div class="font-label-md text-label-md text-secondary uppercase tracking-wider mb-1">Time Spent</div>
+<div class="font-body-sm text-body-sm text-on-surface">42h / 60h est.</div>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 68%;"></div>
+</div>
+</section>
+<!-- Upcoming Milestones (Bento-style list) -->
+<section class="flex flex-col gap-stack-sm mt-stack-sm">
+<h3 class="font-headline-sm text-headline-sm text-high-contrast flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 0;">flag</span>
+                Milestones
+            </h3>
+<div class="flex flex-col gap-unit">
+<!-- Completed -->
+<div class="bg-surface p-4 rounded-lg border border-border-subtle flex items-start gap-4 opacity-75">
+<div class="mt-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-md text-body-md text-on-surface line-through">Literature Review</h4>
+<p class="font-body-sm text-body-sm text-secondary">Gathered 15 papers on network pruning.</p>
+</div>
+<div class="font-label-sm text-label-sm text-secondary">Oct 10</div>
+</div>
+<!-- Current -->
+<div class="bg-surface-bright p-4 rounded-lg border border-primary relative overflow-hidden flex items-start gap-4">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="mt-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">radio_button_unchecked</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-md text-body-md text-primary font-medium">Initial Implementation</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Apply magnitude pruning to base model.</p>
+<div class="mt-3 flex gap-2">
+<button class="bg-primary-container text-on-primary text-label-md font-label-md px-3 py-1.5 rounded flex items-center gap-1 active:bg-primary transition-colors">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span> Start Session
+                            </button>
+</div>
+</div>
+<div class="font-label-sm text-label-sm text-primary font-medium">Tomorrow</div>
+</div>
+<!-- Upcoming -->
+<div class="bg-surface p-4 rounded-lg border border-border-subtle flex items-start gap-4">
+<div class="mt-1 text-outline">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">radio_button_unchecked</span>
+</div>
+<div class="flex-1">
+<h4 class="font-body-md text-body-md text-on-surface">Benchmarking</h4>
+<p class="font-body-sm text-body-sm text-secondary">Test accuracy drop vs latency gains.</p>
+</div>
+<div class="font-label-sm text-label-sm text-secondary">Oct 25</div>
+</div>
+</div>
+</section>
+<!-- Quick Links / Resources -->
+<section class="flex flex-col gap-stack-sm mt-stack-sm mb-section-gap">
+<h3 class="font-headline-sm text-headline-sm text-high-contrast flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 0;">link</span>
+                Resources
+            </h3>
+<div class="grid grid-cols-2 gap-unit">
+<a class="bg-surface p-4 rounded-lg border border-border-subtle flex flex-col items-center justify-center gap-2 active:bg-surface-container-high transition-colors text-center" href="#">
+<span class="material-symbols-outlined text-primary text-[32px]" style="font-variation-settings: 'FILL' 0;">code</span>
+<span class="font-label-md text-label-md text-on-surface">GitHub Repo</span>
+</a>
+<a class="bg-surface p-4 rounded-lg border border-border-subtle flex flex-col items-center justify-center gap-2 active:bg-surface-container-high transition-colors text-center" href="#">
+<span class="material-symbols-outlined text-primary text-[32px]" style="font-variation-settings: 'FILL' 0;">description</span>
+<span class="font-label-md text-label-md text-on-surface">Overleaf Draft</span>
+</a>
+<a class="bg-surface p-4 rounded-lg border border-border-subtle flex flex-col items-center justify-center gap-2 active:bg-surface-container-high transition-colors text-center" href="#">
+<span class="material-symbols-outlined text-primary text-[32px]" style="font-variation-settings: 'FILL' 0;">folder</span>
+<span class="font-label-md text-label-md text-on-surface">Datasets</span>
+</a>
+<a class="bg-surface p-4 rounded-lg border border-border-subtle flex flex-col items-center justify-center gap-2 active:bg-surface-container-high transition-colors text-center border-dashed" href="#">
+<span class="material-symbols-outlined text-secondary text-[32px]" style="font-variation-settings: 'FILL' 0;">add</span>
+<span class="font-label-md text-label-md text-secondary">Add Link</span>
+</a>
+</div>
+</section>
+</main>
+<!-- FAB (Suppressed due to rules: "You MUST suppress the FAB on Settings, Profile, Details, and Transactional screens.") -->
+<!-- BottomNavBar (Suppressed due to rules: "Automatic Suppression: You MUST exclude the navigation shell if the page intent is... Task-Focused: Any sub-page featuring a 'Close' or 'Back' action") -->
+</body></html>

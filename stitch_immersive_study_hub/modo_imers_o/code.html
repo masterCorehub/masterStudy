@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Silk Learning - Imersão</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#ede9fe",
+                    "on-tertiary-fixed-variant": "#5b21b6",
+                    "inverse-primary": "#a5b4fc",
+                    "background": "#e8eaf0",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-high": "#dcdee4",
+                    "surface-container": "#e2e4ea",
+                    "on-primary": "#ffffff",
+                    "on-secondary-container": "#585a68",
+                    "surface-container-low": "#e5e7ed",
+                    "tertiary-fixed-dim": "#c4b5fd",
+                    "surface-tint": "#6366f1",
+                    "secondary": "#6c6e7e",
+                    "tertiary-container": "#a78bfa",
+                    "tertiary": "#7c3aed",
+                    "surface-bright": "#edeef4",
+                    "on-secondary-fixed": "#1a1b26",
+                    "surface-container-highest": "#d6d8de",
+                    "secondary-container": "#d8dae6",
+                    "primary-container": "#818cf8",
+                    "surface-variant": "#dcdee4",
+                    "on-tertiary-container": "#3b1f63",
+                    "error": "#dc2626",
+                    "surface-dim": "#d4d6dc",
+                    "on-tertiary-fixed": "#2e1065",
+                    "on-background": "#2e3040",
+                    "on-primary-fixed": "#1e1b4b",
+                    "primary-fixed-dim": "#a5b4fc",
+                    "outline-variant": "#d0d2dc",
+                    "outline": "#8a8c9a",
+                    "secondary-fixed-dim": "#b8baca",
+                    "on-primary-fixed-variant": "#4338ca",
+                    "inverse-on-surface": "#e8eaf0",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed": "#e0e2ff",
+                    "on-error": "#ffffff",
+                    "on-error-container": "#991b1b",
+                    "primary": "#6366f1",
+                    "on-secondary-fixed-variant": "#404252",
+                    "secondary-fixed": "#d8dae6",
+                    "surface-container-lowest": "#f0f2f8",
+                    "on-surface": "#2e3040",
+                    "on-primary-container": "#e0e2ff",
+                    "inverse-surface": "#2e3040",
+                    "on-surface-variant": "#585a68",
+                    "error-container": "#fee2e2",
+                    "surface": "#e8eaf0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.5rem",
+                    "lg": "1rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "display": ["Plus Jakarta Sans"],
+                    "body": ["Plus Jakarta Sans"],
+                    "label": ["Plus Jakarta Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        /* Neomorphic Utilities */
+        .neo-raised {
+            box-shadow: 6px 6px 12px rgba(0,0,0,0.08), -6px -6px 12px rgba(255,255,255,0.6);
+        }
+        .neo-pressed {
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5);
+        }
+        .neo-raised-sm {
+            box-shadow: 4px 4px 8px rgba(0,0,0,0.06), -4px -4px 8px rgba(255,255,255,0.5);
+        }
+        /* Custom scrollbar for Windows */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e8eaf0; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d0d2dc; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8a8c9a; 
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body h-screen w-screen overflow-hidden flex flex-col">
+<!-- TopNavBar (Shared Component) -->
+<header class="w-full h-16 shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] flex justify-between items-center px-6 sticky top-0 z-50 bg-background">
+<div class="flex items-center gap-4">
+<h1 class="text-xl font-semibold tracking-tight text-primary">Silk Learning</h1>
+<span class="text-on-surface-variant font-medium ml-4 border-l border-outline-variant pl-4">Modo Imersão</span>
+</div>
+<div class="flex items-center gap-6">
+<!-- Progress Flow -->
+<nav class="hidden md:flex items-center gap-2 neo-pressed rounded-full px-4 py-2 bg-background">
+<div class="flex items-center text-primary font-semibold text-sm">
+<span class="material-symbols-outlined text-sm mr-1">headphones</span>
+                    Ouvir
+                </div>
+<span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+<div class="flex items-center text-on-surface-variant text-sm">
+<span class="material-symbols-outlined text-sm mr-1">play_circle</span>
+                    Aula
+                </div>
+<span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+<div class="flex items-center text-on-surface-variant text-sm">
+<span class="material-symbols-outlined text-sm mr-1">menu_book</span>
+                    PDF
+                </div>
+<span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+<div class="flex items-center text-on-surface-variant text-sm">
+<span class="material-symbols-outlined text-sm mr-1">library_music</span>
+                    PDF+Áudio
+                </div>
+<span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+<div class="flex items-center text-on-surface-variant text-sm">
+<span class="material-symbols-outlined text-sm mr-1">hearing</span>
+                    Só Áudio
+                </div>
+</nav>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 rounded-full bg-background neo-raised flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-background neo-raised flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-background neo-raised flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]">
+<span class="material-symbols-outlined">fullscreen</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden neo-pressed p-0.5">
+<img alt="User Profile Avatar" class="w-full h-full object-cover rounded-full" data-alt="A highly detailed close-up portrait of a young professional in a softly lit, modern environment. The lighting is bright and even, matching a neomorphic light-mode aesthetic with cool gray backgrounds and subtle indigo accents. The mood is calm and focused." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrstj954tqskvtN9qpWZNdgYQCaqMraeVofCGkKBWNNcGGrk2CyCNPjDM7viyvIdmq3bXfC-WvkqBfM-vh5uFm9BMfNquO1iRuyHpjk6CnV6RW4n8CUeIHJ5_8L3FrKdKvm58gwVPcPh7kbwNlso_b5B9a2-ZoLm7iwZJGlwT7BEgat4wsbMzx4U5D18idK0A6QQanoMmgPMqQw7nZx87L-YAen3gTulncXXh9U9tlGAN9fhrubZQhJdSnfZMIJL6h0lKv-a6AxGI"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar (Hidden/Collapsed state for immersion, showing only icons unless hovered) -->
+<aside class="flex flex-col h-full py-6 bg-background shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] w-20 hover:w-64 transition-all duration-300 group z-40 relative rounded-r-xl border-r-0">
+<div class="px-4 mb-8 flex items-center overflow-hidden whitespace-nowrap">
+<div class="w-12 h-12 rounded-xl neo-raised flex items-center justify-center bg-background shrink-0">
+<span class="material-symbols-outlined text-tertiary">school</span>
+</div>
+<div class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<h2 class="text-lg font-semibold text-tertiary">IMERSÃO</h2>
+<p class="text-xs text-on-surface-variant">Deep Study Flow</p>
+</div>
+</div>
+<nav class="flex-1 px-3 space-y-2">
+<a class="flex items-center text-on-surface-variant hover:text-primary rounded-lg p-3 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 active:scale-95 transform whitespace-nowrap overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0">book</span>
+<span class="ml-4 font-body font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">My Courses</span>
+</a>
+<a class="flex items-center text-on-surface-variant hover:text-primary rounded-lg p-3 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 active:scale-95 transform whitespace-nowrap overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0">grid_view</span>
+<span class="ml-4 font-body font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">Modules</span>
+</a>
+<a class="flex items-center text-on-surface-variant hover:text-primary rounded-lg p-3 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 active:scale-95 transform whitespace-nowrap overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0">quiz</span>
+<span class="ml-4 font-body font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">Flashcards</span>
+</a>
+<a class="flex items-center bg-background shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] text-primary rounded-lg p-3 active:scale-95 transform whitespace-nowrap overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0">edit_note</span>
+<span class="ml-4 font-body font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">Notes</span>
+</a>
+</nav>
+<div class="px-3 mt-auto space-y-2">
+<button class="w-full flex items-center justify-center p-3 neo-raised rounded-lg text-primary font-medium text-sm active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] transition-all mb-4 overflow-hidden whitespace-nowrap">
+<span class="material-symbols-outlined shrink-0">play_arrow</span>
+<span class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">Start Study Session</span>
+</button>
+<a class="flex items-center text-on-surface-variant hover:text-primary rounded-lg p-3 transition-colors duration-200 whitespace-nowrap overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0">help_outline</span>
+<span class="ml-4 font-body font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">Help</span>
+</a>
+<a class="flex items-center text-on-surface-variant hover:text-primary rounded-lg p-3 transition-colors duration-200 whitespace-nowrap overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0">logout</span>
+<span class="ml-4 font-body font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 p-8 flex flex-col items-center justify-center relative overflow-y-auto">
+<!-- Central Dynamic Area (Audio Player State) -->
+<div class="w-full max-w-4xl bg-background rounded-3xl neo-raised p-10 flex flex-col items-center justify-center min-h-[614px] transition-all duration-500 relative">
+<!-- Content Badge -->
+<div class="absolute top-8 left-8 bg-background neo-pressed px-4 py-2 rounded-full flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">headphones</span>
+<span class="text-sm font-semibold text-primary uppercase tracking-wider">Passo 1: Ouvir</span>
+</div>
+<!-- Central Visualizer/Art -->
+<div class="w-64 h-64 rounded-full bg-background neo-pressed flex items-center justify-center mb-12 relative">
+<div class="w-56 h-56 rounded-full bg-background neo-raised flex items-center justify-center">
+<div class="w-48 h-48 rounded-full bg-background neo-pressed overflow-hidden flex items-center justify-center">
+<span class="material-symbols-outlined text-6xl text-primary opacity-80" style="font-variation-settings: 'FILL' 1;">graphic_eq</span>
+</div>
+</div>
+</div>
+<!-- Lesson Info -->
+<div class="text-center mb-10">
+<h2 class="text-3xl font-headline font-semibold text-on-surface mb-2">Introdução à Neurociência</h2>
+<p class="text-on-surface-variant font-body text-lg">Módulo 1 • A base fisiológica da aprendizagem</p>
+</div>
+<!-- Audio Controls -->
+<div class="w-full max-w-2xl px-8">
+<!-- Progress Bar -->
+<div class="flex items-center gap-4 mb-8">
+<span class="text-sm text-on-surface-variant font-medium">12:45</span>
+<div class="flex-1 h-3 bg-background neo-pressed rounded-full relative cursor-pointer">
+<div class="absolute top-0 left-0 h-full w-1/3 bg-primary rounded-full"></div>
+<div class="absolute top-1/2 left-1/3 w-5 h-5 bg-background neo-raised rounded-full -translate-y-1/2 -translate-x-1/2 cursor-grab"></div>
+</div>
+<span class="text-sm text-on-surface-variant font-medium">35:20</span>
+</div>
+<!-- Playback Buttons -->
+<div class="flex justify-center items-center gap-8">
+<button class="w-14 h-14 rounded-full bg-background neo-raised flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]">
+<span class="material-symbols-outlined text-2xl">replay_10</span>
+</button>
+<button class="w-20 h-20 rounded-full bg-background neo-raised flex items-center justify-center text-primary hover:text-tertiary transition-colors active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<button class="w-14 h-14 rounded-full bg-background neo-raised flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]">
+<span class="material-symbols-outlined text-2xl">forward_10</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Next Step Action -->
+<div class="mt-8 flex justify-end w-full max-w-4xl">
+<button class="bg-background neo-raised px-8 py-4 rounded-xl flex items-center gap-3 text-primary font-semibold hover:text-tertiary active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] transition-all">
+                    Próximo Passo: Aula em Vídeo
+                    <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</main>
+<!-- Right Side Panel: Quick Notes (Retractable) -->
+<aside class="w-80 h-full bg-background shadow-[-6px_0px_12px_rgba(0,0,0,0.05)] flex flex-col z-30 border-l border-outline-variant/20">
+<div class="p-6 pb-4 border-b border-outline-variant/20 flex justify-between items-center">
+<h3 class="font-headline font-semibold text-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">edit_note</span>
+                    Anotações Rápidas
+                </h3>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">close_fullscreen</span>
+</button>
+</div>
+<div class="flex-1 p-6 overflow-y-auto flex flex-col gap-6">
+<!-- Note Input -->
+<div class="bg-background neo-pressed rounded-xl p-4 flex flex-col h-40">
+<textarea class="flex-1 bg-transparent border-none resize-none focus:ring-0 text-sm text-on-surface p-0 placeholder:text-outline" placeholder="Digite seus insights enquanto ouve..."></textarea>
+<div class="flex justify-between items-center mt-2 pt-2 border-t border-outline-variant/20">
+<div class="flex gap-2">
+<button class="text-outline hover:text-primary"><span class="material-symbols-outlined text-sm">format_bold</span></button>
+<button class="text-outline hover:text-primary"><span class="material-symbols-outlined text-sm">format_list_bulleted</span></button>
+</div>
+<button class="bg-background neo-raised-sm w-8 h-8 rounded-full flex items-center justify-center text-primary active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]">
+<span class="material-symbols-outlined text-sm">send</span>
+</button>
+</div>
+</div>
+<!-- Previous Notes Timeline -->
+<div class="space-y-4 relative before:absolute before:inset-0 before:ml-2 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-outline-variant/30 before:to-transparent">
+<div class="relative flex items-start gap-4">
+<div class="absolute left-0 w-4 h-4 rounded-full bg-background neo-raised border-2 border-primary z-10 mt-1"></div>
+<div class="ml-8 bg-background neo-raised rounded-xl p-4 w-full">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-semibold text-primary">05:12</span>
+<button class="text-outline hover:text-error"><span class="material-symbols-outlined text-sm">delete</span></button>
+</div>
+<p class="text-sm text-on-surface-variant">A neuroplasticidade é mais ativa nos primeiros 20 minutos de foco absoluto.</p>
+</div>
+</div>
+<div class="relative flex items-start gap-4">
+<div class="absolute left-0 w-4 h-4 rounded-full bg-background neo-raised border-2 border-tertiary z-10 mt-1"></div>
+<div class="ml-8 bg-background neo-raised rounded-xl p-4 w-full">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-semibold text-tertiary">11:30</span>
+<button class="text-outline hover:text-error"><span class="material-symbols-outlined text-sm">delete</span></button>
+</div>
+<p class="text-sm text-on-surface-variant">Revisar conceito de consolidação sináptica vs consolidação de sistemas.</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</body></html>

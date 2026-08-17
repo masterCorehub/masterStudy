@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Whiteboard - CS301</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-alt": "#E8EAF0",
+                      "error-container": "#ffdad6",
+                      "secondary": "#505f76",
+                      "surface-container-low": "#f2f4f6",
+                      "surface": "#f7f9fb",
+                      "surface-tint": "#545f73",
+                      "inverse-primary": "#bcc7de",
+                      "error": "#ba1a1a",
+                      "surface-container-high": "#e6e8ea",
+                      "outline": "#75777d",
+                      "outline-variant": "#c5c6cd",
+                      "surface-bright": "#f7f9fb",
+                      "on-secondary-container": "#54647a",
+                      "tertiary-fixed-dim": "#b9c8de",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "on-primary-fixed-variant": "#3c475a",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-container": "#8291a6",
+                      "surface-dim": "#d8dadc",
+                      "surface-variant": "#e0e3e5",
+                      "on-error": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "tertiary-container": "#1b2a3b",
+                      "tertiary": "#061525",
+                      "on-background": "#191c1e",
+                      "background": "#f7f9fb",
+                      "on-secondary-fixed": "#0b1c30",
+                      "on-secondary": "#ffffff",
+                      "primary-fixed-dim": "#bcc7de",
+                      "on-primary-fixed": "#111c2d",
+                      "on-tertiary-fixed-variant": "#39485a",
+                      "border-subtle": "#E2E8F0",
+                      "inverse-surface": "#2d3133",
+                      "secondary-fixed": "#d3e4fe",
+                      "on-primary-container": "#8590a6",
+                      "primary-container": "#1e293b",
+                      "on-tertiary-fixed": "#0d1c2d",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "secondary-container": "#d0e1fb",
+                      "on-primary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "on-surface-variant": "#45474c",
+                      "inverse-on-surface": "#eff1f3",
+                      "primary": "#091426",
+                      "on-surface": "#191c1e",
+                      "primary-fixed": "#d8e3fb",
+                      "text-high-contrast": "#0F172A",
+                      "surface-container": "#eceef0",
+                      "tertiary-fixed": "#d4e4fa"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "stack-sm": "12px",
+                      "stack-md": "24px",
+                      "section-gap": "80px",
+                      "margin-page": "64px",
+                      "stack-lg": "48px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "body-md": ["Inter"],
+                      "label-md": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "headline-sm": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "body-sm": ["Inter"]
+              },
+              "fontSize": {
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "label-sm": ["11px", {"lineHeight": "1", "fontWeight": "500"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                      "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        /* Infinite grid background */
+        .canvas-grid {
+            background-color: #f7f9fb; /* Match background token */
+            background-image: radial-gradient(#c5c6cd 1px, transparent 1px); /* Match outline-variant */
+            background-size: 24px 24px;
+        }
+        
+        /* Material Symbols */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* Minimalist Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d8dadc;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c5c6cd;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-body-md text-on-surface bg-background overflow-hidden selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Top Navigation Bar (Whiteboard Context) -->
+<header class="flex justify-between items-center h-16 w-full px-gutter bg-surface-container-lowest border-b border-border-subtle z-40 shrink-0">
+<!-- Left: Course & Title Info -->
+<div class="flex items-center gap-stack-md">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">CS301 - Sistemas Operacionais</span>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm font-semibold text-primary">Mapa Mental: Threads vs Processos</span>
+<span class="material-symbols-outlined text-outline-variant text-[18px] cursor-pointer hover:text-primary transition-colors" title="Edit Title">edit</span>
+</div>
+</div>
+</div>
+<!-- Center: Zoom Controls -->
+<div class="flex items-center justify-center bg-surface-container-low rounded-lg p-1 border border-border-subtle">
+<button aria-label="Zoom Out" class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<span class="font-label-md text-label-md text-primary w-12 text-center select-none">100%</span>
+<button aria-label="Zoom In" class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<!-- Right: Actions -->
+<div class="flex items-center gap-stack-sm">
+<button class="px-4 py-2 font-label-md text-label-md text-secondary border border-secondary hover:bg-surface-container-low rounded transition-all duration-200 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">delete_sweep</span>
+                Clear Canvas
+            </button>
+<button class="px-4 py-2 font-label-md text-label-md bg-primary-container text-on-primary hover:bg-primary rounded transition-all duration-200 flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">ios_share</span>
+                Export
+            </button>
+</div>
+</header>
+<!-- Main Workspace Area -->
+<main class="flex-1 relative w-full h-full overflow-hidden flex">
+<!-- Interactive Canvas Area -->
+<div class="flex-1 h-full canvas-grid relative overflow-auto touch-pan-x touch-pan-y" id="canvas-container">
+<!-- Floating Toolbar (Left) -->
+<div class="absolute left-6 top-1/2 -translate-y-1/2 bg-surface-container-lowest border border-border-subtle rounded-lg shadow-sm p-2 flex flex-col gap-2 z-30">
+<button class="p-2 bg-primary-fixed text-on-primary-fixed rounded transition-colors flex justify-center items-center group relative" title="Select/Pointer">
+<span class="material-symbols-outlined text-[20px] fill">near_me</span>
+<span class="absolute left-full ml-2 px-2 py-1 bg-inverse-surface text-inverse-on-surface font-label-sm text-label-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity">Select (V)</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-primary rounded transition-colors flex justify-center items-center group relative" title="Pen/Pencil">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-primary rounded transition-colors flex justify-center items-center group relative" title="Eraser">
+<span class="material-symbols-outlined text-[20px]">ink_eraser</span>
+</button>
+<div class="w-full h-px bg-border-subtle my-1"></div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-primary rounded transition-colors flex justify-center items-center group relative" title="Sticky Note">
+<span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-primary rounded transition-colors flex justify-center items-center group relative" title="Shapes">
+<span class="material-symbols-outlined text-[20px]">category</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-primary rounded transition-colors flex justify-center items-center group relative" title="Text Tool">
+<span class="material-symbols-outlined text-[20px]">text_fields</span>
+</button>
+<div class="w-full h-px bg-border-subtle my-1"></div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-primary rounded transition-colors flex justify-center items-center group relative" title="Image/File Upload">
+<span class="material-symbols-outlined text-[20px]">image</span>
+</button>
+<!-- Color Picker Stub -->
+<div class="mt-2 flex flex-col items-center gap-1">
+<button class="w-5 h-5 rounded-full bg-primary border border-border-subtle cursor-pointer ring-2 ring-offset-2 ring-primary-fixed"></button>
+<button class="w-5 h-5 rounded-full bg-error border border-border-subtle cursor-pointer"></button>
+<button class="w-5 h-5 rounded-full bg-surface-container-highest border border-border-subtle cursor-pointer"></button>
+</div>
+</div>
+<!-- Canvas Content (Simulated Mind Map & Notes) -->
+<!-- We use absolute positioning within a large simulated coordinate space -->
+<div class="relative w-[2000px] h-[2000px]" style="transform-origin: 0 0;">
+<!-- Central Node -->
+<div class="absolute top-[400px] left-[600px] bg-surface-container-lowest border-2 border-primary rounded-lg p-6 shadow-sm min-w-[200px] text-center cursor-move select-none hover:border-primary-fixed transition-colors">
+<h2 class="font-headline-sm text-headline-sm text-primary font-semibold">Processos vs Threads</h2>
+</div>
+<!-- Child Node 1 -->
+<div class="absolute top-[250px] left-[300px] bg-surface-container-lowest border border-border-subtle rounded-lg p-4 shadow-sm min-w-[180px] text-center cursor-move select-none">
+<span class="font-body-md text-body-md text-on-surface">Processo (Heavyweight)</span>
+</div>
+<!-- Connecting Line (Simulated with SVG for clarity) -->
+<svg class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: -1;">
+<!-- Line from Central to Processo -->
+<path d="M 600 430 Q 500 350 480 280" fill="none" marker-end="url(#arrowhead)" stroke="#75777d" stroke-width="2"></path>
+<!-- Line from Central to Thread -->
+<path d="M 800 430 Q 900 350 920 280" fill="none" marker-end="url(#arrowhead)" stroke="#75777d" stroke-width="2"></path>
+<!-- Arrowhead definition -->
+<defs>
+<marker id="arrowhead" markerheight="7" markerwidth="10" orient="auto" refx="9" refy="3.5">
+<polygon fill="#75777d" points="0 0, 10 3.5, 0 7"></polygon>
+</marker>
+</defs>
+</svg>
+<!-- Child Node 2 -->
+<div class="absolute top-[250px] left-[850px] bg-surface-container-lowest border border-border-subtle rounded-lg p-4 shadow-sm min-w-[180px] text-center cursor-move select-none">
+<span class="font-body-md text-body-md text-on-surface">Thread (Lightweight)</span>
+</div>
+<!-- Sticky Note -->
+<div class="absolute top-[500px] left-[400px] bg-[#fef08a] border border-[#fde047] rounded p-4 shadow-sm w-48 min-h-[120px] cursor-move transform -rotate-2 select-none">
+<div class="font-body-sm text-body-sm text-[#854d0e] leading-snug font-medium">
+                        Importante:<br/>Overhead de troca de contexto é maior em processos devido a TLB flushes.
+                    </div>
+</div>
+<!-- Small Hand-drawn diagram placeholder (Using an SVG placeholder for sketched look) -->
+<div class="absolute top-[550px] left-[800px] w-64 h-48 border border-dashed border-outline-variant rounded p-2 flex items-center justify-center opacity-70 cursor-move">
+<span class="font-label-sm text-label-sm text-outline">[Sketch: Shared Memory Space]</span>
+</div>
+</div>
+</div>
+<!-- Floating Materials Panel (Right Side) -->
+<div class="absolute right-6 top-6 bottom-6 w-72 bg-surface-container-lowest border border-border-subtle rounded-xl shadow-sm flex flex-col z-30 pointer-events-auto">
+<div class="p-4 border-b border-border-subtle flex justify-between items-center bg-surface-container-low rounded-t-xl">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-primary">Course Materials</h3>
+<button class="text-on-surface-variant hover:text-primary transition-colors" title="Collapse Panel">
+<span class="material-symbols-outlined text-[20px]">last_page</span>
+</button>
+</div>
+<div class="p-4 flex-1 overflow-y-auto flex flex-col gap-3">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Drag to Canvas</p>
+<!-- Material Item 1 -->
+<div class="p-3 border border-border-subtle rounded bg-surface hover:bg-surface-container transition-colors cursor-grab flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary mt-0.5">description</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Lecture 4 Slides</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">PDF • 2.4 MB</span>
+</div>
+</div>
+<!-- Material Item 2 -->
+<div class="p-3 border border-border-subtle rounded bg-surface hover:bg-surface-container transition-colors cursor-grab flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary mt-0.5">code</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">pthread_example.c</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Source Code</span>
+</div>
+</div>
+<!-- Material Item 3 -->
+<div class="p-3 border border-border-subtle rounded bg-surface hover:bg-surface-container transition-colors cursor-grab flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary mt-0.5">image</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-medium text-on-surface">Memory Architecture</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">PNG diagram</span>
+</div>
+</div>
+</div>
+<div class="p-4 border-t border-border-subtle bg-surface-container-low rounded-b-xl">
+<button class="w-full py-2 font-label-md text-label-md text-primary border border-dashed border-outline-variant hover:border-primary hover:bg-surface-container transition-colors rounded flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Upload New
+                </button>
+</div>
+</div>
+</main>
+<script>
+        // Simple script to center the canvas on load for visual effect
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('canvas-container');
+            // Scroll to center-ish where the content is
+            container.scrollLeft = 200;
+            container.scrollTop = 100;
+        });
+    </script>
+<!-- Flashcard Preview Overlay (Hidden by default/Simulated state) -->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm pointer-events-none opacity-0 transition-opacity">
+<div class="bg-surface-container-lowest rounded-xl shadow-lg border border-border-subtle w-full max-w-md overflow-hidden pointer-events-auto">
+<div class="p-4 border-b border-border-subtle flex justify-between items-center bg-surface-container-low">
+<h4 class="font-headline-sm text-headline-sm font-semibold text-primary">Flashcards Gerados</h4>
+<button class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="p-6 flex flex-col gap-4">
+<div class="p-4 bg-primary-fixed/30 border border-primary-fixed rounded-lg">
+<p class="font-label-sm text-label-sm text-primary uppercase mb-1">Frente</p>
+<p class="font-body-md text-body-md">Qual a principal causa do overhead em troca de contexto de processos?</p>
+</div>
+<div class="p-4 bg-surface-container border border-border-subtle rounded-lg">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-1">Verso</p>
+<p class="font-body-md text-body-md">TLB Flushes (Translation Lookaside Buffer).</p>
+</div>
+<button class="w-full py-3 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-primary-container transition-colors">
+                Salvar no Deck de Revisão
+            </button>
+</div>
+</div>
+</div></body></html>

@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.npm-cache/
+**/.npm-cache/
+C:*
+
+# Production / Builds
+dist/
+**/dist/
+release/
+**/release/
+release-*/
+**/release-*/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs and test results
+*.log
+**/*.log
+test-results/
+**/test-results/
+playwright-report/
+**/playwright-report/
+
+# Vercel and IDE
+.vercel/
+**/.vercel/
+.idea/
+**/.idea/
+.vscode/
+**/.vscode/
+.DS_Store
+**/.DS_Store
+
+# Large archives & Course media (prevents exceeding GitHub's 100MB limit)
+*.zip
+*.tar.gz
+*.exe
+*.AppImage
+Mairo Vergara/

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="studyhub-gradient" x1="36" y1="28" x2="220" y2="228" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#c4b5fd"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="58" fill="#1d1d27"/>
+  <rect x="9" y="9" width="238" height="238" rx="50" fill="none" stroke="#ffffff" stroke-opacity=".08" stroke-width="4"/>
+  <path d="M57 145c0-28 20-49 45-49 20 0 35 15 52 39 17-24 32-39 52-39 25 0 45 21 45 49s-20 49-45 49c-20 0-35-15-52-39-17 24-32 39-52 39-25 0-45-21-45-49Z" fill="none" stroke="url(#studyhub-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="22"/>
+  <circle cx="58" cy="78" r="8" fill="#c4b5fd"/>
+</svg>

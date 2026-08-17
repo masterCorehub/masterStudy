@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Silk Learning - Create Flashcards</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#7c3aed",
+                        "secondary-container": "#d8dae6",
+                        "surface-bright": "#edeef4",
+                        "error-container": "#fee2e2",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#1e1b4b",
+                        "inverse-primary": "#a5b4fc",
+                        "inverse-on-surface": "#e8eaf0",
+                        "primary-container": "#818cf8",
+                        "on-secondary-fixed-variant": "#404252",
+                        "secondary": "#6c6e7e",
+                        "secondary-fixed": "#d8dae6",
+                        "surface-tint": "#6366f1",
+                        "surface-variant": "#dcdee4",
+                        "outline-variant": "#d0d2dc",
+                        "inverse-surface": "#2e3040",
+                        "on-background": "#2e3040",
+                        "surface-container-low": "#e5e7ed",
+                        "primary-fixed-dim": "#a5b4fc",
+                        "secondary-fixed-dim": "#b8baca",
+                        "on-secondary-container": "#585a68",
+                        "surface": "#e8eaf0",
+                        "on-tertiary-container": "#3b1f63",
+                        "on-surface-variant": "#585a68",
+                        "primary": "#6366f1",
+                        "error": "#dc2626",
+                        "tertiary-container": "#a78bfa",
+                        "surface-container-lowest": "#f0f2f8",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#d4d6dc",
+                        "on-surface": "#2e3040",
+                        "on-primary-fixed-variant": "#4338ca",
+                        "background": "#e8eaf0",
+                        "on-tertiary-fixed-variant": "#5b21b6",
+                        "surface-container-highest": "#d6d8de",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed": "#1a1b26",
+                        "surface-container": "#e2e4ea",
+                        "tertiary-fixed-dim": "#c4b5fd",
+                        "surface-container-high": "#dcdee4",
+                        "on-error-container": "#991b1b",
+                        "outline": "#8a8c9a",
+                        "on-primary-container": "#e0e2ff",
+                        "primary-fixed": "#e0e2ff",
+                        "tertiary-fixed": "#ede9fe",
+                        "on-tertiary-fixed": "#2e1065",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "display": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #e8eaf0;
+            color: #2e3040;
+        }
+        
+        /* Neomorphic Raised */
+        .neo-raised {
+            box-shadow: 6px 6px 12px rgba(0,0,0,0.08), -6px -6px 12px rgba(255,255,255,0.6);
+            background-color: #e8eaf0;
+            border-radius: 1.5rem;
+        }
+        
+        .neo-raised-sm {
+            box-shadow: 4px 4px 8px rgba(0,0,0,0.06), -4px -4px 8px rgba(255,255,255,0.5);
+            background-color: #e8eaf0;
+            border-radius: 1rem;
+        }
+
+        /* Neomorphic Inset */
+        .neo-inset {
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5);
+            background-color: #e8eaf0;
+            border-radius: 1rem;
+            border: none;
+        }
+        
+        .neo-inset:focus {
+            outline: none;
+            box-shadow: inset 6px 6px 10px rgba(0,0,0,0.08), inset -6px -6px 10px rgba(255,255,255,0.6);
+        }
+
+        /* Interactive Elements */
+        .neo-button {
+            box-shadow: 6px 6px 12px rgba(0,0,0,0.08), -6px -6px 12px rgba(255,255,255,0.6);
+            background-color: #e8eaf0;
+            transition: all 0.2s ease;
+            border-radius: 1rem;
+        }
+        
+        .neo-button:active, .neo-button.active {
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5);
+        }
+
+        .neo-button-primary {
+            background-color: #e8eaf0;
+            color: #6366f1;
+            font-weight: 600;
+        }
+        
+        /* SideNav Active state from JSON */
+        .sidenav-active {
+            background-color: #e8eaf0;
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5);
+            color: #6366f1;
+        }
+    </style>
+</head>
+<body class="bg-background flex h-screen overflow-hidden text-on-surface antialiased font-body">
+<!-- SideNavBar (from JSON) -->
+<nav class="hidden md:flex flex-col h-full py-6 bg-background border-r-0 w-64 h-screen rounded-r-xl shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] z-40 relative">
+<!-- Header -->
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 neo-raised-sm rounded-full flex items-center justify-center text-primary overflow-hidden">
+<img alt="Silk Learning Brand" class="w-full h-full object-cover" data-alt="A clean, minimalist logo mark for a modern learning application. It features a stylized, continuous line art design in deep indigo, set against a smooth cool gray neomorphic background. The aesthetic is soft, rounded, and highly professional, avoiding sharp edges to convey a sense of calm focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB71Dh_6wcJ-GqeGX4eWmIGUyqs6B6vlWvwYmOf240BCPhjb-Mr7pw_6esDJqL1cYJgno4_pb4UHWdz7Td0gfV9iyRwi_1BofAa7oOnMzvIdOcIkXt6XlfmthDtNUc5uUMQXFFq0vXcLURcrSqdKPijflLRE_GQYv8CnfAHF71LsZUDbRTmcJGdhx8r2Bw7iSAtz4x6zd5PxPhYZoF_HdkvyI60uNo6eLpC8feLjzv2ANM74wozEMbeyiNBwUxo3hYaVY51yLmQxD0"/>
+</div>
+<div>
+<h1 class="text-lg font-semibold text-tertiary tracking-tight">IMERSÃO</h1>
+<p class="text-xs text-on-surface-variant">Deep Study Flow</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 px-4 space-y-2 overflow-y-auto">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg m-2 text-on-surface-variant hover:text-primary hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 active:scale-95 transform font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">book</span>
+                My Courses
+            </a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg m-2 text-on-surface-variant hover:text-primary hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 active:scale-95 transform font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">grid_view</span>
+                Modules
+            </a>
+<!-- ACTIVE STATE -->
+<a class="flex items-center gap-4 px-4 py-3 bg-background shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] text-primary rounded-lg m-2 font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">quiz</span>
+                Flashcards
+            </a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg m-2 text-on-surface-variant hover:text-primary hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 active:scale-95 transform font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">edit_note</span>
+                Notes
+            </a>
+</div>
+<!-- CTA -->
+<div class="px-6 my-6">
+<button class="w-full neo-button text-primary font-medium py-3 px-4 rounded-xl flex justify-center items-center gap-2 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] active:scale-95 transition-all">
+<span class="material-symbols-outlined text-sm">play_arrow</span>
+                Start Study Session
+            </button>
+</div>
+<!-- Footer Links -->
+<div class="px-4 space-y-2 mt-auto">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg m-2 text-on-surface-variant hover:text-primary hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 active:scale-95 transform font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-sm">help_outline</span>
+                Help
+            </a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg m-2 text-on-surface-variant hover:text-primary hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300 active:scale-95 transform font-body font-medium text-sm" href="#">
+<span class="material-symbols-outlined text-sm">logout</span>
+                Sign Out
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden">
+<!-- TopNavBar (from JSON) -->
+<header class="flex justify-between items-center px-6 sticky top-0 z-50 bg-background shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] w-full h-16">
+<div class="flex items-center">
+<span class="text-xl font-semibold tracking-tight text-primary dark:text-inverse-primary font-headline hidden md:block">Silk Learning</span>
+<!-- Mobile Menu Trigger -->
+<button class="md:hidden neo-button p-2 text-on-surface-variant rounded-lg">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+<!-- Search Bar (on_right logic) -->
+<div class="flex-1 max-w-md mx-6 hidden md:block">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full neo-inset pl-10 pr-4 py-2 text-sm text-on-surface placeholder:text-outline w-full h-10" placeholder="Search decks, notes..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="neo-button w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<button class="neo-button w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] hidden sm:flex">
+<span class="material-symbols-outlined text-xl">settings</span>
+</button>
+<button class="neo-button w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] hidden lg:flex">
+<span class="material-symbols-outlined text-xl">fullscreen</span>
+</button>
+<div class="w-10 h-10 rounded-full neo-raised-sm ml-2 overflow-hidden border-2 border-background cursor-pointer">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A minimalist avatar of a user profile. It shows a soft, stylized, and abstract human silhouette in cool gray tones, reflecting a clean, neomorphic interface aesthetic. The background matches the soft UI look." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIwQbE4nBzofiAJroRgRW53D-jaaVlsnFfrtqrkwDkL8FB3l_ruIw-sEVnx0yK0cP7i3BraRU71nDPOMT9iUq-j1hJ4hIq8ks5nRMzNnv-tcAjKseij_aHh1Ls9JuUp5HWWPurA2fec8bMnXOs5BLyD4LdWq_Um-021Iv_cIbpUG-vbECbkQj07vM78TMpsaKqPTnq2ceqlDS80PIt9V-KXy7lZ81dFj8ebuwcsnLbybRSIuYoslsui0EV80wXerS2S7kpZSSWuPM"/>
+</div>
+</div>
+</header>
+<!-- Flashcard Creation Workspace -->
+<div class="flex-1 overflow-y-auto p-6 md:p-8">
+<!-- Page Header -->
+<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="text-3xl font-headline font-semibold text-on-surface mb-2">Create New Deck</h2>
+<p class="text-on-surface-variant font-body">Design your study materials with precision.</p>
+</div>
+<div class="flex gap-4">
+<button class="neo-button px-6 py-2.5 rounded-xl text-on-surface-variant font-medium text-sm flex items-center gap-2 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm">close</span>
+                        Cancel
+                    </button>
+<button class="neo-button neo-button-primary px-6 py-2.5 rounded-xl text-primary font-medium text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">save</span>
+                        Save Deck
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100%-100px)]">
+<!-- Left Column: Deck Setup & Editor (Spans 8 cols) -->
+<div class="lg:col-span-8 flex flex-col gap-8 h-full">
+<!-- Deck Metadata -->
+<div class="neo-raised p-6 shrink-0">
+<h3 class="text-lg font-semibold text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">folder_special</span>
+                            Deck Information
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-on-surface-variant ml-2">Deck Title</label>
+<input class="neo-inset w-full px-4 py-3 text-on-surface placeholder:text-outline font-body" placeholder="e.g., Advanced Neuroscience" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-on-surface-variant ml-2">Category / Tag</label>
+<div class="relative">
+<input class="neo-inset w-full px-4 py-3 text-on-surface placeholder:text-outline font-body" placeholder="e.g., Medical" type="text"/>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline text-sm">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card Editor Canvas -->
+<div class="neo-raised p-8 flex-1 flex flex-col min-h-[400px]">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">edit_square</span>
+                                Card Editor
+                            </h3>
+<span class="text-xs font-medium text-on-surface-variant px-3 py-1 neo-inset rounded-full">Card #4</span>
+</div>
+<!-- Editor Fields -->
+<div class="flex-1 flex flex-col gap-8">
+<!-- Front (Question) -->
+<div class="flex-1 flex flex-col">
+<div class="flex justify-between items-center mb-2 ml-2">
+<label class="text-sm font-semibold text-on-surface">Front (Prompt)</label>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-full neo-button flex items-center justify-center text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[16px]">format_bold</span></button>
+<button class="w-8 h-8 rounded-full neo-button flex items-center justify-center text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[16px]">image</span></button>
+</div>
+</div>
+<textarea class="neo-inset w-full flex-1 p-4 text-on-surface placeholder:text-outline resize-none font-body text-lg focus:ring-0" placeholder="Type your question or concept here..."></textarea>
+</div>
+<!-- Divider (Neomorphic) -->
+<div class="w-full h-1 rounded-full neo-inset opacity-50 my-2"></div>
+<!-- Back (Answer) -->
+<div class="flex-1 flex flex-col">
+<div class="flex justify-between items-center mb-2 ml-2">
+<label class="text-sm font-semibold text-on-surface">Back (Answer)</label>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-full neo-button flex items-center justify-center text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[16px]">list</span></button>
+<button class="w-8 h-8 rounded-full neo-button flex items-center justify-center text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[16px]">code</span></button>
+</div>
+</div>
+<textarea class="neo-inset w-full flex-1 p-4 text-on-surface placeholder:text-outline resize-none font-body text-base focus:ring-0" placeholder="Provide the detailed answer, explanation, or notes..."></textarea>
+</div>
+</div>
+<!-- Editor Actions -->
+<div class="mt-8 flex justify-end gap-4 border-t-0 pt-4">
+<button class="neo-button px-5 py-2.5 rounded-xl text-on-surface-variant font-medium text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">auto_awesome</span>
+                                Generate Hint
+                            </button>
+<button class="neo-button neo-button-primary px-8 py-2.5 rounded-xl text-primary font-medium flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span>
+                                Add to Deck
+                            </button>
+</div>
+</div>
+</div>
+<!-- Right Column: Deck Preview (Spans 4 cols) -->
+<div class="lg:col-span-4 h-full">
+<div class="neo-raised h-full p-6 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">view_carousel</span>
+                                Deck Preview
+                            </h3>
+<span class="text-sm font-medium text-on-surface-variant">3 Cards</span>
+</div>
+<!-- Card List -->
+<div class="flex-1 overflow-y-auto pr-2 space-y-4">
+<!-- Card Item 1 -->
+<div class="neo-raised-sm p-4 relative group cursor-pointer hover:shadow-[8px_8px_16px_rgba(0,0,0,0.06),-8px_-8px_16px_rgba(255,255,255,0.7)] transition-all">
+<div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+<button class="w-6 h-6 rounded-full neo-button flex items-center justify-center text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[14px]">edit</span></button>
+<button class="w-6 h-6 rounded-full neo-button flex items-center justify-center text-error hover:text-error-container"><span class="material-symbols-outlined text-[14px]">delete</span></button>
+</div>
+<span class="text-xs font-bold text-outline-variant uppercase tracking-wider mb-2 block">Card 1</span>
+<p class="text-sm text-on-surface font-medium line-clamp-2 mb-2">What is the primary function of the amygdala?</p>
+<div class="w-8 border-b-2 border-outline-variant mb-2"></div>
+<p class="text-xs text-on-surface-variant line-clamp-2">Processing fearful and threatening stimuli, and memory consolidation.</p>
+</div>
+<!-- Card Item 2 -->
+<div class="neo-raised-sm p-4 relative group cursor-pointer hover:shadow-[8px_8px_16px_rgba(0,0,0,0.06),-8px_-8px_16px_rgba(255,255,255,0.7)] transition-all">
+<div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+<button class="w-6 h-6 rounded-full neo-button flex items-center justify-center text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[14px]">edit</span></button>
+<button class="w-6 h-6 rounded-full neo-button flex items-center justify-center text-error hover:text-error-container"><span class="material-symbols-outlined text-[14px]">delete</span></button>
+</div>
+<span class="text-xs font-bold text-outline-variant uppercase tracking-wider mb-2 block">Card 2</span>
+<p class="text-sm text-on-surface font-medium line-clamp-2 mb-2">Define Neuroplasticity.</p>
+<div class="w-8 border-b-2 border-outline-variant mb-2"></div>
+<p class="text-xs text-on-surface-variant line-clamp-2">The brain's ability to reorganize itself by forming new neural connections throughout life.</p>
+</div>
+<!-- Card Item 3 -->
+<div class="neo-raised-sm p-4 relative group cursor-pointer hover:shadow-[8px_8px_16px_rgba(0,0,0,0.06),-8px_-8px_16px_rgba(255,255,255,0.7)] transition-all">
+<div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+<button class="w-6 h-6 rounded-full neo-button flex items-center justify-center text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[14px]">edit</span></button>
+<button class="w-6 h-6 rounded-full neo-button flex items-center justify-center text-error hover:text-error-container"><span class="material-symbols-outlined text-[14px]">delete</span></button>
+</div>
+<span class="text-xs font-bold text-outline-variant uppercase tracking-wider mb-2 block">Card 3</span>
+<p class="text-sm text-on-surface font-medium line-clamp-2 mb-2">Which neurotransmitter is associated with reward and pleasure?</p>
+<div class="w-8 border-b-2 border-outline-variant mb-2"></div>
+<p class="text-xs text-on-surface-variant line-clamp-2">Dopamine.</p>
+</div>
+<!-- Add New Card Placeholder in List -->
+<div class="neo-inset p-4 flex flex-col items-center justify-center border-2 border-dashed border-outline-variant/30 text-on-surface-variant cursor-pointer hover:text-primary transition-colors min-h-[120px]">
+<span class="material-symbols-outlined mb-1">add_circle</span>
+<span class="text-xs font-medium">Currently Editing...</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

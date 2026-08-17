@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Editor de Notas - Silk Learning</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config injected for specific Silk Brand Theme -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#6366f1",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed": "#ede9fe",
+                    "secondary-fixed-dim": "#b8baca",
+                    "on-tertiary-fixed": "#2e1065",
+                    "on-primary-fixed-variant": "#4338ca",
+                    "inverse-surface": "#2e3040",
+                    "secondary-container": "#d8dae6",
+                    "surface-container-low": "#e5e7ed",
+                    "on-error": "#ffffff",
+                    "error": "#dc2626",
+                    "secondary-fixed": "#d8dae6",
+                    "primary-container": "#818cf8",
+                    "on-tertiary-fixed-variant": "#5b21b6",
+                    "surface-container-lowest": "#f0f2f8",
+                    "primary-fixed": "#e0e2ff",
+                    "outline": "#8a8c9a",
+                    "on-secondary-container": "#585a68",
+                    "on-error-container": "#991b1b",
+                    "inverse-on-surface": "#e8eaf0",
+                    "on-secondary-fixed": "#1a1b26",
+                    "on-primary-container": "#e0e2ff",
+                    "secondary": "#6c6e7e",
+                    "surface-container": "#e2e4ea",
+                    "on-secondary-fixed-variant": "#404252",
+                    "on-surface": "#2e3040",
+                    "on-primary-fixed": "#1e1b4b",
+                    "tertiary": "#7c3aed",
+                    "on-background": "#2e3040",
+                    "surface-dim": "#d4d6dc",
+                    "on-primary": "#ffffff",
+                    "surface-container-highest": "#d6d8de",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-container": "#a78bfa",
+                    "surface-tint": "#6366f1",
+                    "outline-variant": "#d0d2dc",
+                    "surface-container-high": "#dcdee4",
+                    "inverse-primary": "#a5b4fc",
+                    "surface-variant": "#dcdee4",
+                    "surface-bright": "#edeef4",
+                    "primary-fixed-dim": "#a5b4fc",
+                    "error-container": "#fee2e2",
+                    "surface": "#e8eaf0",
+                    "on-tertiary-container": "#3b1f63",
+                    "background": "#e8eaf0",
+                    "on-surface-variant": "#585a68",
+                    "tertiary-fixed-dim": "#c4b5fd"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.5rem",
+                    "lg": "1rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans", "sans-serif"],
+                    "display": ["Plus Jakarta Sans", "sans-serif"],
+                    "body": ["Plus Jakarta Sans", "sans-serif"],
+                    "label": ["Plus Jakarta Sans", "sans-serif"]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        /* Custom scrollbar to maintain neomorphic aesthetic */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d0d2dc; 
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8a8c9a; 
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body h-screen flex flex-col overflow-hidden antialiased">
+<!-- Top Action Bar (Editor Focused Header) -->
+<header class="h-24 px-8 flex items-center justify-between w-full z-20 shrink-0">
+<!-- Back Navigation -->
+<div class="flex items-center gap-6 w-1/4">
+<button class="w-12 h-12 rounded-full flex items-center justify-center bg-background shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] text-on-surface-variant hover:text-primary transition-all duration-200">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-primary uppercase tracking-wider">Módulo 3</span>
+<span class="text-sm text-on-surface-variant font-medium">Neuroanatomia Funcional</span>
+</div>
+</div>
+<!-- Editable Title (Carved Inset) -->
+<div class="flex-1 flex justify-center">
+<input class="text-2xl font-headline font-semibold text-center bg-background border-none outline-none text-on-surface w-2/3 px-6 py-3 rounded-2xl shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] focus:ring-2 focus:ring-primary/20 transition-all" type="text" value="Resumo: Córtex Pré-frontal"/>
+</div>
+<!-- Right Actions (Status & Immersion) -->
+<div class="w-1/4 flex items-center justify-end gap-6">
+<span class="text-xs font-semibold text-on-surface-variant flex items-center gap-1.5 opacity-70">
+<span class="material-symbols-outlined text-[16px]">cloud_done</span> 
+                Salvo agora
+            </span>
+<button class="px-5 py-3 rounded-xl flex items-center gap-2 bg-background shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] text-primary font-semibold hover:text-tertiary transition-all duration-300" id="immersion-btn">
+<span class="material-symbols-outlined" id="immersion-icon">visibility_off</span>
+<span id="immersion-text">Imersão</span>
+</button>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="flex-1 flex px-8 pb-8 gap-8 overflow-hidden relative">
+<!-- Left Panel: Reference & Context (Extruded Card) -->
+<aside class="w-[340px] shrink-0 rounded-3xl bg-background shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] flex flex-col transition-all duration-500 origin-left z-10" id="reference-panel">
+<div class="p-6 pb-4 flex justify-between items-center relative">
+<h3 class="font-headline font-semibold text-lg text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">dataset</span>
+                    Base de Estudo
+                </h3>
+<div class="absolute bottom-0 left-6 right-6 h-px bg-surface-variant/40"></div>
+</div>
+<div class="p-6 overflow-y-auto flex-1 space-y-6">
+<!-- Reference Item 1: Concept -->
+<div class="p-5 rounded-2xl shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] bg-background">
+<h4 class="font-semibold text-on-surface text-sm mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[18px]">lightbulb</span>
+                        Conceito Chave
+                    </h4>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                        O córtex pré-frontal é crucial para funções executivas, planejamento de comportamentos cognitivos complexos e tomada de decisão.
+                    </p>
+</div>
+<!-- Reference Item 2: Image Asset -->
+<div class="p-4 rounded-2xl shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] bg-background flex flex-col gap-3">
+<div class="w-full h-32 rounded-xl bg-cover bg-center shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)]" data-alt="A highly detailed, aesthetically pleasing digital medical illustration of a human brain in profile. The prefrontal cortex area is subtly highlighted with a soft indigo glow. The overall visual style is soft, neomorphic, utilizing cool grays and deep purples, suitable for an advanced educational platform interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBUlCwjRP6iKEuinya5JXC9YNttYgTv8tUOXmKKENSc7qPCf0iV6QVuXjNErOrIBYq6Ezc-PUVKykKW8pKAAYBUi_a6PkaiNjlvh8-m_e8VnxY_b5Xw19FAuYruuCNItgJ9wVvM82tITSHcJj8SCIQOXcR2rrU6f18uRW7k6bVn1c8piouc8HIcbEBVQRCKgyYYrEF60seMbDFsVewliPQ_uJMnTfJuMHWQdX3SNK9lWQpQ2Odv9_Qjp4ViO6KVSLuXVmqtY0Z0_fM')"></div>
+<span class="text-xs font-semibold text-on-surface-variant text-center uppercase tracking-wider">Fig 1: Mapeamento Cortical</span>
+</div>
+<!-- Reference Item 3: Flashcard Link -->
+<button class="w-full p-4 rounded-xl flex items-center justify-between bg-background shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] text-on-surface transition-all group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">quiz</span>
+<span class="text-sm font-medium">Flashcards Relacionados</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
+</button>
+</div>
+</aside>
+<!-- Center: The Canvas & Toolbar -->
+<section class="flex-1 flex flex-col min-w-0 transition-all duration-500">
+<!-- Floating Neomorphic Toolbar -->
+<div class="flex justify-center mb-6 z-10">
+<div class="flex items-center p-2 rounded-2xl bg-background shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] gap-1">
+<!-- Text Styles -->
+<button class="w-10 h-10 rounded-xl flex items-center justify-center text-primary shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'wght' 600;">format_bold</span>
+</button>
+<button class="w-10 h-10 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-primary hover:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] transition-all">
+<span class="material-symbols-outlined">format_italic</span>
+</button>
+<button class="w-10 h-10 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-primary hover:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] transition-all">
+<span class="material-symbols-outlined">format_underlined</span>
+</button>
+<div class="w-px h-6 bg-surface-variant/60 mx-2"></div>
+<!-- Lists -->
+<button class="w-10 h-10 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-primary hover:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] transition-all">
+<span class="material-symbols-outlined">format_list_bulleted</span>
+</button>
+<button class="w-10 h-10 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-primary hover:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] transition-all">
+<span class="material-symbols-outlined">format_list_numbered</span>
+</button>
+<div class="w-px h-6 bg-surface-variant/60 mx-2"></div>
+<!-- Highlighter Tool (Tertiary Color) -->
+<button class="w-10 h-10 rounded-xl flex items-center justify-center text-tertiary hover:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] transition-all group" title="Destacar">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">format_ink_highlighter</span>
+</button>
+<div class="w-px h-6 bg-surface-variant/60 mx-2"></div>
+<!-- Add Image/Media -->
+<button class="w-10 h-10 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-primary hover:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] transition-all">
+<span class="material-symbols-outlined">image</span>
+</button>
+</div>
+</div>
+<!-- Editor Canvas (Deep Inset View) -->
+<div class="flex-1 rounded-[2rem] bg-background shadow-[inset_6px_6px_12px_rgba(0,0,0,0.06),inset_-6px_-6px_12px_rgba(255,255,255,0.5)] p-10 overflow-hidden flex flex-col relative">
+<!-- Subtly styled textarea acting as rich text area -->
+<textarea class="w-full h-full bg-transparent border-none outline-none resize-none text-on-surface leading-loose text-lg font-body placeholder:text-on-surface-variant/50" placeholder="Comece a estruturar suas ideias..."></textarea>
+<!-- Mock formatted content overlay to demonstrate style -->
+<div class="absolute inset-10 pointer-events-none text-lg leading-loose text-on-surface font-body">
+<p class="mb-4">O estudo da região frontal revela complexidades fascinantes. A <strong class="font-semibold text-primary">área de Brodmann 9 e 10</strong> está intimamente ligada à memória de trabalho.</p>
+<ul class="list-disc pl-6 mb-4 space-y-2 text-on-surface-variant">
+<li>Regulação da atenção seletiva.</li>
+<li>Inibição de impulsos inadequados.</li>
+<li><span class="bg-tertiary/20 text-tertiary px-1 rounded">Integração temporal</span> de eventos.</li>
+</ul>
+</div>
+</div>
+</section>
+</main>
+<!-- JavaScript for Immersion Mode Toggle -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const immersionBtn = document.getElementById('immersion-btn');
+            const immersionIcon = document.getElementById('immersion-icon');
+            const immersionText = document.getElementById('immersion-text');
+            const refPanel = document.getElementById('reference-panel');
+            
+            let isImmersed = false;
+
+            immersionBtn.addEventListener('click', () => {
+                isImmersed = !isImmersed;
+                
+                if (isImmersed) {
+                    // Activate Immersion
+                    immersionBtn.classList.add('shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]', 'text-tertiary');
+                    immersionBtn.classList.remove('shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)]', 'text-primary');
+                    immersionIcon.textContent = 'visibility';
+                    immersionText.textContent = 'Foco Ativo';
+                    
+                    // Hide Reference Panel smoothly
+                    refPanel.classList.add('w-0', 'opacity-0', 'pointer-events-none', 'scale-95');
+                    refPanel.classList.remove('w-[340px]', 'opacity-100');
+                } else {
+                    // Deactivate Immersion
+                    immersionBtn.classList.remove('shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]', 'text-tertiary');
+                    immersionBtn.classList.add('shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)]', 'text-primary');
+                    immersionIcon.textContent = 'visibility_off';
+                    immersionText.textContent = 'Imersão';
+                    
+                    // Show Reference Panel smoothly
+                    refPanel.classList.remove('w-0', 'opacity-0', 'pointer-events-none', 'scale-95');
+                    refPanel.classList.add('w-[340px]', 'opacity-100');
+                }
+            });
+        });
+    </script>
+</body></html>

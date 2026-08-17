@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Create Module - Silk Learning</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#7c3aed",
+                        "secondary-container": "#d8dae6",
+                        "surface-bright": "#edeef4",
+                        "error-container": "#fee2e2",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#1e1b4b",
+                        "inverse-primary": "#a5b4fc",
+                        "inverse-on-surface": "#e8eaf0",
+                        "primary-container": "#818cf8",
+                        "on-secondary-fixed-variant": "#404252",
+                        "secondary": "#6c6e7e",
+                        "secondary-fixed": "#d8dae6",
+                        "surface-tint": "#6366f1",
+                        "surface-variant": "#dcdee4",
+                        "outline-variant": "#d0d2dc",
+                        "inverse-surface": "#2e3040",
+                        "on-background": "#2e3040",
+                        "surface-container-low": "#e5e7ed",
+                        "primary-fixed-dim": "#a5b4fc",
+                        "secondary-fixed-dim": "#b8baca",
+                        "on-secondary-container": "#585a68",
+                        "surface": "#e8eaf0",
+                        "on-tertiary-container": "#3b1f63",
+                        "on-surface-variant": "#585a68",
+                        "primary": "#6366f1",
+                        "error": "#dc2626",
+                        "tertiary-container": "#a78bfa",
+                        "surface-container-lowest": "#f0f2f8",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#d4d6dc",
+                        "on-surface": "#2e3040",
+                        "on-primary-fixed-variant": "#4338ca",
+                        "background": "#e8eaf0",
+                        "on-tertiary-fixed-variant": "#5b21b6",
+                        "surface-container-highest": "#d6d8de",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed": "#1a1b26",
+                        "surface-container": "#e2e4ea",
+                        "tertiary-fixed-dim": "#c4b5fd",
+                        "surface-container-high": "#dcdee4",
+                        "on-error-container": "#991b1b",
+                        "outline": "#8a8c9a",
+                        "on-primary-container": "#e0e2ff",
+                        "primary-fixed": "#e0e2ff",
+                        "tertiary-fixed": "#ede9fe",
+                        "on-tertiary-fixed": "#2e1065",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "display": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        /* Neomorphic styles */
+        .neo-raised {
+            box-shadow: 6px 6px 12px rgba(0,0,0,0.08), -6px -6px 12px rgba(255,255,255,0.6);
+        }
+        .neo-inset {
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5);
+        }
+        .neo-raised-active:active {
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5);
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-full py-6 bg-background border-r-0 w-64 h-screen rounded-r-xl shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] z-20 flex-shrink-0 hidden md:flex">
+<div class="px-6 mb-8 flex items-center gap-4">
+<img alt="Silk Learning Brand" class="w-10 h-10 rounded-full neo-inset p-1 object-cover" data-alt="A clean, minimalist logo icon for an educational app, featuring a subtle gradient and geometric shapes in soft violet and indigo tones on a light gray background, matching a neomorphic aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIs643APg43TUEQi8IwaC6kh6VlrARptpe7vtuee9jerMM83RopZo3cqaV43Sir6UEhZxYeLFn_JGM1a4l8j73tY6b8BSmtofVlAsm6UGQwe_K4a9yc99R24r2I-WhMYfgdIHt9Fz8kXJMTBZ69Ietwunc-GZBYowyEtruU4kGmGlK1r3qZwYuKFFzy6Z2uLSfJwI2fzR4BPf-JTV1y5BqLLms4XOsWKlUSS20v-JyIvck3zQlnzR3G8k4dMN-JWNAw94-YwAWPxo"/>
+<div>
+<h1 class="text-lg font-semibold text-tertiary tracking-tight">IMERSÃO</h1>
+<p class="text-xs text-on-surface-variant">Deep Study Flow</p>
+</div>
+</div>
+<button class="mx-6 mb-8 py-3 px-4 rounded-xl text-primary font-semibold neo-raised neo-raised-active transition-all duration-300 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+            Start Study Session
+        </button>
+<nav class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary rounded-lg m-2 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300" href="#">
+<span class="material-symbols-outlined">book</span>
+<span class="font-body font-medium text-sm">My Courses</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-background shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] text-primary rounded-lg m-2 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-body font-medium text-sm">Modules</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary rounded-lg m-2 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300" href="#">
+<span class="material-symbols-outlined">quiz</span>
+<span class="font-body font-medium text-sm">Flashcards</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary rounded-lg m-2 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300" href="#">
+<span class="material-symbols-outlined">edit_note</span>
+<span class="font-body font-medium text-sm">Notes</span>
+</a>
+</nav>
+<div class="px-4 mt-auto space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary rounded-lg m-2 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="font-body font-medium text-sm">Help</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary rounded-lg m-2 hover:shadow-[6px_6px_12px_rgba(0,0,0,0.04)] transition-all duration-300" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body font-medium text-sm">Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col h-full overflow-hidden">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center px-6 sticky top-0 z-50 bg-background w-full h-16 shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)]">
+<div class="flex items-center gap-4">
+<!-- Mobile menu toggle (hidden on md) -->
+<button class="md:hidden p-2 rounded-lg neo-raised text-on-surface-variant">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="text-xl font-semibold tracking-tight text-primary dark:text-inverse-primary hidden md:block">Silk Learning</div>
+</div>
+<div class="flex-1 max-w-xl mx-8 hidden md:flex items-center justify-end">
+<div class="relative w-64">
+<input class="w-full bg-background border-none rounded-full py-2 pl-4 pr-10 text-sm text-on-surface placeholder:text-on-surface-variant neo-inset focus:ring-2 focus:ring-primary/50 transition-shadow" placeholder="Search modules..." type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 rounded-full text-on-surface-variant hover:text-primary transition-colors duration-200 neo-raised neo-raised-active">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 rounded-full text-on-surface-variant hover:text-primary transition-colors duration-200 neo-raised neo-raised-active">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 rounded-full text-on-surface-variant hover:text-primary transition-colors duration-200 neo-raised neo-raised-active">
+<span class="material-symbols-outlined">fullscreen</span>
+</button>
+<img alt="User Profile Avatar" class="w-8 h-8 rounded-full object-cover ml-2 neo-inset p-0.5" data-alt="A small, soft-lit portrait photograph of a young professional smiling slightly, serving as a user profile avatar in a minimalist web interface. The lighting is bright and even, fitting a light-mode neomorphic theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHzYK12YEOLmbR7liZNjFxcj0N2yjPBJP6NvecDc5Php0puvb4UCZltId42aChsv2BcTqXQ9088_qMcbkhtKi7fn9yjCPAMEFJ-JgYQH8Atho-uAuG8nFa-c0RwpzIMivvZ7P5Q9O5tz7JkaRWByjoV96L5u5mxRHpx6GSrd8tm70Bw0ynESS-G5_sTmkKw9yng4X5J9Gp_lwF2Mu7l-7rKmL6BgqxL39XElywXNgyY159gb38BWufv9_F9ndiIHj2Lm0RZJGKLfg"/>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 overflow-y-auto p-6 md:p-10 pb-32 md:pb-12">
+<div class="max-w-5xl mx-auto space-y-8">
+<!-- Page Header -->
+<div class="flex items-center justify-between">
+<div>
+<h2 class="text-3xl font-semibold text-on-surface mb-2">Create New Module</h2>
+<p class="text-on-surface-variant">Design the curriculum and content for your next learning experience.</p>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-2.5 rounded-xl text-on-surface-variant font-medium neo-raised neo-raised-active transition-all">Cancel</button>
+<button class="px-6 py-2.5 rounded-xl text-primary font-semibold neo-raised neo-raised-active transition-all flex items-center gap-2">
+<span class="material-symbols-outlined">save</span>
+                            Save Module
+                        </button>
+</div>
+</div>
+<!-- Bento Grid Layout for Form -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Left Column: Module Details (Wider) -->
+<div class="lg:col-span-2 space-y-8">
+<!-- Basic Info Card -->
+<div class="bg-background rounded-2xl p-6 md:p-8 neo-raised">
+<h3 class="text-lg font-semibold text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">info</span>
+                                Module Details
+                            </h3>
+<div class="space-y-6">
+<div>
+<label class="block text-sm font-medium text-on-surface-variant mb-2 ml-1">Module Title</label>
+<input class="w-full bg-background border-none rounded-xl py-3 px-4 text-on-surface placeholder:text-outline-variant neo-inset focus:ring-0" placeholder="e.g., Introduction to Advanced Calculus" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-on-surface-variant mb-2 ml-1">Description</label>
+<textarea class="w-full bg-background border-none rounded-xl py-3 px-4 text-on-surface placeholder:text-outline-variant neo-inset focus:ring-0 resize-none" placeholder="Briefly describe what students will learn..." rows="4"></textarea>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div>
+<label class="block text-sm font-medium text-on-surface-variant mb-2 ml-1">Duration (Hours)</label>
+<input class="w-full bg-background border-none rounded-xl py-3 px-4 text-on-surface placeholder:text-outline-variant neo-inset focus:ring-0" placeholder="0" type="number"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-on-surface-variant mb-2 ml-1">Difficulty Level</label>
+<select class="w-full bg-background border-none rounded-xl py-3 px-4 text-on-surface neo-inset focus:ring-0 appearance-none cursor-pointer">
+<option>Beginner</option>
+<option>Intermediate</option>
+<option>Advanced</option>
+</select>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Visuals & Settings -->
+<div class="space-y-8">
+<!-- Cover Image Selector -->
+<div class="bg-background rounded-2xl p-6 neo-raised flex flex-col">
+<h3 class="text-lg font-semibold text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">image</span>
+                                Cover Image
+                            </h3>
+<div class="flex-1 w-full bg-background rounded-xl neo-inset flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:text-primary transition-colors group aspect-video">
+<span class="material-symbols-outlined text-4xl text-outline-variant mb-2 group-hover:text-primary transition-colors">cloud_upload</span>
+<p class="text-sm font-medium text-on-surface-variant group-hover:text-primary">Click to upload cover</p>
+<p class="text-xs text-outline mt-1">PNG, JPG up to 5MB</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

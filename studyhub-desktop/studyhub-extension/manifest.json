@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "StudyHub Companion — Captura Rápida & IA",
+  "version": "1.0.0",
+  "description": "Extensão oficial do StudyHub para captura de vídeos do YouTube, artigos e resumos inteligentes com IA.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "studyhub-companion@studyhub.local",
+      "strict_min_version": "109.0"
+    }
+  },
+  "permissions": [
+    "sidePanel",
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "service-worker.js",
+    "scripts": ["service-worker.js"]
+  },
+  "action": {
+    "default_title": "Abrir StudyHub Companion"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "sidebar_action": {
+    "default_panel": "sidepanel.html",
+    "default_title": "StudyHub Companion"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["sidepanel.html", "sidepanel.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
