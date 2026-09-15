@@ -34,15 +34,6 @@ const accentById = new Map(JOURNAL_ACCENTS.map((accent) => [accent.id, accent]))
 const renderSafeMarkdown = (content = "") =>
   sanitizeGeneratedHtml(markdownToNoteHtml(content));
 
-const hashJournalPassword = async (value) => {
-  const bytes = new TextEncoder().encode(String(value || ""));
-  if (window.crypto?.subtle) {
-    const digest = await window.crypto.subtle.digest("SHA-256", bytes);
-    return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
-  }
-  return btoa(unescape(encodeURIComponent(String(value || ""))));
-};
-
 const formatDateLong = (dateKey) =>
   new Intl.DateTimeFormat("pt-BR", {
     weekday: "long",
@@ -649,16 +640,16 @@ export function JournalScreen() {
   const [tagInput, setTagInput] = useState("");
   const [promptOffset, setPromptOffset] = useState(0);
   const [saveFeedback, setSaveFeedback] = useState("");
+  const [sendingToApple, setSendingToApple] = useState(false);
   const [signedPhotoUrls, setSignedPhotoUrls] = useState({});
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [photoMessage, setPhotoMessage] = useState(null);
   const [lightboxPhotoId, setLightboxPhotoId] = useState(null);
-  const [journalLocked, setJournalLocked] = useState(Boolean(settings.passwordHash));
+  const [journalLocked, setJournalLocked] = useState(true);
+  const [accountEmail, setAccountEmail] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [showPasswordSettings, setShowPasswordSettings] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [passwordSettingsError, setPasswordSettingsError] = useState("");
+  const [unlockingJournal, setUnlockingJournal] = useState(false);
   const [showJournalAi, setShowJournalAi] = useState(false);
   const [journalAiResponse, setJournalAiResponse] = useState("");
   const [journalAiError, setJournalAiError] = useState("");
@@ -1226,6 +1217,44 @@ export function JournalScreen() {
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
+  const sendCurrentEntryToApple = async () => {
+    const title = draft.title?.trim() || "Entrada do diário";
+    const gratitudeLines = paddedGratitudes(draft.gratitudes)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map((item) => `• ${item}`)
+      .join("\n");
+    const quoteLines = (draft.importantQuotes || [])
+      .map((quote) => String(quote.text || "").trim())
+      .filter(Boolean)
+      .map((quote) => `• “${quote}”`)
+      .join("\n");
+    const body = [
+      String(draft.content || "").trim(),
+      `Data no StudyHub: ${formatDateLong(draft.entryDate)}`,
+      `Humor: ${moodById.get(draft.mood)?.label || "Não informado"} · Energia: ${draft.energy}/5 · Sono: ${draft.sleepHours}h`,
+      draft.tags?.length ? `Tags: ${draft.tags.map((tag) => `#${tag}`).join(" ")}` : "",
+      gratitudeLines ? `Gratidão\n${gratitudeLines}` : "",
+      quoteLines ? `Frases importantes\n${quoteLines}` : "",
+      draft.highlight?.trim() ? `Momento que quero guardar\n${draft.highlight.trim()}` : "",
+      draft.intention?.trim() ? `Intenção para amanhã\n${draft.intention.trim()}` : "",
+    ].filter(Boolean).join("\n\n");
+    setSendingToApple(true);
+    try {
+      await window.studyhubDesktop?.journal?.sendToApple?.({
+        title,
+        body,
+        entryDate: draft.entryDate,
+        mediaPaths: (draft.photos || []).map((photo) => photo.path).filter(Boolean),
+      });
+      setSaveFeedback("Entrada enviada ao Diário da Apple");
+    } catch (error) {
+      setSaveFeedback(error?.message || "Não foi possível enviar ao Diário da Apple");
+    } finally {
+      setSendingToApple(false);
+    }
+  };
+
   const usePrompt = () => {
     updateDraft({ prompt });
     document.querySelector(".journal-writing-area")?.focus();
@@ -1471,38 +1500,22 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
 
   const unlockJournal = async (event) => {
     event.preventDefault();
-    const hash = await hashJournalPassword(passwordInput);
-    if (hash === settings.passwordHash) {
-      setJournalLocked(false);
-      setPasswordInput("");
-      setPasswordError("");
-    } else {
-      setPasswordError("Senha incorreta.");
-      setPasswordInput("");
-    }
-  };
-
-  const resetForgottenJournalPassword = () => {
-    const confirmed = window.confirm(
-      "Remover a senha esquecida do Diário? Suas entradas e fotos não serão apagadas.",
-    );
-    if (!confirmed) return;
-    updateJournalSettings({ passwordHash: "" });
-    setJournalLocked(false);
-    setPasswordInput("");
-    setPasswordError("");
-  };
-
-  const saveJournalPassword = async (event) => {
-    event.preventDefault();
-    if (newPassword && newPassword.length < 4) {
-      setPasswordSettingsError("Use pelo menos 4 caracteres.");
+    if (!accountEmail) {
+      setPasswordError("Não foi possível identificar sua conta. Entre novamente no aplicativo.");
       return;
     }
-    updateJournalSettings({ passwordHash: newPassword ? await hashJournalPassword(newPassword) : "" });
-    setNewPassword("");
-    setPasswordSettingsError("");
-    setShowPasswordSettings(false);
+    setUnlockingJournal(true);
+    setPasswordError("");
+    try {
+      await collaborationCloud.signIn({ email: accountEmail, password: passwordInput });
+      setJournalLocked(false);
+      setPasswordInput("");
+    } catch {
+      setPasswordError("Senha da conta incorreta.");
+      setPasswordInput("");
+    } finally {
+      setUnlockingJournal(false);
+    }
   };
 
   useEffect(() => {
@@ -1518,8 +1531,16 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
   }, [dirty, draft, editingId]);
 
   useEffect(() => {
-    setJournalLocked(Boolean(settings.passwordHash));
-  }, [settings.passwordHash]);
+    let mounted = true;
+    collaborationCloud.getSession().then((session) => {
+      if (mounted) setAccountEmail(session?.user?.email || "");
+    }).catch(() => {
+      if (mounted) setAccountEmail("");
+    });
+    // Remove a configuração antiga: a partir de agora a conta é a única fonte da senha.
+    if (settings.passwordHash) updateJournalSettings({ passwordHash: "" });
+    return () => { mounted = false; };
+  }, []);
 
   if (journalLocked) {
     return (
@@ -1528,15 +1549,13 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--journal-accent)]/15 text-[color:var(--journal-accent)]"><Icon name="lock" className="text-3xl" /></div>
           <span className="journal-eyebrow">Diário protegido</span>
           <h1 className="mt-2 text-2xl font-black text-[color:var(--journal-ink)]">Digite sua senha</h1>
-          <p className="mt-2 text-sm text-[color:var(--journal-muted)]">Suas memórias ficam protegidas neste dispositivo.</p>
+          <p className="mt-2 text-sm text-[color:var(--journal-muted)]">Use a mesma senha da sua conta para acessar suas memórias.</p>
           <form className="mt-6 space-y-3 text-left" onSubmit={unlockJournal}>
-            <input autoFocus type="password" value={passwordInput} onChange={(event) => setPasswordInput(event.target.value)} className="journal-filter-select w-full" placeholder="Senha do diário" aria-label="Senha do diário" />
+            <input autoFocus type="password" value={passwordInput} onChange={(event) => setPasswordInput(event.target.value)} className="journal-filter-select w-full" placeholder="Senha da conta" aria-label="Senha da conta" autoComplete="current-password" required />
             {passwordError ? <p className="text-xs font-bold text-red-600">{passwordError}</p> : null}
-            <button type="submit" className="journal-primary-button w-full justify-center"><Icon name="lock_open" /> Abrir diário</button>
+            <button type="submit" className="journal-primary-button w-full justify-center" disabled={unlockingJournal || !accountEmail}><Icon name="lock_open" /> {unlockingJournal ? "Verificando..." : "Abrir diário"}</button>
           </form>
-          <button type="button" className="mt-4 text-xs font-bold text-[color:var(--journal-muted)] underline underline-offset-2 hover:text-[color:var(--journal-ink)]" onClick={resetForgottenJournalPassword}>
-            Esqueci a senha
-          </button>
+          <p className="mt-4 text-xs text-[color:var(--journal-muted)]">Esqueceu a senha? Recupere-a pela tela de acesso do aplicativo.</p>
         </section>
       </main>
     );
@@ -1574,7 +1593,11 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
             <Icon name="save" />
             Salvar
           </button>
-          <button type="button" className="journal-icon-button" title="Configurar senha do diário" aria-label="Configurar senha do diário" onClick={() => { setPasswordSettingsError(""); setShowPasswordSettings(true); }}>
+          <button type="button" className="journal-outline-button" onClick={sendCurrentEntryToApple} disabled={!draft.content?.trim() || sendingToApple} title="Criar uma entrada no Diário da Apple">
+            <Icon name="menu_book" />
+            <span className="hidden sm:inline">{sendingToApple ? "Enviando…" : "Enviar ao Diário"}</span>
+          </button>
+          <button type="button" className="journal-icon-button" title="Bloquear diário" aria-label="Bloquear diário" onClick={() => setJournalLocked(true)}>
             <Icon name="lock" />
           </button>
           <button type="button" className="journal-outline-button" onClick={handleOpenJournalAi}>
@@ -2047,22 +2070,6 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
         onClose={() => setLightboxPhotoId(null)}
         onChange={setLightboxPhotoId}
       />
-      {showPasswordSettings ? (
-        <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowPasswordSettings(false); }}>
-          <section className="journal-panel w-full max-w-md p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div><span className="journal-eyebrow">Privacidade</span><h2 className="mt-1 text-xl font-black text-[color:var(--journal-ink)]">Senha do diário</h2></div>
-              <button type="button" className="journal-icon-button" onClick={() => setShowPasswordSettings(false)} aria-label="Fechar"><Icon name="close" /></button>
-            </div>
-            <p className="mt-3 text-sm text-[color:var(--journal-muted)]">Defina uma senha para exigir proteção sempre que o Diário for aberto.</p>
-            <form className="mt-5 space-y-3" onSubmit={saveJournalPassword}>
-              <input autoFocus type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} className="journal-filter-select w-full" placeholder={settings.passwordHash ? "Nova senha (deixe vazio para remover)" : "Criar senha"} aria-label="Nova senha do diário" />
-              {passwordSettingsError ? <p className="text-xs font-bold text-red-600">{passwordSettingsError}</p> : null}
-              <div className="flex justify-end gap-2"><button type="button" className="journal-outline-button" onClick={() => setShowPasswordSettings(false)}>Cancelar</button><button type="submit" className="journal-primary-button"><Icon name="lock" /> Salvar senha</button></div>
-            </form>
-          </section>
-        </div>
-      ) : null}
       {showJournalAi ? (
         <div className="fixed inset-0 z-[135] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowJournalAi(false); }}>
           <section className="journal-panel w-full max-w-2xl p-6 shadow-2xl">

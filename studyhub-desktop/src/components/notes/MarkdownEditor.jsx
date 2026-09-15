@@ -9,6 +9,7 @@ import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
 import { tags } from "@lezer/highlight";
 import { createLivePreviewPlugin } from "./plugins/livePreviewPlugin";
 import { createHashtagPlugin } from "./plugins/hashtagPlugin";
+import { shortcutLabel } from "../../utils/keyboardShortcuts";
 
 /**
  * Tema personalizado do editor Markdown estilo Obsidian para o CampusFlow.
@@ -222,7 +223,7 @@ function tagCompletion(allTags = []) {
  * @param {Array} props.notesList - Lista de notas para autocomplete de wikilinks
  * @param {Array} props.allTags - Lista de tags para autocomplete
  * @param {function} props.onWikilinkClick - Callback quando um wikilink é clicado
- * @param {function} props.onSave - Callback para salvar (Ctrl+S)
+ * @param {function} props.onSave - Callback para salvar (Cmd/Ctrl+S)
  * @param {React.Ref} props.editorRef - Ref externa para acessar a instância do editor
  */
 export function MarkdownEditor({
@@ -458,11 +459,11 @@ export function MarkdownEditor({
         </div>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
-            <kbd className="px-1 py-0.5 rounded bg-[var(--surface-high)] text-[10px] font-mono">Ctrl+S</kbd>
+            <kbd className="px-1 py-0.5 rounded bg-[var(--surface-high)] text-[10px] font-mono">{shortcutLabel("Mod+S")}</kbd>
             Salvar
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="px-1 py-0.5 rounded bg-[var(--surface-high)] text-[10px] font-mono">Ctrl+B</kbd>
+            <kbd className="px-1 py-0.5 rounded bg-[var(--surface-high)] text-[10px] font-mono">{shortcutLabel("Mod+B")}</kbd>
             Negrito
           </span>
           <span>Markdown</span>

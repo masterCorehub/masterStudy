@@ -534,7 +534,7 @@ const DrawingOverlay = forwardRef(({
       }
 
       if (clickedIdx !== -1) {
-        if (e.shiftKey || e.ctrlKey) {
+        if (e.shiftKey || e.ctrlKey || e.metaKey) {
           const current = new Set(selectedIndicesRef.current);
           if (current.has(clickedIdx)) current.delete(clickedIdx);
           else current.add(clickedIdx);
@@ -556,7 +556,7 @@ const DrawingOverlay = forwardRef(({
       }
 
       // Clicou no vazio: limpa seleção e inicia caixa de seleção (Marquee)
-      if (!e.shiftKey && !e.ctrlKey) {
+      if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
         selectedIndicesRef.current = [];
         setSelectedCount(0);
       }

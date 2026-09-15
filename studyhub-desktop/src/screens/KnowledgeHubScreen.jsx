@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Icon } from "../ui/Icon";
 import { SCREEN_IDS } from "../app/screenIds";
 import { useStudyStore } from "../store/useStore";
+import { shortcutLabel } from "../utils/keyboardShortcuts";
 import {
   extractYouTubeVideoId,
   fetchYouTubeDetails,
@@ -42,7 +43,7 @@ export function KnowledgeHubScreen({ onNavigate }) {
     window.addEventListener("studyhub-open-quick-capture", handleQuickCapture);
 
     const handleKeyDown = (e) => {
-      // Ctrl+Shift+K ou Alt+N abre o modal de adição rápida no Hub
+      // Cmd/Ctrl+Shift+K abre o modal de adição rápida no Hub
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setIsAddModalOpen(true);
@@ -320,7 +321,7 @@ export function KnowledgeHubScreen({ onNavigate }) {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar no seu conhecimento... (Ctrl + /)"
+                placeholder={`Buscar no seu conhecimento... (${shortcutLabel("Mod+/")})`}
                 className="w-full pl-10 pr-4 py-2 rounded-xl bg-[color:var(--surface-container-low)] border border-[color:var(--outline-variant)]/40 text-xs text-[color:var(--on-surface)] outline-none focus:border-[color:var(--primary)] transition-all"
               />
             </div>
@@ -354,7 +355,7 @@ export function KnowledgeHubScreen({ onNavigate }) {
               className="px-4 py-2 rounded-xl bg-[color:var(--primary)] text-white text-xs font-bold shadow-sm hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
             >
               <Icon name="add" className="text-base" />
-              <span>+ Adicionar (Ctrl + K)</span>
+              <span>+ Adicionar ({shortcutLabel("Mod+Shift+K")})</span>
             </button>
           </div>
         </header>

@@ -125,6 +125,17 @@ export function FormattedMarkdown({ content }) {
 
 // Real Ollama Local AI helper
 async function generateWithOllama(ollamaUrl, modelName, systemPrompt, userPrompt) {
+  if (window.studyhubDesktop?.academicAI?.chat) {
+    const result = await window.studyhubDesktop.academicAI.chat({
+      model: modelName,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    });
+    if (!result?.message) throw new Error("O provedor de IA não retornou nenhuma resposta.");
+    return result.message;
+  }
   const endpoint = `${ollamaUrl.replace(/\/$/, '')}/api/generate`;
   const response = await fetch(endpoint, {
     method: "POST",
@@ -496,6 +507,7 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
   const [selectedModel, setSelectedModel] = useState(() => localStorage.getItem("studyhub_ollama_model") || "");
   const [availableModels, setAvailableModels] = useState([]);
   const [isOllamaConnected, setIsOllamaConnected] = useState(false);
+  const [configuredAiProvider, setConfiguredAiProvider] = useState("ollama");
   const [showOllamaConfigModal, setShowOllamaConfigModal] = useState(false);
   const [tempUrl, setTempUrl] = useState(ollamaUrl);
 
@@ -764,6 +776,17 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
   // Check Ollama connection & list models
   const checkOllamaConnection = async () => {
     try {
+      if (window.studyhubDesktop?.academicAI?.status) {
+        const status = await window.studyhubDesktop.academicAI.status();
+        setConfiguredAiProvider(status?.provider || "ollama");
+        if (status?.provider === "gemini") {
+          const modelsList = (status.models || []).map((model) => model.name);
+          setAvailableModels(modelsList);
+          setIsOllamaConnected(Boolean(status.available));
+          if (modelsList[0]) setSelectedModel(modelsList[0]);
+          return;
+        }
+      }
       const res = await fetch(`${ollamaUrl.replace(/\/$/, '')}/api/tags`);
       if (res.ok) {
         const data = await res.json();
@@ -977,6 +1000,47 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
       )
       .forEach((resource) => deleteAcademicEntity("resources", resource.id));
   };
+
+  // Keep a linked folder synchronized while the discipline is open. New files
+  // appear automatically and files removed from disk are dropped from the
+  // linked-folder resources (manually added resources remain untouched).
+  useEffect(() => {
+    const folderPath = subjectLinkedFolder?.path;
+    if (!subject?.id || !folderPath || !window.studyhubDesktop?.scanDirectory) return undefined;
+    let cancelled = false;
+    const syncFolder = async () => {
+      try {
+        const result = await window.studyhubDesktop.scanDirectory(folderPath);
+        if (cancelled) return;
+        const diskPaths = new Set((result?.filesList || []).map((file) => String(file.path)));
+        const linkedResources = academicResources.filter(
+          (resource) => resource.subjectId === subject.id && String(resource.linkedFolderPath || "") === String(folderPath),
+        );
+        linkedResources
+          .filter((resource) => resource.path && !diskPaths.has(String(resource.path)))
+          .forEach((resource) => deleteAcademicEntity("resources", resource.id));
+        const knownPaths = new Set(academicResources.map((resource) => String(resource.path || "")));
+        (result?.filesList || [])
+          .filter((file) => file?.path && !knownPaths.has(String(file.path)))
+          .forEach((file) => addAcademicEntity("resources", {
+            subjectId: subject.id,
+            semesterId: subject.semesterId,
+            title: file.name || resourceFileName(file.path),
+            type: "file",
+            path: file.path,
+            url: "",
+            selected: true,
+            linkedFolderPath: folderPath,
+            linkedFolderName: subjectLinkedFolder.name,
+          }));
+      } catch {
+        // A disconnected/moved folder is reported when the user opens it.
+      }
+    };
+    syncFolder();
+    const timer = globalThis.setInterval(syncFolder, 5000);
+    return () => { cancelled = true; globalThis.clearInterval(timer); };
+  }, [subject?.id, subject?.semesterId, subjectLinkedFolder?.path, subjectLinkedFolder?.name, academicResources, addAcademicEntity, deleteAcademicEntity]);
 
   const pickSubjectFolder = async () => {
     if (!window.studyhubDesktop?.selectDirectory || !subject?.id) {
@@ -1226,7 +1290,24 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
           return;
         }
       } catch (e) {
-        console.warn("IPC academicAI fallback to direct Ollama:", e);
+        console.warn("IPC academicAI failed:", e);
+        if (configuredAiProvider === "gemini") {
+          const detail = String(e?.message || e || "");
+          const busy = /high demand|resource.?exhausted|429/i.test(detail);
+          setAcademicAiChatHistory(activeSubjectId, [
+            ...updatedWithUser,
+            {
+              role: "ai",
+              content: busy
+                ? "⚠️ **O Gemini está temporariamente com alta demanda.** Aguarde alguns segundos e tente novamente. Isso é uma limitação momentânea do serviço, não um problema com sua chave."
+                : `⚠️ **Erro no Google Gemini:** ${detail}`,
+              time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              sources: [],
+            },
+          ]);
+          setIsAiThinking(false);
+          return;
+        }
       }
     }
 
@@ -1277,7 +1358,9 @@ INSTRUÇÕES DE RESPOSTA:
         ...updatedWithUser,
         {
           role: "ai",
-          content: `⚠️ **Erro na IA Ollama:** ${err.message}\n\nCertifique-se de que o Ollama esteja rodando no seu computador (\`ollama run ${selectedModel || "llama3.2"}\`).`,
+          content: configuredAiProvider === "gemini"
+            ? `⚠️ **Erro no Google Gemini:** ${err.message}\n\nTente novamente em alguns instantes ou verifique o limite de uso no Google AI Studio.`
+            : `⚠️ **Erro na IA Ollama:** ${err.message}\n\nCertifique-se de que o Ollama esteja rodando no seu computador (\`ollama run ${selectedModel || "llama3.2"}\`).`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           sources: [],
         },
@@ -1566,19 +1649,19 @@ INSTRUÇÕES DE RESPOSTA:
                 Convidar pessoa
               </button>
             ) : null}
-            {/* Ollama Status & Model Selector */}
+            {/* AI provider status & model selector */}
             <div className={`items-center gap-2 ${activeTab === "Pessoas" ? "hidden" : "flex"}`}>
               <button 
-                onClick={() => { setTempUrl(ollamaUrl); setShowOllamaConfigModal(true); }}
+                onClick={() => configuredAiProvider === "gemini" ? useStudyStore.getState().openSettingsModal?.("ai") : (setTempUrl(ollamaUrl), setShowOllamaConfigModal(true))}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                   isOllamaConnected 
                     ? 'bg-green-500/10 text-green-600 border-green-500/30' 
                     : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
                 }`}
-                title="Configurar Conexão do Ollama Local"
+                title={configuredAiProvider === "gemini" ? "Configurar Google Gemini" : "Configurar conexão do Ollama local"}
               >
                 <div className={`w-2 h-2 rounded-full ${isOllamaConnected ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
-                {isOllamaConnected ? "Ollama Conectado" : "Ollama Desconectado"}
+                {configuredAiProvider === "gemini" ? (isOllamaConnected ? "Gemini conectado" : "Gemini não configurado") : (isOllamaConnected ? "Ollama conectado" : "Ollama desconectado")}
               </button>
 
               {isOllamaConnected && availableModels.length > 0 && (
@@ -1686,11 +1769,11 @@ INSTRUÇÕES DE RESPOSTA:
                     <Icon name="memory" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-[color:var(--on-surface)]">Tutor IA (Ollama Local) — {subject?.name}</h2>
+                    <h2 className="text-base font-black text-[color:var(--on-surface)]">Tutor IA ({configuredAiProvider === "gemini" ? "Google Gemini" : "Ollama local"}) — {subject?.name}</h2>
                     <p className="text-xs text-[color:var(--on-surface-variant)]">
                       {isOllamaConnected 
                         ? `Modelo ativo: ${selectedModel || "Llama3"}` 
-                        : "Ollama desconectado. Inicie o serviço local em http://localhost:11434"}
+                        : configuredAiProvider === "gemini" ? "Configure sua chave Gemini nas configurações de IA" : "Ollama desconectado. Inicie o serviço local em http://localhost:11434"}
                     </p>
                   </div>
                 </div>
@@ -1733,12 +1816,20 @@ INSTRUÇÕES DE RESPOSTA:
                           {msg.sources && msg.sources.length > 0 && (
                             <div className="mt-4 pt-3 border-t border-[color:var(--outline-variant)]/10 flex items-center flex-wrap gap-2">
                               <span className="text-[11px] font-bold text-[color:var(--on-surface-variant)]">Fontes consultadas:</span>
-                              {msg.sources.map(src => (
-                                <div key={src.id} className="flex items-center gap-1.5 bg-[color:var(--surface-container-low)] border border-[color:var(--primary)]/20 px-2.5 py-1 rounded-lg text-xs font-medium text-[color:var(--primary)]">
-                                  <span className="w-3.5 h-3.5 rounded bg-[color:var(--primary)]/10 flex items-center justify-center text-[9px] font-bold">{src.id}</span>
-                                  {src.name}
-                                </div>
-                              ))}
+                              {msg.sources.map((src, index) => {
+                                const sourceId = src.id || src.sourceId || `source-${index}`;
+                                const sourceName = src.name || src.title || "Fonte consultada";
+                                return (
+                                  <details key={sourceId} className="w-full rounded-xl border border-[color:var(--primary)]/20 bg-[color:var(--surface-container-low)] px-3 py-2 text-xs">
+                                    <summary className="flex cursor-pointer list-none items-center gap-2 font-bold text-[color:var(--primary)]">
+                                      <span className="flex h-5 w-5 items-center justify-center rounded bg-[color:var(--primary)]/10 text-[10px]">{index + 1}</span>
+                                      <span className="truncate">{sourceName}</span>
+                                      {src.locator ? <span className="ml-auto truncate text-[10px] font-normal text-[color:var(--on-surface-variant)]">{src.locator}</span> : null}
+                                    </summary>
+                                    {src.excerpt ? <blockquote className="mt-2 border-l-2 border-[color:var(--primary)]/40 pl-3 text-[11px] leading-5 text-[color:var(--on-surface-variant)]">“{src.excerpt}{src.excerpt.length >= 900 ? "…" : ""}”</blockquote> : null}
+                                  </details>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -1750,7 +1841,7 @@ INSTRUÇÕES DE RESPOSTA:
                 {isAiThinking && (
                   <div className="flex gap-3 items-center text-xs font-bold text-[color:var(--primary)] bg-[color:var(--primary)]/10 px-4 py-3 rounded-2xl w-fit">
                     <Icon name="memory" className="animate-spin text-[16px]" />
-                    Executando Ollama Local ({selectedModel || "modelo"})...
+                    Executando {configuredAiProvider === "gemini" ? "Google Gemini" : "Ollama local"} ({selectedModel || "modelo"})...
                   </div>
                 )}
                 
@@ -2226,7 +2317,7 @@ INSTRUÇÕES DE RESPOSTA:
           <div className="flex-1 overflow-y-auto p-8 bg-[color:var(--background)]">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-black text-[color:var(--on-surface)]">Anotações de {subject.name}</h2>
-              <button onClick={handleCreateNewNote} className="bg-[color:var(--primary)] text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-md">
+              <button onClick={handleCreateDisciplineNote} className="bg-[color:var(--primary)] text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-md">
                 <Icon name="add" /> Nova Anotação
               </button>
             </div>
@@ -2253,7 +2344,7 @@ INSTRUÇÕES DE RESPOSTA:
               <div className="flex flex-col items-center justify-center py-20 text-[color:var(--on-surface-variant)] opacity-60">
                 <Icon name="edit_note" className="text-5xl mb-4" />
                 <p className="font-bold text-base">Nenhuma anotação vinculada a esta matéria</p>
-                <button onClick={handleCreateNewNote} className="mt-4 px-4 py-2 bg-[color:var(--primary)] text-white rounded-xl text-xs font-bold">
+                <button onClick={handleCreateDisciplineNote} className="mt-4 px-4 py-2 bg-[color:var(--primary)] text-white rounded-xl text-xs font-bold">
                   Criar Primeira Anotação
                 </button>
               </div>

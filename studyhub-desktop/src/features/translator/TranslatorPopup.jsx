@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "../../ui/Icon";
 import { useStudyStore } from "../../store/useStore";
+import { isPrimaryShortcut, shortcutLabel } from "../../utils/keyboardShortcuts";
 
 const LANGUAGE_OPTIONS = [
   { value: "auto", label: "Detectar idioma" },
@@ -123,6 +124,7 @@ function LanguageSelect({ label, value, onChange, allowAuto = false, disabled = 
 }
 
 export function TranslatorPopup() {
+  const liveTranslationCapture = useStudyStore((state) => Boolean(state.appSettings?.liveTranslationCapture));
   const inputRef = useRef(null);
   const copiedTimerRef = useRef(null);
   const mountedRef = useRef(true);
@@ -241,7 +243,7 @@ export function TranslatorPopup() {
     }));
 
     try {
-      const result = await api.startCapture();
+      const result = await api.startCapture({ mode: liveTranslationCapture ? "live" : "frozen" });
       applySession(result);
     } catch (error) {
       showError(error, "Não foi possível iniciar a captura.");
@@ -453,7 +455,7 @@ export function TranslatorPopup() {
       handleClose();
       return;
     }
-    if (event.key === "Enter" && event.ctrlKey) {
+    if (event.key === "Enter" && isPrimaryShortcut(event)) {
       event.preventDefault();
       handleTranslate();
     }
@@ -671,7 +673,7 @@ export function TranslatorPopup() {
 
         <div className="space-y-1 text-center text-[9px] font-semibold text-[color:var(--outline)]">
           <p>OCR local · somente o texto é enviado para tradução</p>
-          <p id="translator-shortcut">Ctrl + Enter para traduzir · Esc para fechar</p>
+          <p id="translator-shortcut">{shortcutLabel("Mod+Enter")} para traduzir · Esc para fechar</p>
         </div>
       </div>
     </main>

@@ -28,6 +28,7 @@ const {
   protocol,
   session,
   shell,
+  systemPreferences,
 } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
@@ -88,13 +89,28 @@ protocol.registerSchemesAsPrivileged([
 app.enableSandbox();
 
 const isDev = !app.isPackaged;
+
+// Keep development isolated from the installed StudyHub application. Electron's
+// single-instance lock is tied to the user-data directory; sharing it caused
+// `npm run dev` to exit silently whenever the packaged app was still in the
+// menu bar. A separate profile also prevents development settings from
+// overwriting the user's installed-app data.
+if (isDev) {
+  app.setPath(
+    "userData",
+    path.join(app.getPath("appData"), "StudyHub-development"),
+  );
+}
+
 const execFileAsync = promisify(execFile);
 const APP_ICON_PATH = path.join(__dirname, "assets", "studyhub-icon.png");
+const MAC_TRAY_ICON_PATH = path.join(__dirname, "assets", "studyhub-tray-template.svg");
 const DEFAULT_QUICK_NOTE_SHORTCUT = "CommandOrControl+Shift+Alt+1";
 const DEFAULT_QUICK_DRAW_SHORTCUT = "CommandOrControl+Shift+Alt+2";
 const DEFAULT_TRANSLATOR_TEXT_SHORTCUT = "CommandOrControl+Shift+Alt+3";
 const DEFAULT_TRANSLATOR_OCR_SHORTCUT = "CommandOrControl+Shift+Alt+4";
 const DEFAULT_AI_FLASHCARD_SHORTCUT = "CommandOrControl+Shift+Alt+5";
+const DEFAULT_STICKY_NOTES_SHORTCUT = "CommandOrControl+Shift+Alt+6";
 let quickNoteWindow = null;
 let noteSearchWindow = null;
 let commandPaletteWindow = null;
@@ -102,10 +118,12 @@ let quickDrawWindow = null;
 let aiFlashcardWindow = null;
 const whiteboardWindows = new Map();
 const readerWindows = new Map();
+const stickyNoteWindows = new Map();
 let translatorWindow = null;
 let translatorCaptureWindow = null;
 let mainWindow = null;
 let pomodoroWidgetWindow = null;
+let trayPopoverWindow = null;
 const internalBrowserWindows = new Set();
 let tray = null;
 let isQuitting = false;
@@ -115,11 +133,19 @@ let quickDrawShortcut = DEFAULT_QUICK_DRAW_SHORTCUT;
 let translatorTextShortcut = DEFAULT_TRANSLATOR_TEXT_SHORTCUT;
 let translatorOcrShortcut = DEFAULT_TRANSLATOR_OCR_SHORTCUT;
 let aiFlashcardShortcut = DEFAULT_AI_FLASHCARD_SHORTCUT;
+let stickyNotesShortcut = DEFAULT_STICKY_NOTES_SHORTCUT;
+
+function requestAppQuit() {
+  if (isQuitting) return;
+  isQuitting = true;
+  app.quit();
+}
 let translatorService = null;
 let translatorCapture = null;
 let lastTranslatorImage = null;
 let translatorOperationId = 0;
 let returnToTranslatorAfterCapture = false;
+let translatorCaptureMode = "frozen";
 const UTILITY_WINDOW_TYPE = {
   QUICK_NOTE: "quick-note",
   QUICK_DRAW: "quick-draw",
@@ -318,7 +344,7 @@ ipcMain.handle("translator:speak", async (event, payload = {}) => {
     ? [["spd-say", ["-l", language || "en", text]], ["espeak-ng", ["-v", language || "en", text]], ["espeak", ["-v", language || "en", text]]]
     : [];
   const command = process.platform === "darwin" ? "say" : process.platform === "win32" ? "powershell.exe" : linuxCandidates[0]?.[0];
-  const args = process.platform === "darwin" ? [text] : process.platform === "win32" ? ["-NoProfile", "-Command", `Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.Speak(${JSON.stringify(text)})`] : linuxCandidates[0]?.[1];
+  const args = process.platform === "darwin" ? ["-v", language.startsWith("pt") ? "Luciana" : "Samantha", text] : process.platform === "win32" ? ["-NoProfile", "-Command", `Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.Speak(${JSON.stringify(text)})`] : linuxCandidates[0]?.[1];
   if (!command) return { ok: false, error: "Nenhum mecanismo de voz instalado. Instale espeak-ng ou speech-dispatcher." };
   return new Promise((resolve) => {
     const start = (index = 0) => {
@@ -504,9 +530,126 @@ ipcMain.handle("pomodoro:completed", (event, completion) => {
   }).show();
 });
 
+const SYSTEM_NOTIFICATION_SCREENS = new Set([
+  "tasks",
+  "flashcards",
+  "academic",
+  "pomodoro",
+]);
+
+ipcMain.handle("notifications:show", (event, payload = {}) => {
+  assertTrustedRenderer(event);
+  if (!Notification.isSupported()) return { shown: false, reason: "unsupported" };
+
+  const title = String(payload.title || "CampusFlow").trim().slice(0, 120);
+  const body = String(payload.body || "").trim().slice(0, 500);
+  const subtitle = String(payload.subtitle || "Seu assistente de estudos").trim().slice(0, 120);
+  const screenId = SYSTEM_NOTIFICATION_SCREENS.has(payload.screen) ? payload.screen : null;
+  if (!title || !body) return { shown: false, reason: "invalid-content" };
+
+  const notification = new Notification({
+    title,
+    subtitle,
+    body,
+    icon: APP_ICON_PATH,
+    silent: payload.sound === false,
+    timeoutType: payload.persistent ? "never" : "default",
+    closeButtonText: "Agora não",
+    actions: screenId ? [{ type: "button", text: String(payload.actionLabel || "Abrir") }] : [],
+  });
+  const openDestination = () => {
+    const win = showMainWindow();
+    if (!screenId || !win || win.isDestroyed()) return;
+    const send = () => win.webContents.send("mac-widgets:navigate", screenId);
+    if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
+    else send();
+  };
+  notification.on("click", openDestination);
+  notification.on("action", openDestination);
+  notification.show();
+  return { shown: true };
+});
+
+ipcMain.handle("tray-popover:action", (event, action) => {
+  assertTrustedRenderer(event);
+  trayPopoverWindow?.hide();
+  if (action === "quit") {
+    requestAppQuit();
+    return true;
+  }
+  if (action === "translate-text") {
+    showTranslatorPopup("text");
+    return true;
+  }
+  if (action === "translate-area") {
+    startTranslatorCapture();
+    return true;
+  }
+  if (action === "pomodoro-widget") {
+    openPomodoroWidgetWindow(event);
+    return true;
+  }
+  const win = showMainWindow();
+  if (action === "settings") {
+    win?.webContents.send("tray-popover:open-settings");
+  } else if (action === "open-app") {
+    win?.focus();
+  }
+  return true;
+});
+
+function resolveMacWidgetBridge() {
+  const candidates = [
+    path.join(process.resourcesPath || "", "native", "CampusFlowWidgetBridge"),
+    path.join(__dirname, "..", "native", "macos", "build", "CampusFlowWidgetBridge"),
+  ];
+  return candidates.find((candidate) => candidate && fs.existsSync(candidate)) || null;
+}
+
+function runMacWidgetBridge(state) {
+  return new Promise((resolve, reject) => {
+    const executable = resolveMacWidgetBridge();
+    if (!executable) {
+      resolve({ available: false, reason: "native-bridge-not-built" });
+      return;
+    }
+    const child = spawn(executable, [], { stdio: ["pipe", "pipe", "pipe"] });
+    let output = "";
+    let errorOutput = "";
+    const timeout = setTimeout(() => child.kill("SIGTERM"), 5_000);
+    child.stdout.on("data", (chunk) => { output += chunk; });
+    child.stderr.on("data", (chunk) => { errorOutput += chunk; });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      clearTimeout(timeout);
+      if (code === 0) resolve({ available: true, path: output.trim() });
+      else reject(new Error(errorOutput.trim() || `Widget bridge terminou com código ${code}.`));
+    });
+    child.stdin.end(JSON.stringify(state));
+  });
+}
+
+ipcMain.handle("mac-widgets:update", async (event, state = {}) => {
+  assertTrustedRenderer(event);
+  if (process.platform !== "darwin") return { available: false, reason: "macos-only" };
+  const serialized = JSON.stringify(state);
+  if (Buffer.byteLength(serialized, "utf8") > 128 * 1024) {
+    throw new Error("O estado enviado aos widgets excede o limite permitido.");
+  }
+  return runMacWidgetBridge(JSON.parse(serialized));
+});
+
 function normalizeShortcut(value, fallback) {
   const nextValue = `${value || ""}`.trim();
-  return nextValue || fallback;
+  if (!nextValue) return fallback;
+  // Global shortcuts must use the app's three-modifier namespace. This avoids
+  // taking over OS actions such as Spotlight, app switching, screenshots,
+  // window management and accessibility shortcuts.
+  const normalized = nextValue.toLowerCase();
+  const hasPrimary = normalized.includes("commandorcontrol") || normalized.includes("cmdorctrl");
+  const hasShift = normalized.includes("shift");
+  const hasAlt = normalized.includes("alt") || normalized.includes("option");
+  return hasPrimary && hasShift && hasAlt ? nextValue : fallback;
 }
 
 function showMainWindow() {
@@ -524,14 +667,33 @@ function showMainWindow() {
   return mainWindow;
 }
 
+function openStickyNotesScreen() {
+  const win = showMainWindow();
+  if (!win || win.isDestroyed()) return;
+  const navigate = () => win.webContents.send("mac-widgets:navigate", "sticky_notes");
+  if (win.webContents.isLoading()) win.webContents.once("did-finish-load", navigate);
+  else navigate();
+}
+
 function formatShortcutLabel(accelerator) {
-  return `${accelerator || ""}`
-    .replace("CommandOrControl", "Ctrl")
-    .replace("Super", "Win");
+  const value = `${accelerator || ""}`;
+  if (process.platform === "darwin") {
+    return value
+      .replace(/CommandOrControl|CmdOrCtrl|Command/g, "⌘")
+      .replace(/Control|Ctrl/g, "⌃")
+      .replace(/Shift/g, "⇧")
+      .replace(/Alt/g, "⌥")
+      .replaceAll("+", "");
+  }
+  return value.replace(/CommandOrControl|CmdOrCtrl/g, "Ctrl").replace("Super", "Win");
 }
 
 function refreshTrayMenu() {
   if (!tray) return;
+  if (process.platform === "darwin") {
+    tray.setContextMenu(null);
+    return;
+  }
   tray.setContextMenu(
     Menu.buildFromTemplate([
       { label: "Abrir StudyHub", click: showMainWindow },
@@ -547,13 +709,70 @@ function refreshTrayMenu() {
       { type: "separator" },
       {
         label: "Sair",
-        click: () => {
-          isQuitting = true;
-          app.quit();
-        },
+        accelerator: process.platform === "darwin" ? "Command+Q" : undefined,
+        click: requestAppQuit,
       },
     ]),
   );
+}
+
+function positionTrayPopover() {
+  if (!trayPopoverWindow || trayPopoverWindow.isDestroyed() || !tray) return;
+  const trayBounds = tray.getBounds();
+  const display = screen.getDisplayNearestPoint({ x: trayBounds.x, y: trayBounds.y });
+  const [width, height] = trayPopoverWindow.getSize();
+  const x = Math.round(Math.min(
+    display.workArea.x + display.workArea.width - width - 8,
+    Math.max(display.workArea.x + 8, trayBounds.x + trayBounds.width / 2 - width / 2),
+  ));
+  const y = Math.round(trayBounds.y + trayBounds.height + 6);
+  trayPopoverWindow.setPosition(x, y, false);
+}
+
+function createTrayPopover() {
+  if (process.platform !== "darwin") return null;
+  if (trayPopoverWindow && !trayPopoverWindow.isDestroyed()) return trayPopoverWindow;
+  trayPopoverWindow = new BrowserWindow({
+    width: 430,
+    height: 650,
+    show: false,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    hasShadow: true,
+    backgroundColor: "#00000000",
+    webPreferences: {
+      preload: path.join(__dirname, "preload.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+    },
+  });
+  trayPopoverWindow.removeMenu();
+  hardenStudyHubWindow(trayPopoverWindow);
+  loadStudyHubWindow(trayPopoverWindow, "screen=tray_popover&standalone=1");
+  trayPopoverWindow.on("blur", () => trayPopoverWindow?.hide());
+  trayPopoverWindow.on("closed", () => { trayPopoverWindow = null; });
+  return trayPopoverWindow;
+}
+
+function toggleTrayPopover() {
+  const win = createTrayPopover();
+  if (!win) return;
+  if (win.isVisible()) {
+    win.hide();
+    return;
+  }
+  positionTrayPopover();
+  win.show();
+  win.focus();
 }
 
 function createTray() {
@@ -561,12 +780,22 @@ function createTray() {
     return tray;
   }
 
-  const icon = nativeImage.createFromPath(APP_ICON_PATH);
+  // Use the packaged PNG on macOS. The SVG template renders as a blank
+  // square on some macOS versions, while the PNG keeps the StudyHub mark.
+  let icon = nativeImage.createFromPath(APP_ICON_PATH);
+  if (process.platform === "darwin") {
+    icon = icon.resize({ width: 18, height: 18, quality: "best" });
+  }
 
   tray = new Tray(icon);
-  tray.setToolTip("StudyHub");
+  tray.setToolTip("CampusFlow");
   refreshTrayMenu();
-  tray.on("double-click", showMainWindow);
+  if (process.platform === "darwin") {
+    tray.on("click", toggleTrayPopover);
+    tray.on("right-click", toggleTrayPopover);
+  } else {
+    tray.on("double-click", showMainWindow);
+  }
   return tray;
 }
 
@@ -706,7 +935,7 @@ function setupApplicationMenu() {
               { role: "hideOthers" },
               { role: "unhide" },
               { type: "separator" },
-              { role: "quit" },
+              { label: `Encerrar ${app.name}`, accelerator: "Command+Q", click: requestAppQuit },
             ],
           },
         ]
@@ -734,7 +963,7 @@ function setupApplicationMenu() {
         { label: "Aumentar Zoom", accelerator: "CmdOrCtrl+=", role: "zoomIn" },
         { label: "Diminuir Zoom", accelerator: "CmdOrCtrl+-", role: "zoomOut" },
         { type: "separator" },
-        { label: "Alternar tela cheia", accelerator: "F11", role: "togglefullscreen" },
+        { label: "Alternar tela cheia", accelerator: isMac ? "Ctrl+Command+F" : "F11", role: "togglefullscreen" },
       ],
     },
     {
@@ -1143,12 +1372,50 @@ async function captureDisplayImage(display) {
     fetchWindowIcons: false,
   });
   const source = chooseDisplaySource(sources, display);
-  return source?.thumbnail || null;
+  const image = source?.thumbnail || null;
+  if (!image || image.isEmpty()) {
+    const permission = process.platform === "darwin"
+      ? systemPreferences.getMediaAccessStatus?.("screen")
+      : null;
+    const error = new Error(
+      permission === "denied"
+        ? "O macOS bloqueou a Gravação de Tela para o StudyHub. Desative e ative novamente a permissão e reinicie o app."
+        : "O macOS não forneceu uma imagem da tela. Feche completamente o StudyHub e tente novamente."
+    );
+    error.code = "CAPTURE_EMPTY";
+    throw error;
+  }
+  return image;
 }
 
-async function startTranslatorCapture() {
+function cropDisplaySelection(image, selection, display) {
+  const imageSize = image.getSize();
+  const viewportWidth = Math.max(1, display.bounds.width);
+  const viewportHeight = Math.max(1, display.bounds.height);
+  const scaleX = imageSize.width / viewportWidth;
+  const scaleY = imageSize.height / viewportHeight;
+  const x = Math.max(0, Math.min(imageSize.width - 1, Math.round(Number(selection?.x || 0) * scaleX)));
+  const y = Math.max(0, Math.min(imageSize.height - 1, Math.round(Number(selection?.y || 0) * scaleY)));
+  const width = Math.max(1, Math.min(imageSize.width - x, Math.round(Number(selection?.width || 0) * scaleX)));
+  const height = Math.max(1, Math.min(imageSize.height - y, Math.round(Number(selection?.height || 0) * scaleY)));
+  if (width < 2 || height < 2) {
+    const error = new Error("Selecione uma área maior para traduzir.");
+    error.code = "CAPTURE_SELECTION_TOO_SMALL";
+    throw error;
+  }
+  return image.crop({ x, y, width, height }).toPNG();
+}
+
+async function startTranslatorCapture(options = {}) {
   translatorOperationId += 1;
   closeTranslatorCapture();
+  const requestedMode = typeof options === "string" ? options : options?.mode;
+  if (requestedMode === "live" || requestedMode === "frozen") {
+    translatorCaptureMode = requestedMode;
+  }
+  // Linux portals generally require choosing/capturing a source before an
+  // overlay can be shown, so the reliable frozen workflow remains the fallback.
+  const liveCapture = translatorCaptureMode === "live" && process.platform !== "linux";
   returnToTranslatorAfterCapture = Boolean(
     translatorWindow &&
       !translatorWindow.isDestroyed() &&
@@ -1163,9 +1430,9 @@ async function startTranslatorCapture() {
   try {
     const cursor = screen.getCursorScreenPoint();
     const display = screen.getDisplayNearestPoint(cursor);
-    const captureImage = await captureDisplayImage(display);
+    const captureImage = liveCapture ? null : await captureDisplayImage(display);
 
-    if (!captureImage || captureImage.isEmpty()) {
+    if (!liveCapture && (!captureImage || captureImage.isEmpty())) {
       const error = new Error(
         process.platform === "linux"
           ? "O portal de captura do Linux nao forneceu uma imagem. Autorize o compartilhamento da tela quando solicitado."
@@ -1175,12 +1442,16 @@ async function startTranslatorCapture() {
       throw error;
     }
 
-    const imageSize = captureImage.getSize();
+    const imageSize = captureImage?.getSize() || {
+      width: Math.ceil(display.bounds.width * (display.scaleFactor || 1)),
+      height: Math.ceil(display.bounds.height * (display.scaleFactor || 1)),
+    };
     translatorCapture = {
       displayId: `${display.id}`,
-      imageDataUrl: captureImage.toDataURL(),
+      imageDataUrl: captureImage?.toDataURL() || "",
       imageSize,
       bounds: { ...display.bounds },
+      live: liveCapture,
     };
 
     const win = new BrowserWindow({
@@ -1190,14 +1461,15 @@ async function startTranslatorCapture() {
       height: display.bounds.height,
       show: false,
       frame: false,
-      transparent: false,
+      transparent: liveCapture,
+      hasShadow: false,
       alwaysOnTop: true,
       skipTaskbar: true,
       movable: false,
       resizable: false,
       fullscreenable: false,
       autoHideMenuBar: true,
-      backgroundColor: "#09070f",
+      backgroundColor: liveCapture ? "#00000000" : "#09070f",
       icon: APP_ICON_PATH,
       title: "Selecionar texto da tela - StudyHub",
       webPreferences: {
@@ -1453,7 +1725,7 @@ function registerTranslatorIpc() {
     }
   });
 
-  ipcMain.handle("translator:complete-selection", (event, payload = {}) => {
+  ipcMain.handle("translator:complete-selection", async (event, payload = {}) => {
     assertTrustedRenderer(event);
     const senderWindow = BrowserWindow.fromWebContents(event.sender);
     if (
@@ -1467,7 +1739,32 @@ function registerTranslatorIpc() {
       throw error;
     }
 
-    const imageBuffer = decodeTranslatorImage(payload.imageDataUrl);
+    let imageBuffer;
+    if (translatorCapture?.live) {
+      const display = screen.getAllDisplays().find(
+        (item) => `${item.id}` === `${senderWindow.studyhubDisplayId}`,
+      );
+      if (!display) throw new Error("A tela selecionada não está mais disponível.");
+      senderWindow.hide();
+      // Wait for the compositor to remove the transparent overlay before the
+      // final screenshot, otherwise the selection frame would enter the OCR.
+      await new Promise((resolve) => setTimeout(resolve, 90));
+      try {
+        const captureImage = await captureDisplayImage(display);
+        if (!captureImage || captureImage.isEmpty()) {
+          throw new Error("O sistema não forneceu a captura da área selecionada.");
+        }
+        imageBuffer = cropDisplaySelection(captureImage, payload.selection, display);
+      } catch (error) {
+        if (!senderWindow.isDestroyed()) {
+          senderWindow.show();
+          senderWindow.focus();
+        }
+        throw error;
+      }
+    } else {
+      imageBuffer = decodeTranslatorImage(payload.imageDataUrl);
+    }
     lastTranslatorImage = imageBuffer;
     setImmediate(() => {
       returnToTranslatorAfterCapture = false;
@@ -1502,9 +1799,15 @@ function registerTranslatorIpc() {
     return true;
   });
 
-  ipcMain.handle("translator:start-capture", async (event) => {
+  ipcMain.handle("translator:set-capture-mode", (event, mode) => {
     assertTrustedRenderer(event);
-    await startTranslatorCapture();
+    translatorCaptureMode = mode === "live" ? "live" : "frozen";
+    return translatorCaptureMode;
+  });
+
+  ipcMain.handle("translator:start-capture", async (event, options = {}) => {
+    assertTrustedRenderer(event);
+    await startTranslatorCapture(options);
     return true;
   });
 
@@ -1630,6 +1933,47 @@ ipcMain.handle("window:openMainWindow", (event) => {
   showMainWindow();
 });
 
+ipcMain.handle("journal:send-to-apple", async (event, payload = {}) => {
+  assertTrustedRenderer(event);
+  const title = String(payload.title || "Entrada do StudyHub").trim();
+  const body = String(payload.body || payload.text || "").trim();
+  if (!body) throw new Error("A entrada do diário está vazia.");
+  if (process.platform !== "darwin") {
+    return { ok: false, error: "O Diário da Apple só está disponível no macOS." };
+  }
+  const inputPath = path.join(app.getPath("temp"), `studyhub-journal-${process.pid}-${Date.now()}.json`);
+  await fs.promises.writeFile(inputPath, JSON.stringify({
+    title,
+    body,
+    entryDate: payload.entryDate || new Date().toISOString(),
+    bookmarked: Boolean(payload.bookmarked),
+    mediaPaths: Array.isArray(payload.mediaPaths) ? payload.mediaPaths.filter(Boolean) : [],
+  }), "utf8");
+  try {
+    const bridgeCandidates = [
+      path.join(process.resourcesPath || "", "native", "StudyHubJournalBridge"),
+      path.join(__dirname, "..", "native", "macos", "build", "StudyHubJournalBridge"),
+    ];
+    const bridgePath = bridgeCandidates.find((candidate) => candidate && fs.existsSync(candidate));
+    if (!bridgePath) {
+      const missingBridge = new Error("O componente nativo do Diário não foi encontrado. Gere novamente o aplicativo para macOS.");
+      missingBridge.code = "APPLE_JOURNAL_BRIDGE_MISSING";
+      throw missingBridge;
+    }
+    await execFileAsync(bridgePath, [inputPath], { timeout: 35_000 });
+    return { ok: true, engine: "native-sharing-service" };
+  } catch (error) {
+    if (error?.code === "APPLE_JOURNAL_BRIDGE_MISSING") throw error;
+    const details = String(error?.stderr || error?.message || "").trim();
+    const nativeError = new Error(details || "O Diário da Apple não confirmou a criação da entrada.");
+    nativeError.code = "APPLE_JOURNAL_SHARE_FAILED";
+    nativeError.cause = error;
+    throw nativeError;
+  } finally {
+    await fs.promises.unlink(inputPath).catch(() => {});
+  }
+});
+
 ipcMain.handle("window:isMaximized", (event) => {
   return getSenderWindow(event)?.isMaximized() ?? false;
 });
@@ -1648,10 +1992,15 @@ ipcMain.handle("dialog:openDirectory", async (event) => {
   const rootName = path.basename(dirPath);
   const filesList = [];
 
+  const shouldIgnoreDirectoryEntry = (name) =>
+    !name || name.startsWith(".") || name === "__MACOSX" ||
+    name === "node_modules" || name === ".git" || /\.app$/i.test(name);
+
   function walkSync(currentDirPath) {
     if (filesList.length >= 10000) return;
     fs.readdirSync(currentDirPath).forEach(function (name) {
       if (filesList.length >= 10000) return;
+      if (shouldIgnoreDirectoryEntry(name)) return;
       const filePath = path.join(currentDirPath, name);
       const stat = fs.lstatSync(filePath);
       if (stat.isSymbolicLink()) return;
@@ -1678,10 +2027,14 @@ ipcMain.handle("dialog:scanDirectory", async (event, directoryPath) => {
   const stat = fs.statSync(dirPath);
   if (!stat.isDirectory()) throw new Error("A pasta vinculada não está disponível.");
   const filesList = [];
+  const shouldIgnoreDirectoryEntry = (name) =>
+    !name || name.startsWith(".") || name === "__MACOSX" ||
+    name === "node_modules" || name === ".git" || /\.app$/i.test(name);
   const walkSync = (currentDirPath) => {
     if (filesList.length >= 10000) return;
     fs.readdirSync(currentDirPath).forEach((name) => {
       if (filesList.length >= 10000) return;
+      if (shouldIgnoreDirectoryEntry(name)) return;
       const filePath = path.join(currentDirPath, name);
       const fileStat = fs.lstatSync(filePath);
       if (fileStat.isSymbolicLink()) return;
@@ -1845,7 +2198,7 @@ ipcMain.handle("window:openBookReader", async (event, bookId) => {
   loadStudyHubWindow(readerWin, query);
 });
 
-ipcMain.handle("window:openPomodoroWidget", async (event) => {
+async function openPomodoroWidgetWindow(event) {
   assertTrustedRenderer(event);
   if (pomodoroWidgetWindow && !pomodoroWidgetWindow.isDestroyed()) {
     pomodoroWidgetWindow.setAlwaysOnTop(true, "screen-saver", 1);
@@ -1908,6 +2261,125 @@ ipcMain.handle("window:openPomodoroWidget", async (event) => {
   });
 
   loadStudyHubWindow(widgetWin, "screen=pomodoro_widget");
+}
+
+ipcMain.handle("window:openPomodoroWidget", (event) => openPomodoroWidgetWindow(event));
+
+function normalizeStickyNoteId(value) {
+  const noteId = String(value || "").trim();
+  if (!/^[A-Za-z0-9._-]{1,200}$/.test(noteId)) {
+    throw new Error("Identificador de Sticky Note inválido.");
+  }
+  return noteId;
+}
+
+function setStickyNoteAlwaysOnTop(win, enabled) {
+  if (!win || win.isDestroyed()) return false;
+  const alwaysOnTop = Boolean(enabled);
+  win.setAlwaysOnTop(alwaysOnTop, alwaysOnTop ? "floating" : "normal");
+  if (process.platform === "darwin") {
+    win.setVisibleOnAllWorkspaces(alwaysOnTop, {
+      visibleOnFullScreen: alwaysOnTop,
+    });
+  }
+  if (alwaysOnTop) win.moveTop();
+  return alwaysOnTop;
+}
+
+ipcMain.handle("sticky-notes:open", (event, noteIdValue, options = {}) => {
+  assertTrustedRenderer(event);
+  const noteId = normalizeStickyNoteId(noteIdValue);
+  const existingWindow = stickyNoteWindows.get(noteId);
+  if (existingWindow && !existingWindow.isDestroyed()) {
+    setStickyNoteAlwaysOnTop(existingWindow, options.alwaysOnTop);
+    if (existingWindow.isMinimized()) existingWindow.restore();
+    existingWindow.show();
+    existingWindow.focus();
+    return { opened: true, reused: true };
+  }
+
+  const cursor = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursor);
+  const area = display.workArea;
+  const width = 340;
+  const height = 360;
+  const noteWin = new BrowserWindow({
+    width,
+    height,
+    x: Math.round(Math.min(area.x + area.width - width, Math.max(area.x, cursor.x - width / 2))),
+    y: Math.round(Math.min(area.y + area.height - height, Math.max(area.y, cursor.y + 18))),
+    minWidth: 240,
+    minHeight: 220,
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+    show: false,
+    resizable: true,
+    maximizable: false,
+    fullscreenable: false,
+    hasShadow: true,
+    alwaysOnTop: Boolean(options.alwaysOnTop),
+    icon: APP_ICON_PATH,
+    title: "Sticky Note - StudyHub",
+    webPreferences: {
+      preload: path.join(__dirname, "preload.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+    },
+  });
+
+  noteWin.removeMenu();
+  noteWin.studyhubUtilityType = `sticky-note:${noteId}`;
+  noteWin.studyhubStickyNoteId = noteId;
+  wireWindowStateEvents(noteWin);
+  setStickyNoteAlwaysOnTop(noteWin, options.alwaysOnTop);
+  stickyNoteWindows.set(noteId, noteWin);
+  noteWin.once("ready-to-show", () => {
+    if (!noteWin.isDestroyed()) {
+      noteWin.show();
+      noteWin.focus();
+    }
+  });
+  noteWin.on("closed", () => {
+    if (stickyNoteWindows.get(noteId) === noteWin) {
+      stickyNoteWindows.delete(noteId);
+    }
+  });
+  loadStudyHubWindow(
+    noteWin,
+    `screen=sticky_note_widget&standalone=1&noteId=${encodeURIComponent(noteId)}`,
+  );
+  return { opened: true, reused: false };
+});
+
+ipcMain.handle("sticky-notes:set-always-on-top", (event, enabled) => {
+  const win = getSenderWindow(event);
+  if (!win?.studyhubStickyNoteId) return false;
+  return setStickyNoteAlwaysOnTop(win, enabled);
+});
+
+ipcMain.handle("sticky-notes:changed", (event, change = {}) => {
+  assertTrustedRenderer(event);
+  const noteId = normalizeStickyNoteId(change.noteId);
+  const safeChange = {
+    type: change.type === "deleted" ? "deleted" : "updated",
+    noteId,
+    updates: change.type === "deleted" ? undefined : {
+      ...(typeof change.updates === "object" && change.updates ? change.updates : {}),
+    },
+  };
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed() && win.webContents !== event.sender) {
+      win.webContents.send("sticky-notes:changed", safeChange);
+    }
+  }
+  if (safeChange.type === "deleted") {
+    const noteWin = stickyNoteWindows.get(noteId);
+    if (noteWin && !noteWin.isDestroyed()) noteWin.close();
+  }
+  return true;
 });
 
 function createQuickNoteWindow() {
@@ -2189,7 +2661,8 @@ function registerGlobalShortcuts() {
   };
 
   const registrations = [
-    ["commandPaletteShortcut", "CommandOrControl+Space", openCommandPalette],
+    ["commandPaletteShortcut", "CommandOrControl+Shift+Alt+0", openCommandPalette],
+    ["stickyNotesShortcut", stickyNotesShortcut, openStickyNotesScreen],
     [
       "quickNoteShortcut",
       quickNoteShortcut,
@@ -2262,6 +2735,28 @@ function requestedStudyHubAction(commandLine = process.argv) {
   return argument ? `${argument}`.slice("--studyhub-action=".length) : "";
 }
 
+function campusFlowUrlFromCommandLine(commandLine = process.argv) {
+  return commandLine.find((value) => `${value}`.startsWith("campusflow://")) || "";
+}
+
+function openCampusFlowUrl(rawUrl) {
+  let targetScreen = "";
+  try {
+    const parsed = new URL(rawUrl);
+    const destination = `${parsed.hostname || parsed.pathname}`.replace(/^\//, "");
+    if (destination === "tasks") targetScreen = "tasks";
+    if (destination === "pomodoro") targetScreen = "pomodoro";
+  } catch {
+    return false;
+  }
+  if (!targetScreen) return false;
+  const win = showMainWindow();
+  const send = () => win?.webContents?.send("mac-widgets:navigate", targetScreen);
+  if (win?.webContents?.isLoading()) win.webContents.once("did-finish-load", send);
+  else send();
+  return true;
+}
+
 function performStudyHubAction(action) {
   switch (action) {
     case "quick-note":
@@ -2302,6 +2797,7 @@ ipcMain.handle("shortcuts:update", async (event, nextShortcuts = {}) => {
     aiFlashcardShortcut,
     translatorTextShortcut,
     translatorOcrShortcut,
+    stickyNotesShortcut,
   };
   quickNoteShortcut = normalizeShortcut(
     nextShortcuts.quickNoteShortcut,
@@ -2323,6 +2819,10 @@ ipcMain.handle("shortcuts:update", async (event, nextShortcuts = {}) => {
     nextShortcuts.translatorOcrShortcut,
     translatorOcrShortcut || DEFAULT_TRANSLATOR_OCR_SHORTCUT,
   );
+  stickyNotesShortcut = normalizeShortcut(
+    nextShortcuts.stickyNotesShortcut,
+    stickyNotesShortcut || DEFAULT_STICKY_NOTES_SHORTCUT,
+  );
   const registrationStatus = registerGlobalShortcuts();
   const conflicts = Object.entries(registrationStatus)
     .filter(([, value]) => !value.registered)
@@ -2334,6 +2834,7 @@ ipcMain.handle("shortcuts:update", async (event, nextShortcuts = {}) => {
     aiFlashcardShortcut = previousShortcuts.aiFlashcardShortcut;
     translatorTextShortcut = previousShortcuts.translatorTextShortcut;
     translatorOcrShortcut = previousShortcuts.translatorOcrShortcut;
+    stickyNotesShortcut = previousShortcuts.stickyNotesShortcut;
     registerGlobalShortcuts();
 
     return {
@@ -2351,6 +2852,7 @@ ipcMain.handle("shortcuts:update", async (event, nextShortcuts = {}) => {
     quickDrawShortcut,
     translatorTextShortcut,
     translatorOcrShortcut,
+    stickyNotesShortcut,
     applied: true,
     conflicts: [],
     registrationStatus,
@@ -2383,6 +2885,29 @@ function createWindow() {
   wireWindowStateEvents(win);
   mainWindow = win;
 
+  if (isDev) {
+    win.webContents.on("console-message", (_event, details, message, line, sourceId) => {
+      if (details && typeof details === "object") {
+        console.log(`[renderer:${details.level || "log"}] ${details.message || ""}`);
+        return;
+      }
+      console.log(`[renderer:${details}] ${message || ""} (${sourceId || "renderer"}:${line || 0})`);
+    });
+    win.webContents.on(
+      "did-fail-load",
+      (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+        if (isMainFrame !== false) {
+          console.error(
+            `[renderer] Falha ao carregar ${validatedURL}: ${errorCode} ${errorDescription}`,
+          );
+        }
+      },
+    );
+    win.webContents.on("render-process-gone", (_event, details) => {
+      console.error(`[renderer] Processo encerrado: ${details?.reason || "desconhecido"}`);
+    });
+  }
+
   // The close control sends the app to the tray. Utility windows and the
   // Pomodoro widget remain independent, and global shortcuts keep working.
   win.on("close", (event) => {
@@ -2399,7 +2924,9 @@ function createWindow() {
   });
 
   if (isDev) {
-    win.loadURL("http://127.0.0.1:5173");
+    win.loadURL("http://127.0.0.1:5173").catch((error) => {
+      console.error(`[renderer] Não foi possível abrir a interface: ${error.message}`);
+    });
   } else {
     win.loadFile(path.join(__dirname, "..", "dist", "index.html"));
   }
@@ -2485,21 +3012,48 @@ function startLocalBridgeServer() {
 }
 
 const initialStudyHubAction = requestedStudyHubAction();
-const hasSingleInstanceLock = app.requestSingleInstanceLock({
-  studyhubAction: initialStudyHubAction,
-});
+// The packaged app remains single-instance. Development must allow a fresh
+// Electron process because an older dev window can outlive its Vite server;
+// rejecting the new process made the dev runner shut the new server down and
+// left the surviving window permanently blank.
+const hasSingleInstanceLock = isDev
+  ? true
+  : app.requestSingleInstanceLock({
+      studyhubAction: initialStudyHubAction,
+    });
 
 if (!hasSingleInstanceLock) {
   app.quit();
 } else {
   app.on("second-instance", (_event, commandLine, _workingDirectory, data) => {
+    const deepLink = campusFlowUrlFromCommandLine(commandLine);
+    if (deepLink && app.isReady()) {
+      openCampusFlowUrl(deepLink);
+      return;
+    }
     const action = data?.studyhubAction || requestedStudyHubAction(commandLine);
-    if (app.isReady()) performStudyHubAction(action);
+    if (app.isReady()) {
+      if (action) {
+        performStudyHubAction(action);
+      } else {
+        if (isDev && mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.reloadIgnoringCache();
+        }
+        showMainWindow();
+      }
+    }
   });
 }
 
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  if (app.isReady()) openCampusFlowUrl(url);
+  else app.once("ready", () => openCampusFlowUrl(url));
+});
+
 app.whenReady().then(() => {
   if (!hasSingleInstanceLock) return;
+  app.setAsDefaultProtocolClient("campusflow");
   setupApplicationMenu();
   loadPathGrants();
   const authorizeRenderer = (event) => {
@@ -2545,6 +3099,12 @@ app.whenReady().then(() => {
   app.on("activate", () => {
     showMainWindow();
   });
+});
+
+app.on("before-quit", () => {
+  // The native macOS quit paths reach this event before BrowserWindow's
+  // close handler. Without this flag, closing is mistaken for "hide to tray".
+  isQuitting = true;
 });
 
 app.on("window-all-closed", () => {

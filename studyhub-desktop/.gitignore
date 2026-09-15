@@ -4,6 +4,7 @@
 !.env.example
 .npm-cache/
 node_modules/
+native/macos/build/
 dist/
 release/
 release-*/

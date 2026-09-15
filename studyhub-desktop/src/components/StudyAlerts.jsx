@@ -5,6 +5,7 @@ import { SCREEN_IDS } from "../app/screenIds";
 import { calculateAttendance, getAcademicSemesterData } from "../domain/academic";
 
 const DISMISSED_ALERTS_KEY = "studyhub.dismissed-alerts";
+const SYSTEM_ALERTS_KEY = "studyhub.system-alerts-sent";
 
 function getDismissedAlerts() {
   try {
@@ -18,6 +19,7 @@ export function StudyAlerts({ onNavigate }) {
   const tasks = useStudyStore((state) => state.tasks.list);
   const flashcardDecks = useStudyStore((state) => state.flashcardDecks);
   const academicState = useStudyStore((state) => state.academic);
+  const appSettings = useStudyStore((state) => state.appSettings || {});
   const academic = useMemo(
     () => getAcademicSemesterData(academicState),
     [academicState],
@@ -132,6 +134,50 @@ export function StudyAlerts({ onNavigate }) {
   }, [dismissedAlerts]);
 
   const visibleAlerts = alerts.filter((alert) => !dismissedAlerts.includes(alert.id));
+
+  useEffect(() => {
+    const notifications = window.studyhubDesktop?.notifications;
+    if (!notifications?.show || appSettings.notificationsEnabled === false) return;
+
+    const todayKey = new Date().toLocaleDateString("en-CA");
+    let sent = {};
+    try {
+      sent = JSON.parse(window.localStorage.getItem(SYSTEM_ALERTS_KEY) || "{}");
+    } catch {
+      sent = {};
+    }
+
+    visibleAlerts.forEach((alert) => {
+      if (alert.id === "flashcards-review" && appSettings.flashcardReviewReminders === false) return;
+      if (["overdue-tasks", "upcoming-tasks", "academic-exams"].includes(alert.id) && appSettings.taskDueReminders === false) return;
+      const deliveryKey = `${todayKey}:${alert.id}`;
+      if (sent[deliveryKey]) return;
+      sent[deliveryKey] = Date.now();
+      void notifications.show({
+        title: alert.title,
+        subtitle: alert.id === "flashcards-review" ? "CampusFlow • Revisão inteligente" : "CampusFlow • Planejamento acadêmico",
+        body: alert.message,
+        screen: alert.screen,
+        actionLabel: alert.id === "flashcards-review" ? "Revisar agora" : "Ver agora",
+        persistent: alert.tone === "error",
+        sound: appSettings.soundEnabled !== false,
+      }).catch(() => {
+        delete sent[deliveryKey];
+        window.localStorage.setItem(SYSTEM_ALERTS_KEY, JSON.stringify(sent));
+      });
+    });
+
+    const recentEntries = Object.fromEntries(
+      Object.entries(sent).filter(([, timestamp]) => Date.now() - Number(timestamp) < 8 * 24 * 60 * 60 * 1000),
+    );
+    window.localStorage.setItem(SYSTEM_ALERTS_KEY, JSON.stringify(recentEntries));
+  }, [
+    appSettings.flashcardReviewReminders,
+    appSettings.notificationsEnabled,
+    appSettings.soundEnabled,
+    appSettings.taskDueReminders,
+    visibleAlerts.map((alert) => alert.id).join("|"),
+  ]);
 
   if (visibleAlerts.length === 0) return null;
 

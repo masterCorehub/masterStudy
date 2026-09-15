@@ -96,12 +96,19 @@ export function CaptureOverlay() {
       Promise.resolve(api.getCapture())
         .then((nextCapture) => {
           if (!mountedRef.current) return;
-          if (!nextCapture?.imageDataUrl) throw new Error("A imagem da tela não foi recebida.");
+          if (!nextCapture?.live && !nextCapture?.imageDataUrl) throw new Error("A imagem da tela não foi recebida.");
           setCapture({
             displayId: nextCapture.displayId,
             imageDataUrl: nextCapture.imageDataUrl,
+            live: Boolean(nextCapture.live),
           });
-          setPhase("loading");
+          if (nextCapture.live) {
+            setPhase("ready");
+            getTranslatorApi()?.captureReady?.();
+            globalThis.setTimeout(() => rootRef.current?.focus(), 0);
+          } else {
+            setPhase("loading");
+          }
         })
         .catch((captureError) => {
           if (!mountedRef.current) return;
@@ -136,7 +143,7 @@ export function CaptureOverlay() {
   const submitSelection = async (nextSelection) => {
     const api = getTranslatorApi();
     const rootBounds = rootRef.current?.getBoundingClientRect();
-    if (!api?.completeSelection || !capture || !rootBounds || !imageRef.current) {
+    if (!api?.completeSelection || !capture || !rootBounds || (!capture.live && !imageRef.current)) {
       setError("Não foi possível preparar esta seleção.");
       setPhase("error");
       return;
@@ -146,8 +153,14 @@ export function CaptureOverlay() {
     setError("");
 
     try {
-      const imageDataUrl = cropScreenshot(imageRef.current, nextSelection, rootBounds);
-      await api.completeSelection({ displayId: capture.displayId, imageDataUrl });
+      const imageDataUrl = capture.live
+        ? undefined
+        : cropScreenshot(imageRef.current, nextSelection, rootBounds);
+      await api.completeSelection({
+        displayId: capture.displayId,
+        imageDataUrl,
+        selection: nextSelection,
+      });
     } catch (selectionError) {
       if (!mountedRef.current) return;
       setError(selectionError?.message || "Não foi possível recortar esta área.");
@@ -209,7 +222,7 @@ export function CaptureOverlay() {
   return (
     <main
       aria-label="Seleção de área para tradução"
-      className={`relative h-screen w-screen select-none overflow-hidden bg-slate-950 outline-none ${phase === "ready" || phase === "error" ? "cursor-crosshair" : "cursor-wait"}`}
+      className={`translator-capture-overlay relative h-screen w-screen select-none overflow-hidden outline-none ${capture?.live ? "is-live bg-transparent" : "bg-slate-950"} ${phase === "ready" || phase === "error" ? "cursor-crosshair" : "cursor-wait"}`}
       onPointerCancel={handlePointerCancel}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -217,7 +230,7 @@ export function CaptureOverlay() {
       ref={rootRef}
       tabIndex={-1}
     >
-      {capture ? (
+      {capture && !capture.live ? (
         <img
           alt=""
           className="pointer-events-none absolute inset-0 h-full w-full object-fill"

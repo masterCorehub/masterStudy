@@ -3,10 +3,10 @@ const path = require("node:path");
 const os = require("node:os");
 const { spawn, execFileSync } = require("node:child_process");
 const {
-  chatWithOllama,
-  getOllamaStatus,
+  chatWithAi,
+  getAiStatus,
   startOllama,
-} = require("../ai/ollama-service.cjs");
+} = require("../ai/ai-provider-service.cjs");
 
 const moduleNames = [
   "Console e primeiros programas",
@@ -124,7 +124,7 @@ function registerCodeLabIpc({ ipcMain, app, authorizeSender }) {
     if (child) child.kill();
     return Boolean(child);
   });
-  register("ollama:status", () => getOllamaStatus());
+  register("ollama:status", () => getAiStatus(app));
   register("ollama:start", () => startOllama());
   register("ollama:chat", async (_event, payload = {}) => {
     const messages = (Array.isArray(payload.messages) ? payload.messages : [])
@@ -134,7 +134,7 @@ function registerCodeLabIpc({ ipcMain, app, authorizeSender }) {
         content: String(message?.content || "").slice(0, 20_000),
       }));
     try {
-      const data = await chatWithOllama({
+      const data = await chatWithAi(app, {
         model: String(payload.model || "").slice(0, 120),
         messages,
       });

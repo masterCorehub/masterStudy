@@ -4,6 +4,7 @@ import { SCREEN_IDS } from "../app/screenIds";
 import { useStudyStore } from "../store/useStore";
 import { buildSearchIndex } from "../domain/studySelectors";
 import { usePomodoroStore } from "../store/usePomodoroStore";
+import { isPrimaryShortcut, shortcutLabel } from "../utils/keyboardShortcuts";
 
 const screenId = (value) => value === "today" ? SCREEN_IDS.TODAY : value;
 
@@ -83,15 +84,8 @@ export function CommandPalette({ onNavigate, standalone = false, initialOpen = f
     };
 
     const handleKeyDown = (event) => {
-      // Global shortcut: Ctrl+Space, Ctrl+K or Ctrl+P
-      const isMac = typeof navigator !== "undefined" && navigator.platform?.toUpperCase().indexOf("MAC") >= 0;
-      const isModifier = isMac ? event.metaKey : event.ctrlKey;
-      
-      if (
-        (isModifier && event.code === "Space") ||
-        (isModifier && !event.shiftKey && event.key.toLowerCase() === "k") ||
-        (isModifier && event.key.toLowerCase() === "p")
-      ) {
+      // Cmd/Ctrl+K is app-scoped and does not override Spotlight or Print.
+      if (isPrimaryShortcut(event) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === "k") {
         event.preventDefault();
         event.stopPropagation();
         setOpen((prev) => !prev);
@@ -370,7 +364,7 @@ export function CommandPalette({ onNavigate, standalone = false, initialOpen = f
               />
               <div className="flex items-center gap-1.5">
                 <kbd className="rounded-lg px-2 py-1 text-[11px] font-mono font-bold text-[color:var(--on-surface-variant)] neo-inset">
-                  Ctrl + Espaço
+                  {shortcutLabel("Mod+K")}
                 </kbd>
                 <kbd className="rounded-lg px-2 py-1 text-[11px] font-mono font-bold text-[color:var(--on-surface-variant)] neo-inset">
                   Esc
@@ -491,7 +485,7 @@ export function CommandPalette({ onNavigate, standalone = false, initialOpen = f
               </div>
               <div className="flex items-center gap-1.5 text-xs text-[color:var(--primary)] font-bold">
                 <Icon name="auto_awesome" className="text-sm" />
-                <span>Atalho: Ctrl + Espaço / Ctrl + K</span>
+                <span>Atalho: {shortcutLabel("Mod+K")}</span>
               </div>
             </div>
           </div>
@@ -500,4 +494,3 @@ export function CommandPalette({ onNavigate, standalone = false, initialOpen = f
     </>
   );
 }
-

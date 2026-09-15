@@ -3,6 +3,7 @@ import { Icon } from "../ui/Icon";
 import { SCREEN_IDS } from "../app/screenIds";
 import { useStudyStore } from "../store/useStore";
 import { SettingsModal, ALL_SIDEBAR_ITEMS } from "../components/settings/SettingsModal";
+import { isPrimaryShortcut, shortcutLabel } from "../utils/keyboardShortcuts";
 
 export function StandardSidebar({
   activeScreen,
@@ -26,10 +27,10 @@ export function StandardSidebar({
   const closeSettingsModal = useStudyStore((state) => state.closeSettingsModal);
   const settingsModalInitialTab = useStudyStore((state) => state.settingsModalInitialTab || "sidebar");
 
-  // Atalho global Ctrl + , para abrir Configurações
+  // Atalho local Cmd/Ctrl + , para abrir Configurações
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === ",") {
+      if (isPrimaryShortcut(e) && e.key === ",") {
         e.preventDefault();
         openSettingsModal();
       }
@@ -182,7 +183,7 @@ export function StandardSidebar({
           {/* Botão Único de Configurações no Rodapé da Sidebar */}
           <button
             type="button"
-            title="Configurações (Ctrl + ,)"
+            title={`Configurações (${shortcutLabel("Mod+,")})`}
             onClick={() => openSettingsModal("sidebar")}
             className={`group flex w-full items-center rounded-2xl border p-2.5 text-sm transition-all ${
               isCompact ? "justify-center p-2" : "gap-3 text-left"
@@ -265,6 +266,7 @@ export function StandardSidebar({
         isOpen={isSettingsModalOpen}
         onClose={closeSettingsModal}
         initialTab={settingsModalInitialTab}
+        onNavigate={onNavigate}
       />
     </>
   );

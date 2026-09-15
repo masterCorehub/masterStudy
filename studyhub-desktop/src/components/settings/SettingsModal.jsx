@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Icon } from "../../ui/Icon";
 import { useStudyStore } from "../../store/useStore";
 import { SCREEN_IDS } from "../../app/screenIds";
 import { AccountScreen } from "../../screens/AccountScreen";
 import { THEMES, getThemeById } from "../../theme/themes";
+import { shortcutLabel } from "../../utils/keyboardShortcuts";
 
 export const ALL_SIDEBAR_ITEMS = [
   {
@@ -49,6 +50,13 @@ export const ALL_SIDEBAR_ITEMS = [
     description: "Diário de bordo, reflexões, humor e memórias",
   },
   {
+    key: "sticky-notes",
+    id: SCREEN_IDS.STICKY_NOTES,
+    label: "Sticky Notes",
+    icon: "sticky_note_2",
+    description: "Post-its rápidos com cores, fixação, busca e arquivamento",
+  },
+  {
     key: "knowledge",
     id: SCREEN_IDS.KNOWLEDGE_HUB,
     label: "Capturas & Hub",
@@ -65,24 +73,44 @@ export const ALL_SIDEBAR_ITEMS = [
 ];
 
 const DEFAULT_SHORTCUTS = [
-  { id: "quick_switcher", label: "Abrir nota rápida (Quick Switcher)", keys: "Ctrl + O", desc: "Busca instantânea de notas em todos os cofres" },
-  { id: "command_palette", label: "Paleta de Comandos", keys: "Ctrl + K", desc: "Acessa qualquer tela ou comando com a busca inteligente" },
-  { id: "new_note", label: "Criar nova nota", keys: "Ctrl + N", desc: "Cria uma nota imediatamente no cofre ativo" },
-  { id: "settings", label: "Abrir Configurações", keys: "Ctrl + ,", desc: "Abre o painel de personalização do StudyHub" },
-  { id: "toggle_sidebar", label: "Recolher / Expandir Menu", keys: "Ctrl + B", desc: "Alterna a visibilidade da barra lateral esquerda" },
-  { id: "focus_pomodoro", label: "Iniciar Sessão de Foco", keys: "Ctrl + P", desc: "Abre o cronômetro Pomodoro integrado" },
-  { id: "global_search", label: "Busca Global", keys: "Ctrl + Shift + F", desc: "Pesquisa em matérias, tarefas e livros" },
+  { id: "sticky_notes", label: "Abrir Sticky Notes", keys: "⌘⇧⌥6", desc: "Abre o mural de Sticky Notes mesmo com o StudyHub em segundo plano" },
+  { id: "quick_switcher", label: "Abrir nota rápida", keys: shortcutLabel("Mod+O"), desc: "Busca instantânea de notas em todos os cofres" },
+  { id: "command_palette", label: "Paleta de comandos", keys: shortcutLabel("Mod+K"), desc: "Acessa qualquer tela ou comando com a busca inteligente" },
+  { id: "settings", label: "Abrir configurações", keys: shortcutLabel("Mod+,"), desc: "Abre o painel de personalização do CampusFlow" },
+  { id: "save", label: "Salvar conteúdo", keys: shortcutLabel("Mod+S"), desc: "Salva a nota ou entrada do Diário atual" },
+  { id: "close_tab", label: "Fechar aba de nota", keys: shortcutLabel("Mod+W"), desc: "Fecha a aba ativa no editor de notas" },
+  { id: "knowledge_search", label: "Buscar no Hub", keys: shortcutLabel("Mod+/"), desc: "Leva o foco para a busca do Hub de conhecimento" },
+  { id: "quick_capture", label: "Adicionar ao Hub", keys: shortcutLabel("Mod+Shift+K"), desc: "Abre a captura rápida de conhecimento" },
 ];
 
-export function SettingsModal({ isOpen, onClose, initialTab = "sidebar" }) {
+const NOTIFICATION_TESTS = [
+  { id: "flashcards", icon: "style", title: "12 flashcards para revisar", subtitle: "CampusFlow • Revisão inteligente", body: "Uma revisão curta agora ajuda a fixar o conteúdo.", screen: SCREEN_IDS.FLASHCARDS, actionLabel: "Revisar agora" },
+  { id: "tasks", icon: "event_upcoming", title: "2 tarefas vencem hoje", subtitle: "CampusFlow • Planejamento acadêmico", body: "Confira seus prazos e escolha o próximo passo.", screen: SCREEN_IDS.TASKS, actionLabel: "Ver tarefas" },
+  { id: "exams", icon: "quiz", title: "Prova amanhã", subtitle: "CampusFlow • Calendário acadêmico", body: "Sua revisão final de Cálculo está programada para hoje.", screen: SCREEN_IDS.ACADEMIC, actionLabel: "Abrir calendário" },
+  { id: "attendance", icon: "warning", title: "Atenção à frequência", subtitle: "CampusFlow • Desempenho acadêmico", body: "Uma disciplina está próxima do limite mínimo de presença.", screen: SCREEN_IDS.ACADEMIC, actionLabel: "Ver frequência", persistent: true },
+  { id: "pomodoro", icon: "timer", title: "Ciclo de foco concluído", subtitle: "CampusFlow • Pomodoro", body: "Ótimo trabalho. Respire e aproveite seu intervalo.", screen: SCREEN_IDS.POMODORO, actionLabel: "Abrir Pomodoro" },
+];
+
+export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavigate }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [shortcutFilter, setShortcutFilter] = useState("");
+  const [notificationTestStatus, setNotificationTestStatus] = useState("");
+  const [aiConfig, setAiConfig] = useState({ provider: "ollama", geminiModel: "gemini-3.6-flash", geminiApiKey: "", geminiConfigured: false });
+  const [aiConfigStatus, setAiConfigStatus] = useState("");
+  const [aiConfigBusy, setAiConfigBusy] = useState(false);
 
   const store = useStudyStore();
   const themePreference = useStudyStore((state) => state.themePreference || "system");
   const setThemePreference = useStudyStore((state) => state.setThemePreference);
   const isDarkMode = useStudyStore((state) => state.isDarkMode);
   const [themeCategoryFilter, setThemeCategoryFilter] = useState("all");
+
+  useEffect(() => {
+    if (!isOpen || !window.studyhubDesktop?.academicAI?.getConfig) return;
+    window.studyhubDesktop.academicAI.getConfig().then((config) => {
+      setAiConfig((current) => ({ ...current, ...config, geminiApiKey: "" }));
+    }).catch(() => {});
+  }, [isOpen]);
 
   const sidebarOrder = useStudyStore((state) => state.sidebarOrder || [
     "dashboard",
@@ -100,6 +128,8 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar" }) {
     soundEnabled: true,
     pomodoroAutoBreak: false,
     taskDueReminders: true,
+    flashcardReviewReminders: true,
+    liveTranslationCapture: false,
   });
 
   const orderedSidebarItems = useMemo(() => {
@@ -137,6 +167,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar" }) {
         tasks: state.tasks || {},
         books: state.books || [],
         journalEntries: state.journalEntries || [],
+        stickyNotes: state.stickyNotes || [],
         flashcards: state.flashcards || [],
         customVaults: state.customVaults || [],
         vaultFolders: state.vaultFolders || [],
@@ -172,6 +203,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar" }) {
           if (parsed.tasks) useStudyStore.setState({ tasks: parsed.tasks });
           if (parsed.books) useStudyStore.setState({ books: parsed.books });
           if (parsed.journalEntries) useStudyStore.setState({ journalEntries: parsed.journalEntries });
+          if (parsed.stickyNotes) useStudyStore.setState({ stickyNotes: parsed.stickyNotes });
           if (parsed.flashcards) useStudyStore.setState({ flashcards: parsed.flashcards });
           if (parsed.customVaults) useStudyStore.setState({ customVaults: parsed.customVaults });
           if (parsed.vaultFolders) useStudyStore.setState({ vaultFolders: parsed.vaultFolders });
@@ -184,12 +216,35 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar" }) {
     reader.readAsText(file);
   };
 
+  const testSystemNotification = async (test) => {
+    const notifications = window.studyhubDesktop?.notifications;
+    if (!notifications?.show) {
+      setNotificationTestStatus("Os testes nativos estão disponíveis no aplicativo instalado para macOS.");
+      return;
+    }
+    setNotificationTestStatus(`Enviando teste de ${test.id}...`);
+    try {
+      const result = await notifications.show({
+        ...test,
+        sound: appSettings.soundEnabled !== false,
+      });
+      setNotificationTestStatus(
+        result?.shown
+          ? "Notificação enviada. Confira o canto superior direito ou a Central de Notificações."
+          : "O macOS não permitiu exibir a notificação. Verifique as permissões do StudyHub.",
+      );
+    } catch (error) {
+      setNotificationTestStatus(error?.message || "Não foi possível enviar a notificação.");
+    }
+  };
+
   if (!isOpen) return null;
 
   const tabs = [
     { id: "sidebar", label: "Barra Lateral", icon: "view_sidebar", count: orderedSidebarItems.length },
     { id: "appearance", label: "Aparência & Tema", icon: "palette" },
     { id: "account", label: "Minha Conta & Nuvem", icon: "account_circle" },
+    { id: "ai", label: "Inteligência Artificial", icon: "auto_awesome" },
     { id: "shortcuts", label: "Atalhos do Teclado", icon: "keyboard", count: DEFAULT_SHORTCUTS.length },
     { id: "notifications", label: "Notificações & Foco", icon: "notifications" },
     { id: "data", label: "Dados & Backup", icon: "cloud_sync" },
@@ -544,7 +599,50 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar" }) {
               </div>
             )}
 
-            {/* 5. NOTIFICAÇÕES & FOCO */}
+            {activeTab === "ai" && (
+              <div className="flex flex-col gap-6">
+                <div>
+                  <h3 className="text-base font-bold text-[color:var(--on-surface)]">Provedor de inteligência artificial</h3>
+                  <p className="mt-0.5 text-xs text-[color:var(--on-surface-variant)]">Escolha entre processamento local com Ollama ou Gemini pela API do Google.</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: "ollama", title: "Ollama local", desc: "Privado e offline; usa os modelos instalados no computador.", icon: "computer" },
+                    { id: "gemini", title: "Google Gemini", desc: "Usa a nuvem e pode gerar custos conforme sua conta Google.", icon: "auto_awesome" },
+                  ].map((provider) => (
+                    <button className={`rounded-2xl border p-4 text-left transition ${aiConfig.provider === provider.id ? "border-[color:var(--primary)] bg-[color:var(--primary)]/10" : "border-[color:var(--outline-variant)]/40 bg-[color:var(--surface-container-low)] hover:border-[color:var(--primary)]/40"}`} key={provider.id} onClick={() => setAiConfig((current) => ({ ...current, provider: provider.id }))} type="button">
+                      <Icon className="text-[22px] text-[color:var(--primary)]" name={provider.icon} />
+                      <strong className="mt-3 block text-sm">{provider.title}</strong>
+                      <span className="mt-1 block text-[11px] leading-5 text-[color:var(--on-surface-variant)]">{provider.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {aiConfig.provider === "gemini" && (
+                  <div className="space-y-4 rounded-2xl border border-[color:var(--outline-variant)]/40 bg-[color:var(--surface-container-low)] p-5">
+                    <div>
+                      <label className="mb-2 block text-xs font-bold">Chave da API Gemini</label>
+                      <input autoComplete="off" className="w-full rounded-xl border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-4 py-3 text-sm outline-none focus:border-[color:var(--primary)]" onChange={(event) => setAiConfig((current) => ({ ...current, geminiApiKey: event.target.value }))} placeholder={aiConfig.geminiConfigured ? "Chave já protegida — digite apenas para substituir" : "Cole sua chave do Google AI Studio"} type="password" value={aiConfig.geminiApiKey} />
+                      <p className="mt-2 text-[11px] text-[color:var(--on-surface-variant)]">A chave fica criptografada pelo armazenamento seguro do macOS e não entra nos backups ou na sincronização.</p>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-bold">Modelo</label>
+                      <input className="w-full rounded-xl border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-4 py-3 text-sm outline-none focus:border-[color:var(--primary)]" onChange={(event) => setAiConfig((current) => ({ ...current, geminiModel: event.target.value }))} placeholder="gemini-3.6-flash" type="text" value={aiConfig.geminiModel} />
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 px-3 py-2.5 text-[11px] text-amber-700 dark:text-amber-300"><Icon name="cloud" />Ao usar Gemini, o conteúdo enviado à IA é processado pelos serviços do Google.</div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <button className="rounded-xl bg-[color:var(--primary)] px-5 py-3 text-xs font-black text-white disabled:opacity-50" disabled={aiConfigBusy} onClick={async () => { setAiConfigBusy(true); setAiConfigStatus("Salvando..."); try { const saved = await window.studyhubDesktop.academicAI.saveConfig(aiConfig); setAiConfig((current) => ({ ...current, ...saved, geminiApiKey: "" })); setAiConfigStatus("Configuração salva."); } catch (error) { setAiConfigStatus(error.message); } finally { setAiConfigBusy(false); } }} type="button">Salvar provedor</button>
+                  <button className="rounded-xl border border-[color:var(--outline-variant)] px-5 py-3 text-xs font-black disabled:opacity-50" disabled={aiConfigBusy || (aiConfig.provider === "gemini" && !aiConfig.geminiConfigured && !aiConfig.geminiApiKey.trim())} onClick={async () => { setAiConfigBusy(true); setAiConfigStatus("Testando conexão..."); try { const result = await window.studyhubDesktop.academicAI.testConfig(aiConfig); const saved = await window.studyhubDesktop.academicAI.getConfig(); setAiConfig((current) => ({ ...current, ...saved, geminiApiKey: "" })); setAiConfigStatus(`Conexão funcionando: ${result.model}.`); } catch (error) { setAiConfigStatus(error.message); } finally { setAiConfigBusy(false); } }} type="button">Testar conexão</button>
+                  {aiConfigStatus && <span className="text-xs text-[color:var(--on-surface-variant)]">{aiConfigStatus}</span>}
+                </div>
+              </div>
+            )}
+
+            {/* NOTIFICAÇÕES & FOCO */}
             {activeTab === "notifications" && (
               <div className="flex flex-col gap-6">
                 <div>
@@ -577,6 +675,12 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar" }) {
                       icon: "event_upcoming",
                     },
                     {
+                      key: "flashcardReviewReminders",
+                      title: "Lembretes de revisão de flashcards",
+                      desc: "Mostra uma notificação nativa quando houver cartões vencidos",
+                      icon: "style",
+                    },
+                    {
                       key: "pomodoroAutoBreak",
                       title: "Iniciar pausas automaticamente",
                       desc: "Inicia o intervalo do Pomodoro assim que o tempo de foco termina",
@@ -587,6 +691,12 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar" }) {
                       title: "Pular confirmação ao excluir notas e itens",
                       desc: "Exclui notas e pastas sem exibir o diálogo de confirmação",
                       icon: "delete_forever",
+                    },
+                    {
+                      key: "liveTranslationCapture",
+                      title: "Seleção de tradução com tela ao vivo",
+                      desc: "Mantém vídeos e animações em movimento durante a seleção. Desative para usar uma captura congelada.",
+                      icon: "screenshot_region",
                     },
                   ].map((setting) => {
                     const isChecked = Boolean(appSettings[setting.key]);
@@ -630,6 +740,37 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar" }) {
                     );
                   })}
                 </div>
+
+                <div className="rounded-2xl border border-[color:var(--outline-variant)]/40 bg-[color:var(--surface-container-low)] p-4">
+                  <div className="mb-4 flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--primary)]/10 text-[color:var(--primary)]">
+                      <Icon className="text-[18px]" name="notifications_active" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-[color:var(--on-surface)]">Testar notificações do macOS</h4>
+                      <p className="mt-0.5 text-[11px] text-[color:var(--on-surface-variant)]">Envie cada modelo para conferir texto, som, botão e destino.</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {NOTIFICATION_TESTS.map((test) => (
+                      <button
+                        className="flex items-center gap-3 rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] px-3 py-3 text-left text-xs font-bold text-[color:var(--on-surface)] transition hover:border-[color:var(--primary)]/40 hover:text-[color:var(--primary)]"
+                        key={test.id}
+                        onClick={() => testSystemNotification(test)}
+                        type="button"
+                      >
+                        <Icon className="text-[19px] text-[color:var(--primary)]" name={test.icon} />
+                        <span className="min-w-0 flex-1 truncate">{test.title}</span>
+                        <Icon className="text-[16px] text-[color:var(--on-surface-variant)]" name="send" />
+                      </button>
+                    ))}
+                  </div>
+                  {notificationTestStatus ? (
+                    <p className="mt-3 rounded-xl bg-[color:var(--surface-container)] px-3 py-2 text-[11px] font-medium text-[color:var(--on-surface-variant)]" role="status">
+                      {notificationTestStatus}
+                    </p>
+                  ) : null}
+                </div>
               </div>
             )}
 
@@ -646,6 +787,12 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar" }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <button type="button" onClick={() => { onClose?.(); onNavigate?.(SCREEN_IDS.TRASH_HISTORY); }} className="flex items-center gap-3 rounded-2xl border border-[color:var(--outline-variant)]/30 bg-[color:var(--surface-container-low)] p-4 text-left hover:bg-[color:var(--surface-container)]">
+                      <Icon name="delete_sweep" className="text-2xl text-[color:var(--primary)]" />
+                      <span><strong className="block text-sm">Lixeira e histórico</strong><small className="text-xs text-[color:var(--on-surface-variant)]">Restaurar itens e consultar ações recentes</small></span>
+                    </button>
+                  </div>
                   <div className="p-5 rounded-3xl bg-[color:var(--surface-container-low)] border border-[color:var(--outline-variant)]/30 flex flex-col justify-between gap-4">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">

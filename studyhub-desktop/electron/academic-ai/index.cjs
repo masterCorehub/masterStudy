@@ -5,11 +5,14 @@ const net = require("node:net");
 const path = require("node:path");
 const { ensureDatabase } = require("../storage/study-db.cjs");
 const {
-  cancelOllamaRequest,
-  chatWithOllama,
-  getOllamaStatus,
+  cancelAiRequest,
+  chatWithAi,
+  getAiConfig,
+  getAiStatus,
+  saveAiConfig,
   startOllama,
-} = require("../ai/ollama-service.cjs");
+  testAiProvider,
+} = require("../ai/ai-provider-service.cjs");
 
 const MAX_INLINE_CONTENT = 2 * 1024 * 1024;
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
@@ -481,7 +484,7 @@ function buildContext(chunks) {
     .join("\n\n");
 }
 
-async function chatUntilComplete(config, options = {}) {
+async function chatUntilComplete(app, config, options = {}) {
   const maxContinuations = Math.max(
     0,
     Math.min(4, Number(options.maxContinuations ?? 3)),
@@ -492,7 +495,7 @@ async function chatUntilComplete(config, options = {}) {
   let response = null;
 
   while (continuationCount <= maxContinuations) {
-    response = await chatWithOllama({ ...config, messages });
+    response = await chatWithAi(app, { ...config, messages });
     const fragment = String(response.message || "");
     content += fragment;
 
@@ -561,7 +564,7 @@ async function ask(app, payload = {}) {
     : [];
 
   const requestId = payload.requestId || `academic-ask-${Date.now()}`;
-  const response = await chatUntilComplete({
+  const response = await chatUntilComplete(app, {
     model: payload.model,
     requestId,
     messages: [
@@ -594,6 +597,7 @@ async function ask(app, payload = {}) {
       sourceId: chunk.sourceKey,
       title: chunk.title,
       locator: chunk.locator,
+      excerpt: String(chunk.content || "").replace(/\s+/g, " ").trim().slice(0, 900),
     })),
   };
 }
@@ -680,7 +684,7 @@ function parseJsonResponse(content) {
   return null;
 }
 
-async function generateFromNote(payload = {}, authorizeFilePath) {
+async function generateFromNote(app, payload = {}, authorizeFilePath) {
   const title = cleanText(payload.title || "Nota sem título").slice(0, 500);
   const content = cleanText(payload.content).slice(0, 60_000);
   const selection = cleanText(payload.selection).slice(0, 12_000);
@@ -842,6 +846,7 @@ async function generateFromNote(payload = {}, authorizeFilePath) {
 
   const requestId = payload.requestId || `note-ai-${Date.now()}`;
   const response = await chatUntilComplete(
+    app,
     {
       model: payload.model,
       requestId,
@@ -963,7 +968,7 @@ async function generate(app, payload = {}) {
   };
   if (!instructions[kind]) throw new Error("Tipo de geração inválido.");
   const requestId = payload.requestId || `academic-generate-${Date.now()}`;
-  const response = await chatUntilComplete({
+  const response = await chatUntilComplete(app, {
     model: payload.model,
     requestId,
     format: kind === "flashcards" ? "json" : undefined,
@@ -1027,8 +1032,24 @@ function registerAcademicAiIpc({
       return handler(event, ...args);
     });
 
-  register("academic-ai:status", () => getOllamaStatus());
+  register("academic-ai:status", () => getAiStatus(app));
   register("academic-ai:start", () => startOllama());
+  register("academic-ai:config:get", () => getAiConfig(app));
+  register("academic-ai:config:save", (_event, payload) => saveAiConfig(app, payload));
+  register("academic-ai:config:test", (_event, payload) => testAiProvider(app, payload));
+  register("academic-ai:chat", (_event, payload = {}) =>
+    chatWithAi(app, {
+      model: String(payload.model || "").slice(0, 120),
+      requestId: String(payload.requestId || "").slice(0, 160) || undefined,
+      format: payload.format === "json" ? "json" : undefined,
+      messages: (Array.isArray(payload.messages) ? payload.messages : [])
+        .slice(-20)
+        .map((message) => ({
+          role: message?.role === "system" ? "system" : message?.role === "assistant" ? "assistant" : "user",
+          content: String(message?.content || "").slice(0, 200_000),
+        })),
+    }),
+  );
   register("academic-ai:list-sources", (_event, subjectId) =>
     listSources(app, subjectId),
   );
@@ -1043,10 +1064,10 @@ function registerAcademicAiIpc({
     generate(app, payload),
   );
   register("academic-ai:note-action", (_event, payload) =>
-    generateFromNote(payload, authorizeFilePath),
+    generateFromNote(app, payload, authorizeFilePath),
   );
   register("academic-ai:cancel", (_event, requestId) =>
-    cancelOllamaRequest(requestId),
+    cancelAiRequest(requestId),
   );
 }
 

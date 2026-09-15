@@ -1,4 +1,3 @@
-import { AppShell } from "./app/AppShell";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 import { lazy, Suspense, useEffect, useState } from "react";
@@ -22,6 +21,27 @@ const CaptureOverlay = lazy(() =>
     default: module.CaptureOverlay || module.default,
   })),
 );
+const AppShell = lazy(() =>
+  import("./app/AppShell").then((module) => ({ default: module.AppShell })),
+);
+
+function AppLoadingScreen({ message = "Preparando seu espaço…" }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[color:var(--background)] px-6">
+      <div className="text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-[color:var(--primary)] text-[color:var(--on-primary)] shadow-sm">
+          <span className="material-symbols-outlined text-[28px]">school</span>
+        </div>
+        <div className="mx-auto mt-5 h-1.5 w-36 overflow-hidden rounded-full bg-[color:var(--surface-container-high)]">
+          <div className="h-full w-1/2 animate-pulse rounded-full bg-[color:var(--primary)]" />
+        </div>
+        <p className="mt-3 text-sm font-bold text-[color:var(--on-surface-variant)]">
+          {message}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export function App() {
   const isDarkMode = useStudyStore((state) => state.isDarkMode);
@@ -104,16 +124,7 @@ export function App() {
   }, []);
 
   if (authState.loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[color:var(--background)]">
-        <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[color:var(--outline-variant)] border-t-[color:var(--primary)]" />
-          <p className="mt-4 text-sm font-bold text-[color:var(--on-surface-variant)]">
-            Verificando sua conta…
-          </p>
-        </div>
-      </div>
-    );
+    return <AppLoadingScreen message="Verificando sua conta…" />;
   }
 
   if (!authState.session || authMode === "recovery") {
@@ -153,7 +164,9 @@ export function App() {
           />
         </Suspense>
       ) : (
-        <AppShell />
+        <Suspense fallback={<AppLoadingScreen />}>
+          <AppShell />
+        </Suspense>
       )}
     </ErrorBoundary>
   );

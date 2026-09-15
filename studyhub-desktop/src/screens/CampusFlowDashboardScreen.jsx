@@ -15,13 +15,15 @@ import { getLocalDateKey } from "../utils/dateUtils";
 import { useCurrentDate } from "../utils/useCurrentDate";
 
 const QUICK_NOTE_PALETTES = [
-  { id: "theme", label: "Tema Ativo", dot: "var(--primary)" },
-  { id: "amber", label: "Âmbar Solar", dot: "#f59e0b" },
-  { id: "lavender", label: "Lavanda Pastel", dot: "#a855f7" },
-  { id: "cyan", label: "Ciano Gélido", dot: "#06b6d4" },
-  { id: "emerald", label: "Menta & Matcha", dot: "#10b981" },
+  { id: "yellow", label: "Amarelo", dot: "#fbbf24" },
   { id: "rose", label: "Rosé Suave", dot: "#f43f5e" },
+  { id: "blue", label: "Azul", dot: "#38bdf8" },
+  { id: "green", label: "Verde", dot: "#34d399" },
+  { id: "purple", label: "Roxo", dot: "#a78bfa" },
+  { id: "slate", label: "Cinza", dot: "#94a3b8" },
 ];
+
+const EMPTY_DASHBOARD_WIDGETS = [];
 
 const QUICK_NOTE_COLOR_MAP = {
   theme: {
@@ -72,11 +74,51 @@ const QUICK_NOTE_COLOR_MAP = {
     text: "text-[color:var(--on-surface)]",
     placeholder: "placeholder:text-rose-700/50 dark:placeholder:text-rose-200/40",
   },
+  yellow: {
+    bg: "bg-amber-500/10 dark:bg-amber-950/30",
+    border: "border-amber-500/30 dark:border-amber-500/20",
+    header: "bg-amber-500/15 border-amber-500/25",
+    accent: "text-amber-600 dark:text-amber-400",
+    text: "text-[color:var(--on-surface)]",
+    placeholder: "placeholder:text-amber-700/50 dark:placeholder:text-amber-200/40",
+  },
+  blue: {
+    bg: "bg-sky-500/10 dark:bg-sky-950/30",
+    border: "border-sky-500/30 dark:border-sky-500/20",
+    header: "bg-sky-500/15 border-sky-500/25",
+    accent: "text-sky-600 dark:text-sky-400",
+    text: "text-[color:var(--on-surface)]",
+    placeholder: "placeholder:text-sky-700/50 dark:placeholder:text-sky-200/40",
+  },
+  green: {
+    bg: "bg-emerald-500/10 dark:bg-emerald-950/30",
+    border: "border-emerald-500/30 dark:border-emerald-500/20",
+    header: "bg-emerald-500/15 border-emerald-500/25",
+    accent: "text-emerald-600 dark:text-emerald-400",
+    text: "text-[color:var(--on-surface)]",
+    placeholder: "placeholder:text-emerald-700/50 dark:placeholder:text-emerald-200/40",
+  },
+  purple: {
+    bg: "bg-violet-500/10 dark:bg-violet-950/30",
+    border: "border-violet-500/30 dark:border-violet-500/20",
+    header: "bg-violet-500/15 border-violet-500/25",
+    accent: "text-violet-600 dark:text-violet-400",
+    text: "text-[color:var(--on-surface)]",
+    placeholder: "placeholder:text-violet-700/50 dark:placeholder:text-violet-200/40",
+  },
+  slate: {
+    bg: "bg-slate-500/10 dark:bg-slate-900/50",
+    border: "border-slate-500/30 dark:border-slate-500/20",
+    header: "bg-slate-500/15 border-slate-500/25",
+    accent: "text-slate-600 dark:text-slate-300",
+    text: "text-[color:var(--on-surface)]",
+    placeholder: "placeholder:text-slate-700/50 dark:placeholder:text-slate-200/40",
+  },
 };
 
-function QuickNoteWidgetCard({ note, onChange, onDelete, onAdd }) {
+function QuickNoteWidgetCard({ note, onChange, onUnpin, onOpenStickyNotes, onOpenDesktop }) {
   const [showPalette, setShowPalette] = useState(false);
-  const colorKey = note.color && QUICK_NOTE_COLOR_MAP[note.color] ? note.color : "theme";
+  const colorKey = note.color && QUICK_NOTE_COLOR_MAP[note.color] ? note.color : "yellow";
   const color = QUICK_NOTE_COLOR_MAP[colorKey];
 
   return (
@@ -132,20 +174,29 @@ function QuickNoteWidgetCard({ note, onChange, onDelete, onAdd }) {
         <button
           type="button"
           onPointerDown={(event) => event.stopPropagation()}
-          onClick={onAdd}
+          onClick={() => onOpenDesktop(note)}
           className="rounded-lg p-1 text-[color:var(--on-surface-variant)] opacity-70 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-all"
-          title="Adicionar outra anotação"
+          title="Destacar na mesa do macOS"
+        >
+          <Icon name="open_in_new" className="text-[17px]" />
+        </button>
+        <button
+          type="button"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={onOpenStickyNotes}
+          className="rounded-lg p-1 text-[color:var(--on-surface-variant)] opacity-70 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-all"
+          title="Abrir Sticky Notes"
         >
           <Icon name="add" className="text-[18px]" />
         </button>
         <button
           type="button"
           onPointerDown={(event) => event.stopPropagation()}
-          onClick={() => onDelete(note.id)}
+          onClick={() => onUnpin(note)}
           className="rounded-lg p-1 text-[color:var(--on-surface-variant)] opacity-60 hover:opacity-100 hover:bg-red-500/10 hover:text-red-600 transition-all"
-          title="Excluir esta anotação rápida"
+          title="Remover da tela Hoje"
         >
-          <Icon name="delete" className="text-[17px]" />
+          <Icon name="keep_off" className="text-[17px]" />
         </button>
       </header>
       <textarea
@@ -187,8 +238,8 @@ function DashboardWidgetShell({
   const dragControls = useDragControls();
   const grabOffsetRef = useRef({ x: 0, y: 0 });
   if (!config || config.visible === false) return null;
-  const meta = DASHBOARD_WIDGET_META[config.id] || (config.id.startsWith("quick-note:")
-    ? { label: label || "Anotação rápida", icon: "sticky_note_2" }
+  const meta = DASHBOARD_WIDGET_META[config.id] || (config.id.startsWith("sticky-note:")
+    ? { label: label || "Sticky Note", icon: "sticky_note_2" }
     : { label: config.id, icon: "widgets" });
   const positionFromPoint = (point) => {
     const rect = gridRef.current?.getBoundingClientRect();
@@ -329,11 +380,15 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
     (state) => state.createCourseForAcademicSubject,
   );
   const setActiveCourse = useStudyStore((state) => state.setActiveCourse);
-  const dashboardQuickNotes = useStudyStore((state) => state.dashboardQuickNotes || []);
-  const addDashboardQuickNote = useStudyStore((state) => state.addDashboardQuickNote);
-  const updateDashboardQuickNote = useStudyStore((state) => state.updateDashboardQuickNote);
-  const deleteDashboardQuickNote = useStudyStore((state) => state.deleteDashboardQuickNote);
-  const dashboardWidgets = useStudyStore((state) => state.dashboardWidgets || []);
+  const stickyNotes = useStudyStore((state) => state.stickyNotes || []);
+  const updateStickyNote = useStudyStore((state) => state.updateStickyNote);
+  const dashboardWidgetsState = useStudyStore(
+    (state) => state.dashboardWidgets || EMPTY_DASHBOARD_WIDGETS,
+  );
+  const dashboardWidgets = useMemo(
+    () => dashboardWidgetsState.filter((widget) => !widget.id.startsWith("quick-note:")),
+    [dashboardWidgetsState],
+  );
   const setDashboardWidgetSize = useStudyStore((state) => state.setDashboardWidgetSize);
   const setDashboardWidgetHeight = useStudyStore((state) => state.setDashboardWidgetHeight);
   const positionDashboardWidget = useStudyStore((state) => state.positionDashboardWidget);
@@ -353,6 +408,10 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
   const widgetById = useMemo(
     () => new Map(dashboardWidgets.map((widget, index) => [widget.id, { ...widget, order: index }])),
     [dashboardWidgets],
+  );
+  const pinnedStickyNotes = useMemo(
+    () => stickyNotes.filter((note) => note.pinned && !note.archived),
+    [stickyNotes],
   );
   const subjectById = useMemo(
     () => new Map(academic.subjects.map((subject) => [subject.id, subject])),
@@ -669,17 +728,29 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
     onNavigate?.(SCREEN_IDS.FLASHCARDS);
   };
 
-  const createDashboardQuickNote = () => {
-    const index = dashboardQuickNotes.length;
-    addDashboardQuickNote({
-      title: `Anotação ${index + 1}`,
+  const openStickyNotes = () => {
+    setShowWidgetCatalog(false);
+    onNavigate?.(SCREEN_IDS.STICKY_NOTES);
+  };
+
+  const updateDashboardStickyNote = (noteId, updates) => {
+    updateStickyNote(noteId, updates);
+    window.studyhubDesktop?.stickyNotes?.broadcastChange?.({
+      type: "updated",
+      noteId,
+      updates,
     });
   };
 
-  const deleteSpecificDashboardQuickNote = (note) => {
+  const unpinDashboardStickyNote = (note) => {
     if (!note) return;
-    if (!window.confirm(`Excluir a anotação “${note.title || "sem título"}”?`)) return;
-    deleteDashboardQuickNote(note.id);
+    updateDashboardStickyNote(note.id, { pinned: false });
+  };
+
+  const openDesktopStickyNote = (note) => {
+    window.studyhubDesktop?.stickyNotes?.open?.(note.id, {
+      alwaysOnTop: Boolean(note.alwaysOnTop),
+    });
   };
 
   const widgetProps = (id) => ({
@@ -971,13 +1042,14 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
             </article>
           </DashboardWidgetShell>
 
-          {dashboardQuickNotes.map((note) => (
-            <DashboardWidgetShell key={note.id} {...widgetProps(`quick-note:${note.id}`)} label={note.title}>
+          {pinnedStickyNotes.map((note) => (
+            <DashboardWidgetShell key={note.id} {...widgetProps(`sticky-note:${note.id}`)} label={note.title}>
               <QuickNoteWidgetCard
                 note={note}
-                onChange={updateDashboardQuickNote}
-                onDelete={deleteSpecificDashboardQuickNote}
-                onAdd={createDashboardQuickNote}
+                onChange={updateDashboardStickyNote}
+                onUnpin={unpinDashboardStickyNote}
+                onOpenStickyNotes={openStickyNotes}
+                onOpenDesktop={openDesktopStickyNote}
               />
             </DashboardWidgetShell>
           ))}
@@ -1480,10 +1552,10 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
               <button type="button" onClick={() => setShowWidgetCatalog(false)} className="rounded-xl p-2 hover:bg-[color:var(--surface-container-high)]"><Icon name="close" /></button>
             </header>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button type="button" onClick={createDashboardQuickNote} className="flex items-center gap-3 rounded-2xl border border-dashed border-amber-500/50 bg-amber-500/[0.06] p-4 text-left text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15"><Icon name="add" /></span><span><strong className="block text-sm">Nova anotação rápida</strong><small>Criar como widget independente</small></span></button>
+              <button type="button" onClick={openStickyNotes} className="flex items-center gap-3 rounded-2xl border border-dashed border-amber-500/50 bg-amber-500/[0.06] p-4 text-left text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15"><Icon name="sticky_note_2" /></span><span><strong className="block text-sm">Gerenciar Sticky Notes</strong><small>Fixe uma nota para mostrar no Hoje</small></span></button>
               {dashboardWidgets.map((widget) => {
-                const quickNote = widget.id.startsWith("quick-note:")
-                  ? dashboardQuickNotes.find((note) => `quick-note:${note.id}` === widget.id)
+                const quickNote = widget.id.startsWith("sticky-note:")
+                  ? pinnedStickyNotes.find((note) => `sticky-note:${note.id}` === widget.id)
                   : null;
                 const meta = DASHBOARD_WIDGET_META[widget.id] || (quickNote
                   ? { label: quickNote.title || "Anotação rápida", icon: "sticky_note_2" }
@@ -1491,18 +1563,18 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
                 return <button key={widget.id} type="button" onClick={() => toggleDashboardWidget(widget.id)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${widget.visible === false ? "border-[color:var(--outline-variant)]/25 opacity-60" : "border-[color:var(--primary)]/30 bg-[color:var(--primary)]/5"}`}><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--surface-container-high)] text-[color:var(--primary)]"><Icon name={meta.icon} /></span><span className="min-w-0 flex-1"><strong className="block text-sm">{meta.label}</strong><small className="text-[color:var(--on-surface-variant)]">{widget.visible === false ? "Oculto" : `Visível · ${widget.size}/12 colunas`}</small></span><Icon name={widget.visible === false ? "visibility_off" : "visibility"} /></button>;
               })}
             </div>
-            {dashboardQuickNotes.length ? (
+            {pinnedStickyNotes.length ? (
               <section className="mt-6 border-t border-[color:var(--outline-variant)]/20 pt-5">
                 <div className="mb-3 flex items-center justify-between">
-                  <div><span className="campus-eyebrow">Anotações rápidas</span><p className="mt-1 text-xs text-[color:var(--on-surface-variant)]">Exclua somente a anotação escolhida.</p></div>
-                  <span className="rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-black text-amber-700 dark:text-amber-300">{dashboardQuickNotes.length}</span>
+                  <div><span className="campus-eyebrow">Sticky Notes fixadas</span><p className="mt-1 text-xs text-[color:var(--on-surface-variant)]">Remover daqui não apaga a nota.</p></div>
+                  <span className="rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-black text-amber-700 dark:text-amber-300">{pinnedStickyNotes.length}</span>
                 </div>
                 <div className="space-y-2">
-                  {dashboardQuickNotes.map((note) => (
+                  {pinnedStickyNotes.map((note) => (
                     <div key={note.id} className="flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300"><Icon name="sticky_note_2" /></span>
                       <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{note.title || "Anotação sem título"}</strong><small className="block truncate text-[color:var(--on-surface-variant)]">{note.content || "Sem conteúdo"}</small></span>
-                      <button type="button" className="rounded-xl p-2 text-[color:var(--on-surface-variant)] hover:bg-red-500/10 hover:text-red-600" title={`Excluir ${note.title || "anotação"}`} onClick={() => deleteSpecificDashboardQuickNote(note)}><Icon name="delete" className="text-[18px]" /></button>
+                      <button type="button" className="rounded-xl p-2 text-[color:var(--on-surface-variant)] hover:bg-amber-500/10 hover:text-amber-700" title={`Remover ${note.title || "anotação"} do Hoje`} onClick={() => unpinDashboardStickyNote(note)}><Icon name="keep_off" className="text-[18px]" /></button>
                     </div>
                   ))}
                 </div>

@@ -37,6 +37,7 @@ export function AccountScreen({ required = false, recovery = false }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState("info");
@@ -247,27 +248,28 @@ export function AccountScreen({ required = false, recovery = false }) {
           : "Entrar";
 
   return (
-    <main className={`${required ? "min-h-screen" : "campus-page flex-1"} overflow-y-auto bg-[color:var(--background)] px-5 py-8 md:p-10`}>
-      <div className="mx-auto max-w-3xl">
+    <main className={`${required ? "account-auth-shell min-h-screen" : "campus-page flex-1"} overflow-y-auto bg-[color:var(--background)] px-5 py-8 md:p-10`}>
+      <div className={`mx-auto ${required ? "account-auth-layout" : "max-w-3xl"}`}>
         {required ? (
-          <div className="mb-10 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--primary)] text-white shadow-lg shadow-blue-500/15">
-              <Icon name="school" className="text-3xl" />
+          <aside className="account-auth-intro">
+            <div className="flex items-center gap-3">
+              <div className="account-auth-logo"><Icon name="school" className="text-[26px]" /></div>
+              <div><strong className="block text-lg tracking-[-0.02em]">CampusFlow</strong><p className="text-xs text-white/60">Ambiente de estudos</p></div>
             </div>
-            <div>
-              <strong className="text-xl">StudyHub</strong>
-              <p className="text-sm text-[color:var(--on-surface-variant)]">Seu espaço acadêmico</p>
+            <div className="account-auth-copy">
+              <span className="account-auth-kicker">SEU ESPAÇO ACADÊMICO</span>
+              <h1>Organize seus estudos.<br />Mantenha o foco.</h1>
+              <p>Notas, tarefas, leituras e revisões reunidas em um ambiente calmo, privado e sincronizado.</p>
             </div>
-          </div>
+            <div className="account-auth-benefits" aria-label="Benefícios da plataforma">
+              <div><Icon name="cloud_done" /><span><strong>Sincronização contínua</strong><small>Continue de onde parou, na web ou no desktop.</small></span></div>
+              <div><Icon name="shield_lock" /><span><strong>Seus dados protegidos</strong><small>Conteúdo privado e acesso seguro à sua conta.</small></span></div>
+            </div>
+            <p className="account-auth-footer">CAMPUSFLOW · DEEP FOCUS</p>
+          </aside>
         ) : null}
 
-        <span className="campus-eyebrow">{required ? "ACESSO SEGURO" : "CONTA E SINCRONIZAÇÃO"}</span>
-        <h1 className="mt-2 text-4xl font-black md:text-5xl">
-          {required ? "Entre para continuar" : "Sua conta StudyHub"}
-        </h1>
-        <p className="mt-3 max-w-2xl text-[color:var(--on-surface-variant)]">
-          Seus conteúdos são privados e as alterações são sincronizadas automaticamente entre web e desktop.
-        </p>
+        {!required ? <><span className="campus-eyebrow">CONTA E SINCRONIZAÇÃO</span><h1 className="mt-2 text-4xl font-black md:text-5xl">Sua conta CampusFlow</h1><p className="mt-3 max-w-2xl text-[color:var(--on-surface-variant)]">Seus conteúdos são privados e as alterações são sincronizadas automaticamente entre web e desktop.</p></> : null}
 
         {!collaborationCloudConfigured ? (
           <div className="mt-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-amber-800 dark:text-amber-200">
@@ -354,33 +356,32 @@ export function AccountScreen({ required = false, recovery = false }) {
             </div>
           </div>
         ) : (
-          <form className="mt-8 max-w-xl rounded-2xl border border-[color:var(--outline-variant)]/40 bg-[color:var(--surface-container-lowest)] p-6 shadow-sm" onSubmit={submit}>
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-xl font-black">{authTitle}</h2>
-              {mode !== "recovery" ? (
-                <button type="button" className="text-sm font-black text-[color:var(--primary)]" onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setMessage(""); }}>
-                  {mode === "signup" ? "Já tenho conta" : mode === "forgot" ? "Voltar ao login" : "Criar conta"}
-                </button>
-              ) : null}
+          <form className={`account-auth-form ${required ? "" : "mt-8 max-w-xl"}`} onSubmit={submit}>
+            <div className="account-auth-form-heading">
+              <span className="campus-eyebrow">{mode === "signup" ? "NOVA CONTA" : mode === "forgot" || mode === "recovery" ? "RECUPERAÇÃO" : "BEM-VINDO DE VOLTA"}</span>
+              <h2>{authTitle === "Entrar" ? "Entre na sua conta" : authTitle}</h2>
+              <p>{mode === "signup" ? "Crie seu espaço de estudos em poucos segundos." : mode === "forgot" ? "Enviaremos as instruções para o seu e-mail." : mode === "recovery" ? "Escolha uma senha nova e segura." : "Acesse seus estudos e continue de onde parou."}</p>
             </div>
 
             {mode === "signup" ? (
-              <label className="mt-5 block" htmlFor="signup-name"><span className="text-sm font-bold">Nome</span><input id="signup-name" className="mt-1 w-full" value={name} onChange={(event) => setName(event.target.value)} maxLength={100} autoComplete="name" required /></label>
+              <label className="account-auth-field" htmlFor="signup-name"><span>Nome</span><div><Icon name="person" /><input id="signup-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={100} autoComplete="name" placeholder="Como devemos chamar você?" required /></div></label>
             ) : null}
             {mode !== "recovery" ? (
-              <label className="mt-4 block" htmlFor="account-email"><span className="text-sm font-bold">E-mail</span><input id="account-email" className="mt-1 w-full" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
+              <label className="account-auth-field" htmlFor="account-email"><span>E-mail</span><div><Icon name="mail" /><input id="account-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="voce@exemplo.com" required /></div></label>
             ) : null}
             {mode !== "forgot" ? (
-              <label className="mt-4 block" htmlFor="account-password"><span className="text-sm font-bold">{mode === "recovery" ? "Nova senha" : "Senha"}</span><input id="account-password" className="mt-1 w-full" type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} autoComplete={mode === "signin" ? "current-password" : "new-password"} required /></label>
+              <label className="account-auth-field" htmlFor="account-password"><span>{mode === "recovery" ? "Nova senha" : "Senha"}</span><div><Icon name="lock" /><input id="account-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} autoComplete={mode === "signin" ? "current-password" : "new-password"} placeholder="Mínimo de 8 caracteres" required /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}><Icon name={showPassword ? "visibility_off" : "visibility"} /></button></div></label>
             ) : null}
             {mode === "recovery" ? (
-              <label className="mt-4 block" htmlFor="account-password-confirmation"><span className="text-sm font-bold">Repita a nova senha</span><input id="account-password-confirmation" className="mt-1 w-full" type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} minLength={8} autoComplete="new-password" required /></label>
+              <label className="account-auth-field" htmlFor="account-password-confirmation"><span>Repita a nova senha</span><div><Icon name="lock_reset" /><input id="account-password-confirmation" type={showPassword ? "text" : "password"} value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} minLength={8} autoComplete="new-password" placeholder="Repita a senha" required /></div></label>
             ) : null}
-            {mode === "signin" ? <button type="button" className="mt-3 text-sm font-bold text-[color:var(--primary)]" onClick={() => { setMode("forgot"); setMessage(""); }}>Esqueci minha senha</button> : null}
+            {mode === "signin" ? <button type="button" className="account-auth-link ml-auto mt-3 block" onClick={() => { setMode("forgot"); setMessage(""); }}>Esqueci minha senha</button> : null}
 
             {message ? <p className={`mt-5 rounded-xl border p-3 text-sm font-semibold ${messageClasses}`} aria-live="polite">{message}</p> : null}
-            <button className="campus-primary-button mt-6 w-full justify-center" disabled={busy} type="submit">{busy ? "Aguarde..." : authTitle}</button>
+            <button className="account-auth-submit" disabled={busy} type="submit">{busy ? <><span className="account-auth-spinner" /> Aguarde...</> : <>{authTitle}<Icon name="arrow_forward" /></>}</button>
             {confirmationPending ? <button className="campus-secondary-button mt-3 w-full justify-center" disabled={busy || !email} type="button" onClick={resendConfirmation}>Reenviar confirmação</button> : null}
+            {mode !== "recovery" ? <p className="account-auth-switch">{mode === "signup" ? "Já possui uma conta?" : mode === "forgot" ? "Lembrou sua senha?" : "Ainda não tem uma conta?"} <button type="button" onClick={() => { setMode(mode === "signup" || mode === "forgot" ? "signin" : "signup"); setMessage(""); }}>{mode === "signup" || mode === "forgot" ? "Entrar" : "Criar conta"}</button></p> : null}
+            <p className="account-auth-security"><Icon name="lock" /> Conexão segura e dados privados</p>
           </form>
         )}
 

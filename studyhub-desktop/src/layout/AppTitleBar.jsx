@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "../ui/Icon";
 import { usePomodoroStore } from "../store/usePomodoroStore";
 import { SCREEN_IDS } from "../app/screenIds";
+import { shortcutLabel } from "../utils/keyboardShortcuts";
 
 function getWindowControls() {
   if (typeof window === "undefined") {
@@ -133,14 +134,14 @@ export function AppTitleBar({ onNavigate }) {
           type="button"
           onClick={handleOpenSearch}
           className="flex items-center justify-between gap-3 w-56 sm:w-72 md:w-80 px-3.5 py-1 rounded-full bg-[color:var(--surface-container-high)]/70 hover:bg-[color:var(--surface-container-high)] border border-[color:var(--outline-variant)]/30 text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)] text-xs font-semibold shadow-inner transition-all group cursor-pointer"
-          title="Buscar em todo o StudyHub (Ctrl + K)"
+          title={`Buscar em todo o CampusFlow (${shortcutLabel("Mod+K")})`}
         >
           <div className="flex items-center gap-2 truncate">
             <Icon name="search" className="text-[15px] text-[color:var(--primary)] group-hover:scale-110 transition-transform" />
             <span className="truncate font-medium">Buscar tudo...</span>
           </div>
           <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-[color:var(--surface)] text-[color:var(--on-surface-variant)] border border-[color:var(--outline-variant)]/40 opacity-80 shrink-0">
-            Ctrl K
+            {shortcutLabel("Mod+K")}
           </span>
         </button>
 

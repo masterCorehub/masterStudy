@@ -21,6 +21,38 @@ const isReadOnlySharedItem = (item) =>
       item?.sharedReadOnly !== false,
   );
 
+const getDeletedItemTitle = (item, fallback = "Item sem título") =>
+  String(item?.title || item?.name || item?.text || fallback).trim() || fallback;
+
+const moveToUniversalTrash = (state, entityType, item, metadata = {}) => {
+  if (!item) return {};
+  const now = Date.now();
+  const trashItem = {
+    id: `trash-${now}-${Math.random().toString(36).slice(2, 8)}`,
+    entityType,
+    entityId: item.id,
+    title: getDeletedItemTitle(item, metadata.fallbackTitle),
+    deletedAt: now,
+    expiresAt: now + 30 * 24 * 60 * 60 * 1000,
+    payload: item,
+    metadata,
+  };
+  return {
+    universalTrash: [trashItem, ...(state.universalTrash || [])].slice(0, 1000),
+    universalHistory: [
+      {
+        id: `history-${now}-${Math.random().toString(36).slice(2, 8)}`,
+        action: "deleted",
+        entityType,
+        entityId: item.id,
+        title: trashItem.title,
+        timestamp: now,
+      },
+      ...(state.universalHistory || []),
+    ].slice(0, 2000),
+  };
+};
+
 const migrateDashboardQuickNotes = (state = {}) => {
   if (Array.isArray(state.dashboardQuickNotes)) return state.dashboardQuickNotes;
   const legacyContent = String(state.dashboardQuickNote || "").trim();
@@ -37,6 +69,21 @@ const migrateDashboardQuickNotes = (state = {}) => {
     },
   ];
 };
+
+const STICKY_NOTE_COLORS = new Set(["yellow", "rose", "blue", "green", "purple", "slate"]);
+
+const normalizeStickyNotes = (notes) =>
+  (Array.isArray(notes) ? notes : []).map((note, index) => ({
+    id: note?.id || `sticky-note-${Date.now()}-${index}`,
+    title: String(note?.title || ""),
+    content: String(note?.content || ""),
+    color: STICKY_NOTE_COLORS.has(note?.color) ? note.color : "yellow",
+    pinned: Boolean(note?.pinned),
+    alwaysOnTop: Boolean(note?.alwaysOnTop),
+    archived: Boolean(note?.archived),
+    createdAt: Number(note?.createdAt || Date.now()),
+    updatedAt: Number(note?.updatedAt || note?.createdAt || Date.now()),
+  }));
 
 const DEFAULT_DASHBOARD_WIDGETS = [
   { id: "schedule", visible: true, size: 12, rowSpan: 5, x: 0, y: 0 },
@@ -86,6 +133,85 @@ const ensureQuickNoteWidgets = (widgets, quickNotes = []) => {
     ),
     ...dynamic,
   ];
+};
+
+const ensureStickyNoteWidgets = (widgets, stickyNotes = []) => {
+  const normalized = normalizeDashboardWidgets(widgets);
+  const pinnedNotes = normalizeStickyNotes(stickyNotes).filter(
+    (note) => note.pinned && !note.archived,
+  );
+  const noteIds = new Set(pinnedNotes.map((note) => `sticky-note:${note.id}`));
+  const existing = new Set(normalized.map((widget) => widget.id));
+  const dynamic = pinnedNotes
+    .map((note, index) => ({
+      id: `sticky-note:${note.id}`,
+      visible: true,
+      size: 4,
+      rowSpan: 3,
+      x: (index % 3) * 4,
+      y: index < 3 ? 7 : 21 + Math.floor((index - 3) / 3) * 3,
+    }))
+    .filter((widget) => !existing.has(widget.id));
+  return [
+    ...normalized.filter(
+      (widget) =>
+        !widget.id.startsWith("quick-note:") &&
+        (!widget.id.startsWith("sticky-note:") || noteIds.has(widget.id)),
+    ),
+    ...dynamic,
+  ];
+};
+
+const migrateDashboardNotesToStickyNotes = (state = {}) => {
+  const currentStickyNotes = normalizeStickyNotes(state.stickyNotes);
+  const legacyNotes = migrateDashboardQuickNotes(state);
+  if (!legacyNotes.length) {
+    return {
+      stickyNotes: currentStickyNotes,
+      dashboardWidgets: ensureStickyNoteWidgets(
+        state.dashboardWidgets,
+        currentStickyNotes,
+      ),
+    };
+  }
+  const colorMap = {
+    amber: "yellow",
+    lavender: "purple",
+    cyan: "blue",
+    emerald: "green",
+    rose: "rose",
+    theme: "yellow",
+  };
+  const migrated = legacyNotes.map((note, index) => ({
+    id: `sticky-${note.id || `dashboard-${index}`}`,
+    title: String(note.title || "Anotação rápida"),
+    content: String(note.content || ""),
+    color: colorMap[note.color] || "yellow",
+    pinned: true,
+    alwaysOnTop: false,
+    archived: false,
+    createdAt: Number(note.createdAt || Date.now()),
+    updatedAt: Number(note.updatedAt || note.createdAt || Date.now()),
+  }));
+  const existingIds = new Set(currentStickyNotes.map((note) => note.id));
+  const stickyNotes = [
+    ...currentStickyNotes,
+    ...migrated.filter((note) => !existingIds.has(note.id)),
+  ];
+  const legacyIdMap = new Map(
+    legacyNotes.map((note, index) => [
+      `quick-note:${note.id}`,
+      `sticky-note:${migrated[index].id}`,
+    ]),
+  );
+  const dashboardWidgets = (state.dashboardWidgets || []).map((widget) => ({
+    ...widget,
+    id: legacyIdMap.get(widget.id) || widget.id,
+  }));
+  return {
+    stickyNotes,
+    dashboardWidgets: ensureStickyNoteWidgets(dashboardWidgets, stickyNotes),
+  };
 };
 
 const dashboardWidgetsOverlap = (left, right) =>
@@ -687,6 +813,8 @@ export const useStudyStore = create(
       tasks: { list: [] },
       habits: { list: [] },
       books: { list: [] },
+      universalTrash: [],
+      universalHistory: [],
       activeBookId: null,
       noteVersions: [],
       focusSessions: [],
@@ -695,6 +823,7 @@ export const useStudyStore = create(
       academic: createEmptyAcademicData(),
       collaboration: createEmptyCollaboration(),
       journalEntries: [],
+      stickyNotes: [],
       importantQuotes: [],
       journalSettings: DEFAULT_JOURNAL_SETTINGS,
       dashboard: { progress: 0, activity: [] },
@@ -736,6 +865,7 @@ export const useStudyStore = create(
       translatorTextShortcut: "CommandOrControl+Shift+Alt+3",
       translatorOcrShortcut: "CommandOrControl+Shift+Alt+4",
       aiFlashcardShortcut: "CommandOrControl+Shift+Alt+5",
+      stickyNotesShortcut: "CommandOrControl+Shift+Alt+6",
       immersionPresets: defaultImmersionPresets,
       immersionStepIndex: 0,
       immersionMediaTime: 0,
@@ -749,6 +879,7 @@ export const useStudyStore = create(
         "books",
         "materials",
         "journal",
+        "sticky-notes",
         "knowledge",
         "reviews",
       ],
@@ -761,6 +892,8 @@ export const useStudyStore = create(
         soundEnabled: true,
         pomodoroAutoBreak: false,
         taskDueReminders: true,
+        flashcardReviewReminders: true,
+        liveTranslationCapture: false,
       },
       isSettingsModalOpen: false,
       settingsModalInitialTab: "sidebar",
@@ -938,7 +1071,10 @@ export const useStudyStore = create(
           ),
         })),
       deleteJournalEntry: (entryId) =>
-        set((state) => ({
+        set((state) => {
+          const current = (state.journalEntries || []).find((entry) => entry.id === entryId);
+          return {
+          ...moveToUniversalTrash(state, "journal", current),
           journalEntries: (state.journalEntries || []).filter(
             (entry) => entry.id !== entryId,
           ),
@@ -946,7 +1082,8 @@ export const useStudyStore = create(
             state.activeJournalEntryId === entryId
               ? null
               : state.activeJournalEntryId,
-        })),
+          };
+        }),
       toggleJournalFavorite: (entryId) =>
         set((state) => ({
           journalEntries: normalizeJournalEntries(
@@ -978,6 +1115,88 @@ export const useStudyStore = create(
         set((state) => ({
           importantQuotes: (state.importantQuotes || []).filter((q) => q.id !== id),
         })),
+      addStickyNote: (note = {}) => {
+        const now = Date.now();
+        const id = note.id || `sticky-note-${now}-${Math.random().toString(36).slice(2, 7)}`;
+        set((state) => {
+          const stickyNotes = [{
+            id,
+            title: String(note.title || ""),
+            content: String(note.content || ""),
+            color: STICKY_NOTE_COLORS.has(note.color) ? note.color : "yellow",
+            pinned: Boolean(note.pinned),
+            alwaysOnTop: Boolean(note.alwaysOnTop),
+            archived: false,
+            createdAt: now,
+            updatedAt: now,
+          }, ...normalizeStickyNotes(state.stickyNotes)];
+          return {
+            stickyNotes,
+            dashboardWidgets: ensureStickyNoteWidgets(state.dashboardWidgets, stickyNotes),
+          };
+        });
+        return id;
+      },
+      updateStickyNote: (noteId, updates = {}) =>
+        set((state) => {
+          const stickyNotes = normalizeStickyNotes(state.stickyNotes).map((note) =>
+            note.id === noteId
+              ? {
+                  ...note,
+                  ...updates,
+                  id: note.id,
+                  color: STICKY_NOTE_COLORS.has(updates.color) ? updates.color : note.color,
+                  updatedAt: Date.now(),
+                }
+              : note,
+          );
+          return {
+            stickyNotes,
+            dashboardWidgets: ensureStickyNoteWidgets(state.dashboardWidgets, stickyNotes),
+          };
+        }),
+      duplicateStickyNote: (noteId) =>
+        set((state) => {
+          const source = normalizeStickyNotes(state.stickyNotes).find((note) => note.id === noteId);
+          if (!source) return state;
+          const now = Date.now();
+          const stickyNotes = [{
+              ...source,
+              id: `sticky-note-${now}-${Math.random().toString(36).slice(2, 7)}`,
+              title: source.title ? `${source.title} (cópia)` : "Cópia",
+              pinned: false,
+              alwaysOnTop: false,
+              archived: false,
+              createdAt: now,
+              updatedAt: now,
+            }, ...normalizeStickyNotes(state.stickyNotes)];
+          return {
+            stickyNotes,
+            dashboardWidgets: ensureStickyNoteWidgets(state.dashboardWidgets, stickyNotes),
+          };
+        }),
+      deleteStickyNote: (noteId) =>
+        set((state) => {
+          const notes = normalizeStickyNotes(state.stickyNotes);
+          const current = notes.find((note) => note.id === noteId);
+          const stickyNotes = notes.filter((note) => note.id !== noteId);
+          return {
+            ...moveToUniversalTrash(state, "sticky_note", current, {
+              fallbackTitle: current?.content?.trim().slice(0, 60) || "Sticky Note sem título",
+            }),
+            stickyNotes,
+            dashboardWidgets: ensureStickyNoteWidgets(state.dashboardWidgets, stickyNotes),
+          };
+        }),
+      upgradeDashboardStickyNotes: () =>
+        set((state) => {
+          const migrated = migrateDashboardNotesToStickyNotes(state);
+          return {
+            stickyNotes: migrated.stickyNotes,
+            dashboardQuickNotes: [],
+            dashboardWidgets: migrated.dashboardWidgets,
+          };
+        }),
       setDashboardQuickNote: (text) => set({ dashboardQuickNote: text }),
       addDashboardQuickNote: (note = {}) => {
         const id = note.id || `dashboard-note-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -1011,10 +1230,13 @@ export const useStudyStore = create(
         })),
       deleteDashboardQuickNote: (noteId) =>
         set((state) => {
-          const dashboardQuickNotes = migrateDashboardQuickNotes(state).filter(
+          const currentNotes = migrateDashboardQuickNotes(state);
+          const current = currentNotes.find((note) => note.id === noteId);
+          const dashboardQuickNotes = currentNotes.filter(
             (note) => note.id !== noteId,
           );
           return {
+            ...moveToUniversalTrash(state, "quick_note", current),
             dashboardQuickNotes,
             dashboardWidgets: ensureQuickNoteWidgets(state.dashboardWidgets, dashboardQuickNotes),
           };
@@ -1104,9 +1326,9 @@ export const useStudyStore = create(
         }),
       resetDashboardWidgets: () =>
         set((state) => ({
-          dashboardWidgets: ensureQuickNoteWidgets(
+          dashboardWidgets: ensureStickyNoteWidgets(
             DEFAULT_DASHBOARD_WIDGETS.map((widget) => ({ ...widget })),
-            migrateDashboardQuickNotes(state),
+            state.stickyNotes,
           ),
         })),
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
@@ -1482,6 +1704,7 @@ export const useStudyStore = create(
             ),
           };
           return {
+            ...moveToUniversalTrash(state, "academic", current, { collection }),
             academic: nextAcademic,
             activeProjectId:
               collection === "projects" && state.activeProjectId === entityId
@@ -1721,6 +1944,7 @@ export const useStudyStore = create(
         translatorTextShortcut,
         translatorOcrShortcut,
         aiFlashcardShortcut,
+        stickyNotesShortcut,
       }) =>
         set((state) => ({
           quickNoteShortcut:
@@ -1743,6 +1967,10 @@ export const useStudyStore = create(
             aiFlashcardShortcut ||
             state.aiFlashcardShortcut ||
             "CommandOrControl+Shift+Alt+5",
+          stickyNotesShortcut:
+            stickyNotesShortcut ||
+            state.stickyNotesShortcut ||
+            "CommandOrControl+Shift+Alt+6",
         })),
       setImmersionStepIndex: (index) => set({ immersionStepIndex: index }),
       setImmersionMediaTime: (time) => set({ immersionMediaTime: time }),
@@ -1934,6 +2162,7 @@ export const useStudyStore = create(
           );
 
           return {
+            ...moveToUniversalTrash(state, "study_item", current),
             studyItems: nextItems,
             notes: deriveLegacyNotes(nextItems),
             activeNoteId:
@@ -2005,6 +2234,7 @@ export const useStudyStore = create(
           );
 
           return {
+            ...moveToUniversalTrash(state, "study_item", current),
             studyItems: nextItems,
             notes: deriveLegacyNotes(nextItems),
             activeNoteId:
@@ -2026,9 +2256,18 @@ export const useStudyStore = create(
           let nextState = {};
           
           if (itemIdsToDelete.size > 0) {
+            let trashPatch = {};
+            state.studyItems
+              .filter((item) => itemIdsToDelete.has(item.id) && !isReadOnlySharedItem(item))
+              .forEach((item) => {
+                trashPatch = moveToUniversalTrash({ ...state, ...trashPatch }, "study_item", item);
+              });
             const nextItems = sortStudyItems(
-              state.studyItems.filter((item) => !itemIdsToDelete.has(item.id))
+              state.studyItems.filter(
+                (item) => !itemIdsToDelete.has(item.id) || isReadOnlySharedItem(item),
+              )
             );
+            nextState = { ...nextState, ...trashPatch };
             nextState.studyItems = nextItems;
             nextState.notes = deriveLegacyNotes(nextItems);
             if (itemIdsToDelete.has(state.activeNoteId)) {
@@ -2266,6 +2505,11 @@ export const useStudyStore = create(
       })),
 
       deleteKnowledgeItem: (id) => set((state) => ({
+        ...moveToUniversalTrash(
+          state,
+          "knowledge",
+          (state.knowledgeItems || []).find((item) => item.id === id),
+        ),
         knowledgeItems: (state.knowledgeItems || []).filter((item) => item.id !== id),
         activeKnowledgeItemId: state.activeKnowledgeItemId === id ? null : state.activeKnowledgeItemId,
       })),
@@ -2458,6 +2702,7 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
           const current = state.tasks.list.find((task) => task.id === taskId);
           if (isReadOnlySharedItem(current)) return state;
           return {
+            ...moveToUniversalTrash(state, "task", current),
             tasks: {
               list: state.tasks.list.filter((t) => t.id !== taskId),
             },
@@ -2501,6 +2746,11 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
 
       deleteHabit: (habitId) =>
         set((state) => ({
+          ...moveToUniversalTrash(
+            state,
+            "habit",
+            (state.habits?.list || []).find((habit) => habit.id === habitId),
+          ),
           habits: {
             list: (state.habits?.list || []).filter((h) => h.id !== habitId),
           },
@@ -2542,6 +2792,11 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
         
       deleteBook: (bookId) =>
         set((state) => ({
+          ...moveToUniversalTrash(
+            state,
+            "book",
+            (state.books?.list || []).find((book) => book.id === bookId),
+          ),
           books: {
             list: (state.books?.list || []).filter(b => b.id !== bookId)
           }
@@ -3342,10 +3597,117 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
 
       deleteFlashcardDeck: (deckId) =>
         set((state) => ({
+          ...moveToUniversalTrash(
+            state,
+            "flashcard_deck",
+            state.flashcardDecks.find((deck) => deck.id === deckId),
+          ),
           flashcardDecks: state.flashcardDecks.filter((d) => d.id !== deckId),
           activeDeckId:
             state.activeDeckId === deckId ? null : state.activeDeckId,
         })),
+
+      restoreTrashItem: (trashId) =>
+        set((state) => {
+          const trashItem = (state.universalTrash || []).find((item) => item.id === trashId);
+          if (!trashItem?.payload) return state;
+          const payload = trashItem.payload;
+          const patch = {};
+          const prependUnique = (list) => [payload, ...(list || []).filter((item) => item.id !== payload.id)];
+          switch (trashItem.entityType) {
+            case "study_item": {
+              const studyItems = sortStudyItems(prependUnique(state.studyItems));
+              patch.studyItems = studyItems;
+              patch.notes = deriveLegacyNotes(studyItems);
+              break;
+            }
+            case "task":
+              patch.tasks = { ...state.tasks, list: prependUnique(state.tasks?.list) };
+              break;
+            case "book":
+              patch.books = { ...state.books, list: prependUnique(state.books?.list) };
+              break;
+            case "habit":
+              patch.habits = { ...state.habits, list: prependUnique(state.habits?.list) };
+              break;
+            case "journal":
+              patch.journalEntries = normalizeJournalEntries(prependUnique(state.journalEntries));
+              break;
+            case "quick_note": {
+              const dashboardQuickNotes = prependUnique(migrateDashboardQuickNotes(state));
+              patch.dashboardQuickNotes = dashboardQuickNotes;
+              patch.dashboardWidgets = ensureQuickNoteWidgets(state.dashboardWidgets, dashboardQuickNotes);
+              break;
+            }
+            case "sticky_note":
+              patch.stickyNotes = prependUnique(normalizeStickyNotes(state.stickyNotes));
+              break;
+            case "knowledge":
+              patch.knowledgeItems = prependUnique(state.knowledgeItems);
+              break;
+            case "flashcard_deck":
+              patch.flashcardDecks = prependUnique(state.flashcardDecks);
+              break;
+            case "academic": {
+              const collection = trashItem.metadata?.collection;
+              if (!ACADEMIC_COLLECTIONS.includes(collection)) return state;
+              const academic = normalizeAcademicData(state.academic);
+              patch.academic = { ...academic, [collection]: prependUnique(academic[collection]) };
+              break;
+            }
+            default:
+              return state;
+          }
+          const now = Date.now();
+          return {
+            ...patch,
+            universalTrash: (state.universalTrash || []).filter((item) => item.id !== trashId),
+            universalHistory: [{
+              id: `history-${now}-${Math.random().toString(36).slice(2, 8)}`,
+              action: "restored",
+              entityType: trashItem.entityType,
+              entityId: trashItem.entityId,
+              title: trashItem.title,
+              timestamp: now,
+            }, ...(state.universalHistory || [])].slice(0, 2000),
+          };
+        }),
+
+      permanentlyDeleteTrashItem: (trashId) =>
+        set((state) => {
+          const item = (state.universalTrash || []).find((entry) => entry.id === trashId);
+          if (!item) return state;
+          const now = Date.now();
+          return {
+            universalTrash: state.universalTrash.filter((entry) => entry.id !== trashId),
+            universalHistory: [{
+              id: `history-${now}-${Math.random().toString(36).slice(2, 8)}`,
+              action: "permanently_deleted",
+              entityType: item.entityType,
+              entityId: item.entityId,
+              title: item.title,
+              timestamp: now,
+            }, ...(state.universalHistory || [])].slice(0, 2000),
+          };
+        }),
+
+      emptyUniversalTrash: () =>
+        set((state) => {
+          if (!(state.universalTrash || []).length) return state;
+          const now = Date.now();
+          return {
+            universalTrash: [],
+            universalHistory: [{
+              id: `history-${now}`,
+              action: "trash_emptied",
+              entityType: "system",
+              title: `${state.universalTrash.length} itens removidos definitivamente`,
+              timestamp: now,
+            }, ...(state.universalHistory || [])].slice(0, 2000),
+          };
+        }),
+
+      clearUniversalHistory: () => set({ universalHistory: [] }),
 
       deleteFlashcard: (deckId, cardId) =>
         set((state) => ({
@@ -3463,13 +3825,14 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
     }),
     {
       name: "studyhub-storage-v2",
-      version: 18,
+      version: 21,
       migrate: (persistedState) => {
         const studyItems = migrateStudyItems(persistedState);
         const contextual = migrateAcademicContexts({
           ...persistedState,
           studyItems,
         });
+        const migratedSticky = migrateDashboardNotesToStickyNotes(persistedState);
 
         return {
           ...persistedState,
@@ -3481,6 +3844,7 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
           journalEntries: normalizeJournalEntries(
             persistedState.journalEntries || [],
           ),
+          stickyNotes: migratedSticky.stickyNotes,
           importantQuotes: (persistedState.importantQuotes || []).map(normalizeImportantQuote),
           journalSettings: normalizeJournalSettings(
             persistedState.journalSettings || {},
@@ -3492,11 +3856,10 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
           flashcardReviewHistory: persistedState.flashcardReviewHistory || [],
           studyPlans: persistedState.studyPlans || [],
           importTransactions: persistedState.importTransactions || [],
-          dashboardQuickNotes: migrateDashboardQuickNotes(persistedState),
-          dashboardWidgets: ensureQuickNoteWidgets(
-            persistedState.dashboardWidgets,
-            migrateDashboardQuickNotes(persistedState),
-          ),
+          universalTrash: persistedState.universalTrash || [],
+          universalHistory: persistedState.universalHistory || [],
+          dashboardQuickNotes: [],
+          dashboardWidgets: migratedSticky.dashboardWidgets,
           activeAcademicSubjectId:
             persistedState.activeAcademicSubjectId || null,
           knowledgeItems: Array.isArray(persistedState.knowledgeItems)
@@ -3564,11 +3927,7 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
         state.tasks = contextual.tasks;
         state.flashcardDecks = contextual.flashcardDecks;
         state.focusSessions = contextual.focusSessions;
-        state.dashboardQuickNotes = migrateDashboardQuickNotes(state);
-        state.dashboardWidgets = ensureQuickNoteWidgets(
-          state.dashboardWidgets,
-          state.dashboardQuickNotes,
-        );
+        state.dashboardQuickNotes = [];
         state.academic = contextual.academic;
         state.collaboration = {
           ...createEmptyCollaboration(),
@@ -3576,6 +3935,11 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
         };
         state.journalEntries = normalizeJournalEntries(
           state.journalEntries || [],
+        );
+        state.stickyNotes = normalizeStickyNotes(state.stickyNotes);
+        state.dashboardWidgets = ensureStickyNoteWidgets(
+          state.dashboardWidgets,
+          state.stickyNotes,
         );
         state.journalSettings = normalizeJournalSettings(
           state.journalSettings || {},

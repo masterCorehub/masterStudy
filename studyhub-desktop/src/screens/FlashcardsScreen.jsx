@@ -15,6 +15,28 @@ export function FlashcardsScreen({ onNavigate }) {
   const answerKnowledgeQuiz = useStudyStore((state) => state.answerKnowledgeQuiz);
   const setActiveKnowledgeItemId = useStudyStore((state) => state.setActiveKnowledgeItemId);
   const courses = useStudyStore((state) => state.courses || []);
+  const speakCardText = useCallback(async (text) => {
+    const value = String(text || "").trim();
+    if (!value) return;
+    const portugueseHint = /\b(que|não|para|com|uma|dos|das|como|sobre|estudar|resposta|pergunta|sistema|função|classe|exemplo)\b/i.test(value) || /[ãõáéíóúç]/i.test(value);
+    const language = portugueseHint ? "pt-BR" : "en-US";
+    const result = await window.studyhubDesktop?.translator?.speak?.({ text: value, language });
+    if (result?.audioBase64) {
+      const audio = new Audio(`data:${result.mimeType || "audio/wav"};base64,${result.audioBase64}`);
+      await audio.play().catch(() => {});
+      return;
+    }
+    // The native provider may return ok without Base64 (macOS `say` plays in
+    // the main process). Do not start a second browser voice in that case.
+    if (result?.ok) return;
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(value);
+      utterance.lang = language;
+      utterance.voice = (window.speechSynthesis.getVoices?.() || []).find((voice) => voice.lang?.toLowerCase().startsWith(language.toLowerCase())) || null;
+      window.speechSynthesis.speak(utterance);
+    }
+  }, []);
   
   const [isFlipped, setIsFlipped] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -863,8 +885,9 @@ export function FlashcardsScreen({ onNavigate }) {
   const handleReview = (quality) => {
     if (!activeCard) return;
     setIsFlipped(false);
-    if (isCardAlreadyReviewed) {
+    if (isCardAlreadyReviewed && studyAheadMode) {
       setStudyAheadIndex(prev => prev + 1);
+      return;
     }
     reviewFlashcard(activeDeckId, activeCard.id, quality);
   };
@@ -900,6 +923,10 @@ export function FlashcardsScreen({ onNavigate }) {
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
+            <button type="button" onClick={() => { setStudyAheadMode((value) => !value); setStudyAheadIndex(0); setIsFlipped(false); }} className={`mt-3 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${studyAheadMode ? "bg-[color:var(--primary)] text-white" : "neo-inset text-[color:var(--on-surface-variant)]"}`}>
+              <Icon name="all_inclusive" className="mr-1 align-middle text-sm" />
+              {studyAheadMode ? "Praticando qualquer cartão" : "Praticar fora do dia"}
+            </button>
           </div>
         </header>
 
@@ -923,6 +950,7 @@ export function FlashcardsScreen({ onNavigate }) {
                     <h2 className="max-w-[700px] text-2xl md:text-3xl font-bold leading-relaxed text-[color:var(--on-surface)]">
                       <VocabTextRenderer text={activeCard.front || " "} />
                     </h2>
+                    <button type="button" onClick={(event) => { event.stopPropagation(); speakCardText(activeCard.front); }} className="rounded-xl px-3 py-2 text-xs font-bold neo-inset" title="Ouvir frente"><Icon name="volume_up" /> Ouvir</button>
                     <p className="text-xs text-[color:var(--on-surface-variant)] opacity-70 flex items-center gap-1.5">
                       <Icon name="touch_app" className="text-sm" />
                       Clique no cartão para virar
@@ -936,6 +964,7 @@ export function FlashcardsScreen({ onNavigate }) {
                     <h3 className="max-w-[700px] text-xl md:text-2xl font-medium leading-relaxed text-[color:var(--on-surface)]">
                       <VocabTextRenderer text={activeCard.back || " "} />
                     </h3>
+                    <button type="button" onClick={(event) => { event.stopPropagation(); speakCardText(activeCard.back); }} className="rounded-xl px-3 py-2 text-xs font-bold neo-inset" title="Ouvir resposta"><Icon name="volume_up" /> Ouvir</button>
                     <p className="text-xs text-[color:var(--on-surface-variant)] opacity-70">
                       Classifique sua lembrança abaixo
                     </p>

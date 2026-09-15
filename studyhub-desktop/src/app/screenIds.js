@@ -8,6 +8,8 @@ export const SCREEN_IDS = {
   NOTES: "notes",
   NOTE_EDITOR: "note_editor",
   JOURNAL: "journal",
+  STICKY_NOTES: "sticky_notes",
+  STICKY_NOTE_WIDGET: "sticky_note_widget",
   CREATE_MODULE: "create_module",
   ADD_LESSON: "add_lesson",
   CREATE_FLASHCARDS: "create_flashcards",
@@ -32,6 +34,7 @@ export const SCREEN_IDS = {
   ACCOUNT: "account",
   KNOWLEDGE_HUB: "knowledge_hub",
   KNOWLEDGE_ITEM_DETAIL: "knowledge_item_detail",
+  TRASH_HISTORY: "trash_history",
 };
 
 export const SCREEN_ORDER = [

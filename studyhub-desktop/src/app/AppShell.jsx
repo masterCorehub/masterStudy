@@ -13,6 +13,7 @@ import { QuickNoteModal } from "../components/QuickNoteModal";
 import { CommandPalette } from "../components/CommandPalette";
 import { Icon } from "../ui/Icon";
 import { AnimatePresence, motion } from "framer-motion";
+import { isPrimaryShortcut } from "../utils/keyboardShortcuts";
 
 import { useStudyStore } from "../store/useStore";
 import { collaborationCloud, collaborationCloudConfigured } from "../services/collaboration-cloud";
@@ -37,10 +38,14 @@ import { CampusFlowDisciplinesScreen } from "../screens/CampusFlowDisciplinesScr
 import { AcademicSubjectScreenV2 } from "../screens/AcademicSubjectScreenV2";
 import { CampusFlowProjectsScreen, CampusFlowProjectDetailsScreen } from "../screens/CampusFlowProjectsScreen";
 import { JournalScreen } from "../screens/JournalScreen";
+import { StickyNotesScreen } from "../screens/StickyNotesScreen";
+import { StickyNoteWidgetScreen } from "../screens/StickyNoteWidgetScreen";
 import { FlashcardsScreen } from "../screens/FlashcardsScreen";
 import { PomodoroScreen } from "../screens/PomodoroScreen";
 import { KnowledgeHubScreen } from "../screens/KnowledgeHubScreen";
 import { KnowledgeItemDetailScreen } from "../screens/KnowledgeItemDetailScreen";
+import { TrashHistoryScreen } from "../screens/TrashHistoryScreen";
+import { TrayPopoverScreen } from "../screens/TrayPopoverScreen";
 
 const BookReaderScreen = lazyNamed(
   () => import("../screens/BookReaderScreen"),
@@ -170,9 +175,53 @@ export function AppShell() {
   const aiFlashcardShortcut = useStudyStore(
     (state) => state.aiFlashcardShortcut,
   );
+  const stickyNotesShortcut = useStudyStore(
+    (state) => state.stickyNotesShortcut,
+  );
+  const liveTranslationCapture = useStudyStore(
+    (state) => Boolean(state.appSettings?.liveTranslationCapture),
+  );
   const requestImmersionSeek = useStudyStore(
     (state) => state.requestImmersionSeek,
   );
+
+  useEffect(() => {
+    window.studyhubDesktop?.translator?.setCaptureMode?.(
+      liveTranslationCapture ? "live" : "frozen",
+    );
+  }, [liveTranslationCapture]);
+
+  useEffect(() => {
+    return window.studyhubDesktop?.macWidgets?.onNavigate?.((screen) => {
+      if (screen) window.dispatchEvent(new CustomEvent("studyhub:navigate", { detail: { screen } }));
+    });
+  }, []);
+
+  useEffect(() => {
+    return window.studyhubDesktop?.trayPopover?.onOpenSettings?.(() => {
+      useStudyStore.getState().openSettingsModal?.("notifications");
+    });
+  }, []);
+
+  useEffect(() => {
+    return window.studyhubDesktop?.stickyNotes?.onChanged?.((change) => {
+      if (!change?.noteId) return;
+      if (change.type === "deleted") {
+        useStudyStore.setState((state) => ({
+          stickyNotes: (state.stickyNotes || []).filter(
+            (note) => note.id !== change.noteId,
+          ),
+        }));
+        return;
+      }
+      if (change.type === "updated" && change.updates) {
+        useStudyStore.getState().updateStickyNote?.(
+          change.noteId,
+          change.updates,
+        );
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (!window.studyhubDesktop?.onStudyDataChanged) return undefined;
@@ -186,7 +235,8 @@ export function AppShell() {
             if (snapshot?.state) {
               const normalized = normalizeAcademicStateSnapshot(snapshot.state);
               // Força que a referência seja completamente nova no store
-              useStudyStore.setState({ ...normalized }, true);
+              useStudyStore.setState({ ...normalized });
+              useStudyStore.getState().upgradeDashboardStickyNotes?.();
             }
           })
           .catch(() => useStudyStore.persist.rehydrate());
@@ -515,6 +565,7 @@ export function AppShell() {
           useStudyStore.setState(
             normalizeAcademicStateSnapshot(snapshot.state),
           );
+          useStudyStore.getState().upgradeDashboardStickyNotes?.();
         } else if (mounted) {
           await database.save(useStudyStore.getState());
         }
@@ -777,11 +828,7 @@ export function AppShell() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       const keyLower = e.key ? e.key.toLowerCase() : "";
-      if (
-        (e.ctrlKey && e.altKey && keyLower === "l") ||
-        (e.ctrlKey && e.altKey && e.shiftKey && (e.key === "1" || keyLower === "n")) ||
-        (e.altKey && e.shiftKey && keyLower === "n")
-      ) {
+      if (isPrimaryShortcut(e) && e.altKey && e.shiftKey && keyLower === "1") {
         e.preventDefault();
         setShowQuickNote(true);
       }
@@ -823,10 +870,12 @@ export function AppShell() {
         translatorTextShortcut,
         translatorOcrShortcut,
         aiFlashcardShortcut,
+        stickyNotesShortcut,
       })
       .catch(() => {});
   }, [
     aiFlashcardShortcut,
+    stickyNotesShortcut,
     quickDrawShortcut,
     quickNoteShortcut,
     translatorOcrShortcut,
@@ -845,6 +894,14 @@ export function AppShell() {
     windowParams?.get("standalone") === "1";
   const showAppTitleBar =
     activeScreen !== "pomodoro_widget" && !isStandaloneReaderWindow;
+
+  if (activeScreen === "tray_popover") {
+    return <TrayPopoverScreen />;
+  }
+
+  if (activeScreen === SCREEN_IDS.STICKY_NOTE_WIDGET) {
+    return <StickyNoteWidgetScreen noteId={windowParams?.get("noteId") || ""} />;
+  }
 
   if (isNoteSearchWindow) {
     return (
@@ -965,6 +1022,9 @@ export function AppShell() {
                   {activeScreen === SCREEN_IDS.JOURNAL ? (
                     <JournalScreen onNavigate={handleNavigate} />
                   ) : null}
+                  {activeScreen === SCREEN_IDS.STICKY_NOTES ? (
+                    <StickyNotesScreen />
+                  ) : null}
                   {activeScreen === SCREEN_IDS.TASKS ? (
                     <CampusFlowTasksScreen onNavigate={handleNavigate} />
                   ) : null}
@@ -1018,6 +1078,9 @@ export function AppShell() {
                   ) : null}
                   {activeScreen === SCREEN_IDS.KNOWLEDGE_ITEM_DETAIL ? (
                     <KnowledgeItemDetailScreen onNavigate={handleNavigate} />
+                  ) : null}
+                  {activeScreen === SCREEN_IDS.TRASH_HISTORY ? (
+                    <TrashHistoryScreen />
                   ) : null}
                 </div>
               </Suspense>

@@ -8,6 +8,7 @@ import { RichTextEditor } from "../components/RichTextEditor";
 import { markdownToNoteHtml } from "../domain/aiStudio";
 import { VaultExplorer } from "../components/notes/VaultExplorer";
 import { EditorTabs } from "../components/notes/EditorTabs";
+import { shortcutLabel } from "../utils/keyboardShortcuts";
 import { GraphView } from "../components/notes/GraphView";
 import { BacklinksPanel } from "../components/notes/BacklinksPanel";
 import { TagsPanel } from "../components/notes/TagsPanel";
@@ -210,17 +211,17 @@ export function NotesScreen({ onNavigate }) {
   // Atalhos de teclado globais
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl+O para Quick Switcher
+      // Cmd/Ctrl+O para Quick Switcher
       if ((e.ctrlKey || e.metaKey) && e.key === "o") {
         e.preventDefault();
         setShowQuickSwitcher((v) => !v);
       }
-      // Ctrl+S para Salvar
+      // Cmd/Ctrl+S para salvar
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         handleSave();
       }
-      // Ctrl+W para fechar aba
+      // Cmd/Ctrl+W para fechar aba
       if ((e.ctrlKey || e.metaKey) && e.key === "w") {
         e.preventDefault();
         if (activeTabId) store.closeTab(activeTabId);
@@ -623,7 +624,7 @@ export function NotesScreen({ onNavigate }) {
                 className="px-6 py-2 rounded-xl bg-[var(--surface-high)] text-[var(--on-surface)] font-medium border border-[var(--outline-variant)] hover:bg-[var(--surface-highest)] transition-all opacity-100 flex items-center gap-2"
               >
                 <Icon name="search" />
-                Abrir nota (Ctrl+O)
+                Abrir nota ({shortcutLabel("Mod+O")})
               </button>
             </div>
           </div>

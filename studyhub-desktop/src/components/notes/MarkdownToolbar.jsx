@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "../../ui/Icon";
+import { shortcutLabel } from "../../utils/keyboardShortcuts";
 import {
   insertHeading,
   insertList,
@@ -136,10 +137,10 @@ export function MarkdownToolbar({ editorView, className = "" }) {
 
   const toolbarButtons = [
     // Formatting
-    { icon: "format_bold", label: "Negrito (Ctrl+B)", action: handleBold, group: "format" },
-    { icon: "format_italic", label: "Itálico (Ctrl+I)", action: handleItalic, group: "format" },
-    { icon: "format_strikethrough", label: "Tachado (Ctrl+Shift+X)", action: handleStrikethrough, group: "format" },
-    { icon: "code", label: "Código inline (Ctrl+E)", action: handleInlineCode, group: "format" },
+    { icon: "format_bold", label: `Negrito (${shortcutLabel("Mod+B")})`, action: handleBold, group: "format" },
+    { icon: "format_italic", label: `Itálico (${shortcutLabel("Mod+I")})`, action: handleItalic, group: "format" },
+    { icon: "format_strikethrough", label: `Tachado (${shortcutLabel("Mod+Shift+X")})`, action: handleStrikethrough, group: "format" },
+    { icon: "code", label: `Código inline (${shortcutLabel("Mod+E")})`, action: handleInlineCode, group: "format" },
     { icon: "format_ink_highlighter", label: "Destacar", action: handleHighlight, group: "format", color: "tertiary" },
     { type: "separator" },
     // Headings

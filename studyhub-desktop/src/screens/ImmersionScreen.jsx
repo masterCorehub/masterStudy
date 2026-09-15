@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../ui/Icon";
+import { shortcutLabel } from "../utils/keyboardShortcuts";
 import { sanitizeUserHtml } from "../utils/sanitizeHtml";
 import { SCREEN_IDS } from "../app/screenIds";
 import { useStudyStore } from "../store/useStore";
@@ -2509,7 +2510,7 @@ export function ImmersionScreen({ onNavigate, onCanvasFullscreenChange }) {
             <button
               className="flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--on-surface-variant)] transition-colors hover:bg-[color:var(--surface-bright)] hover:text-[color:var(--on-surface)]"
               type="button"
-              title="Desfazer desenho (Ctrl+Z)"
+              title={`Desfazer desenho (${shortcutLabel("Mod+Z")})`}
               onClick={undoBoard}
             >
               <Icon name="undo" className="text-[17px]" />

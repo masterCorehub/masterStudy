@@ -4,6 +4,7 @@ import { SCREEN_IDS } from "../app/screenIds";
 import { normalizeAcademicData } from "../domain/academic";
 import { useStudyStore } from "../store/useStore";
 import { motion } from "framer-motion";
+import { isMacPlatform, isPrimaryShortcut, shortcutLabel } from "../utils/keyboardShortcuts";
 
 const GRID_SPACING = 28;
 
@@ -393,7 +394,7 @@ export function WhiteboardScreen({ onNavigate, onClose }) {
         setIsSpacePanning(true);
         spacePanningRef.current = true;
       }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+      if (isPrimaryShortcut(event) && !event.shiftKey && event.key.toLowerCase() === "z") {
         if (event.shiftKey) {
           redo();
         } else {
@@ -401,7 +402,7 @@ export function WhiteboardScreen({ onNavigate, onClose }) {
         }
         event.preventDefault();
       }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
+      if (isPrimaryShortcut(event) && (event.key.toLowerCase() === "y" || (isMacPlatform() && event.shiftKey && event.key.toLowerCase() === "z"))) {
         redo();
         event.preventDefault();
       }
@@ -975,14 +976,14 @@ export function WhiteboardScreen({ onNavigate, onClose }) {
             <button
               className="w-10 h-10 rounded-xl flex items-center justify-center text-[color:var(--on-surface-variant)] hover:neo-raised hover:text-[color:var(--primary)] transition-all"
               onClick={undo}
-              title="Desfazer (Ctrl+Z)"
+              title={`Desfazer (${shortcutLabel("Mod+Z")})`}
             >
               <Icon name="undo" />
             </button>
             <button
               className="w-10 h-10 rounded-xl flex items-center justify-center text-[color:var(--on-surface-variant)] hover:neo-raised hover:text-[color:var(--primary)] transition-all"
               onClick={redo}
-              title="Refazer (Ctrl+Y)"
+              title={`Refazer (${shortcutLabel(isMacPlatform() ? "Mod+Shift+Z" : "Mod+Y")})`}
             >
               <Icon name="redo" />
             </button>

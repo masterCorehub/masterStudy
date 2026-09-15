@@ -7,6 +7,7 @@ import { RichTextEditor } from "../components/RichTextEditor";
 import { AppSelect } from "../components/AppSelect";
 import { SharedNoteCollaborationPanel } from "../components/SharedNoteCollaborationPanel";
 import { normalizeAcademicData } from "../domain/academic";
+import { shortcutLabel } from "../utils/keyboardShortcuts";
 import {
   collaborationCloud,
   collaborationCloudConfigured,
@@ -628,7 +629,7 @@ export function NoteEditorScreen({ onNavigate }) {
     } else {
       setLocalContent((prev) => `${prev}<br/>${diffBlockHtml}`);
     }
-    setNoteAiNotice("Sugestão de reescrita inserida na nota. Escolha Aceitar (Ctrl+Enter) ou Rejeitar (Esc).");
+    setNoteAiNotice(`Sugestão de reescrita inserida na nota. Escolha Aceitar (${shortcutLabel("Mod+Enter")}) ou Rejeitar (Esc).`);
   };
 
   const acceptCopilotRewrite = () => {
@@ -670,6 +671,10 @@ export function NoteEditorScreen({ onNavigate }) {
   }, [pendingAiRewrite]);
 
   const startNoteAi = async () => {
+    if (noteAiStatus?.provider === "gemini") {
+      useStudyStore.getState().openSettingsModal?.("ai");
+      return;
+    }
     setNoteAiBusy(true);
     setNoteAiError("");
     try {
@@ -1898,11 +1903,13 @@ export function NoteEditorScreen({ onNavigate }) {
               {!noteAiStatus?.available ? (
                 <div className="campus-note-ai-offline">
                   <p className="text-sm font-extrabold text-amber-800">
-                    IA local desconectada
+                    {noteAiStatus?.provider === "gemini" ? "Google Gemini não configurado" : "IA local desconectada"}
                   </p>
                   <p className="mt-1 text-xs leading-5 text-amber-700">
                     {window.studyhubDesktop?.academicAI
-                      ? "Inicie o Ollama para analisar esta nota sem enviar o conteúdo para a nuvem."
+                      ? noteAiStatus?.provider === "gemini"
+                        ? "Configure sua chave Gemini nas Configurações de IA para analisar esta nota."
+                        : "Inicie o Ollama para analisar esta nota sem enviar o conteúdo para a nuvem."
                       : noteAiStatus?.supported
                         ? "Carregue a IA diretamente no navegador. O modelo será baixado somente na primeira utilização."
                         : "Seu navegador precisa oferecer WebGPU para executar a IA local."}
@@ -1916,7 +1923,7 @@ export function NoteEditorScreen({ onNavigate }) {
                     {noteAiBusy
                       ? "Carregando..."
                       : window.studyhubDesktop?.academicAI
-                        ? "Iniciar Ollama"
+                        ? noteAiStatus?.provider === "gemini" ? "Configurar Gemini" : "Iniciar Ollama"
                         : "Iniciar IA no navegador"}
                   </button>
                 </div>
@@ -1929,7 +1936,7 @@ export function NoteEditorScreen({ onNavigate }) {
                         <span>Modelo de IA</span>
                       </label>
                       <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                        {noteAiStatus?.provider === "webllm" ? "WebLLM Ativo" : "Ollama Conectado"}
+                        {noteAiStatus?.provider === "webllm" ? "WebLLM Ativo" : noteAiStatus?.provider === "gemini" ? "Gemini Conectado" : "Ollama Conectado"}
                       </span>
                     </div>
                     <select
@@ -2342,10 +2349,10 @@ export function NoteEditorScreen({ onNavigate }) {
               type="button"
               onClick={acceptCopilotRewrite}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black shadow-md hover:scale-[1.03] transition-all cursor-pointer"
-              title="Aceitar modificação (Ctrl+Enter ou Tab)"
+              title={`Aceitar modificação (${shortcutLabel("Mod+Enter")} ou Tab)`}
             >
               <Icon name="check" className="text-base" />
-              <span>Aceitar (Ctrl+Enter)</span>
+              <span>Aceitar ({shortcutLabel("Mod+Enter")})</span>
             </button>
 
             <button

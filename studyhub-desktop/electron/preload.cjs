@@ -30,11 +30,35 @@ contextBridge.exposeInMainWorld("studyhubDesktop", {
   openAiFlashcardWindow: () => ipcRenderer.invoke("window:openAiFlashcard"),
   updateGlobalShortcuts: (shortcuts) =>
     ipcRenderer.invoke("shortcuts:update", shortcuts),
+  notifications: {
+    show: (payload) => ipcRenderer.invoke("notifications:show", payload),
+  },
+  trayPopover: {
+    action: (action) => ipcRenderer.invoke("tray-popover:action", action),
+    onOpenSettings: (callback) => {
+      const listener = () => callback();
+      ipcRenderer.on("tray-popover:open-settings", listener);
+      return () => ipcRenderer.removeListener("tray-popover:open-settings", listener);
+    },
+  },
   openNoteEditorWindow: (noteId) =>
     ipcRenderer.invoke("window:openNoteEditor", noteId),
   openBookReaderWindow: (bookId) =>
     ipcRenderer.invoke("window:openBookReader", bookId),
   openPomodoroWidget: () => ipcRenderer.invoke("window:openPomodoroWidget"),
+  stickyNotes: {
+    open: (noteId, options = {}) =>
+      ipcRenderer.invoke("sticky-notes:open", noteId, options),
+    setAlwaysOnTop: (enabled) =>
+      ipcRenderer.invoke("sticky-notes:set-always-on-top", Boolean(enabled)),
+    broadcastChange: (change) =>
+      ipcRenderer.invoke("sticky-notes:changed", change),
+    onChanged: (callback) => {
+      const listener = (_event, change) => callback(change);
+      ipcRenderer.on("sticky-notes:changed", listener);
+      return () => ipcRenderer.removeListener("sticky-notes:changed", listener);
+    },
+  },
   pomodoroWidget: {
     minimize: () => ipcRenderer.invoke("window:minimize"),
     close: () => ipcRenderer.invoke("window:close"),
@@ -86,6 +110,10 @@ contextBridge.exposeInMainWorld("studyhubDesktop", {
   academicAI: {
     status: () => ipcRenderer.invoke("academic-ai:status"),
     start: () => ipcRenderer.invoke("academic-ai:start"),
+    getConfig: () => ipcRenderer.invoke("academic-ai:config:get"),
+    saveConfig: (payload) => ipcRenderer.invoke("academic-ai:config:save", payload),
+    testConfig: (payload) => ipcRenderer.invoke("academic-ai:config:test", payload),
+    chat: (payload) => ipcRenderer.invoke("academic-ai:chat", payload),
     listSources: (subjectId) =>
       ipcRenderer.invoke("academic-ai:list-sources", subjectId),
     indexSources: (payload) =>
@@ -127,7 +155,8 @@ contextBridge.exposeInMainWorld("studyhubDesktop", {
     completeSelection: (payload) =>
       ipcRenderer.invoke("translator:complete-selection", payload),
     cancelCapture: () => ipcRenderer.invoke("translator:cancel-capture"),
-    startCapture: () => ipcRenderer.invoke("translator:start-capture"),
+    startCapture: (options) => ipcRenderer.invoke("translator:start-capture", options),
+    setCaptureMode: (mode) => ipcRenderer.invoke("translator:set-capture-mode", mode),
     retryOcr: () => ipcRenderer.invoke("translator:retry-ocr"),
     copyText: (text) => ipcRenderer.invoke("translator:copy-text", text),
     close: () => ipcRenderer.invoke("translator:close"),
@@ -138,6 +167,17 @@ contextBridge.exposeInMainWorld("studyhubDesktop", {
       ipcRenderer.on("translator:session-changed", listener);
       return () =>
         ipcRenderer.removeListener("translator:session-changed", listener);
+    },
+  },
+  journal: {
+    sendToApple: (payload) => ipcRenderer.invoke("journal:send-to-apple", payload),
+  },
+  macWidgets: {
+    update: (state) => ipcRenderer.invoke("mac-widgets:update", state),
+    onNavigate: (callback) => {
+      const listener = (_event, screen) => callback(screen);
+      ipcRenderer.on("mac-widgets:navigate", listener);
+      return () => ipcRenderer.removeListener("mac-widgets:navigate", listener);
     },
   },
   onStudyDataChanged: (callback) => {
