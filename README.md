@@ -10,6 +10,35 @@ O **masterStudy** é um aplicativo de organização acadêmica e estudo para web
 
 Projeto mantido por [Alexandre Wayss](https://github.com/alexandre-wayss), desenvolvido e evoluído com apoio de ferramentas de IA. A proposta é um produto utilizável e um projeto para demonstrar decisões, implementação e manutenção de software.
 
+## Veja o app em ação
+
+![Visão do dia no masterStudy](branding/screenshots/hoje.png)
+
+O **Hoje** reúne tarefas, prazos e agenda para você escolher o próximo passo.
+
+### Um percurso rápido
+
+![Demonstração: criar e concluir uma tarefa, abrir disciplinas e consultar livros](branding/demo.gif)
+
+Criação e conclusão de uma tarefa, seguida da navegação por disciplinas e biblioteca. O GIF mostra a interface real com dados fictícios de demonstração.
+
+### Explore as áreas
+
+Clique nas imagens para abrir em tamanho maior.
+
+<table>
+  <tr>
+    <td width="50%"><strong>Cursos e disciplinas</strong><br>Organize suas matérias e materiais.<br><a href="branding/screenshots/disciplinas.png"><img src="branding/screenshots/disciplinas.png" alt="Cursos e disciplinas no masterStudy"></a></td>
+    <td width="50%"><strong>Biblioteca</strong><br>Acompanhe os livros e seu progresso.<br><a href="branding/screenshots/biblioteca.png"><img src="branding/screenshots/biblioteca.png" alt="Biblioteca de livros no masterStudy"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><strong>Estúdio de Estudo</strong><br>Separe conversas e explore assuntos.<br><a href="branding/screenshots/estudio.png"><img src="branding/screenshots/estudio.png" alt="Estúdio de Estudo no masterStudy"></a></td>
+    <td width="50%"><strong>Leitor</strong><br>Leia e ajuste a aparência do conteúdo.<br><a href="branding/screenshots/leitor.png"><img src="branding/screenshots/leitor.png" alt="Leitor EPUB e opções de aparência no masterStudy"></a></td>
+  </tr>
+</table>
+
+_As capturas usam conteúdo de exemplo. A demonstração visual não valida serviços externos de conta ou IA._
+
 ## Funcionalidades
 
 | Área | O que você pode fazer |
