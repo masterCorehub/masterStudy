@@ -461,7 +461,7 @@ export function PdfGuidedReadingModal({
       exit={{ opacity: 0 }}
     >
       <aside className="hidden w-[86px] shrink-0 flex-col items-center border-r border-white/70 bg-[#eef0f6] py-5 shadow-[10px_0_28px_rgba(93,91,132,0.08)] md:flex">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[color:var(--primary)] shadow-[6px_6px_16px_rgba(93,91,132,.12)]" aria-label="StudyHub">
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[color:var(--primary)] shadow-[6px_6px_16px_rgba(93,91,132,.12)]" aria-label="masterStudy">
           <Icon name="school" className="text-[25px]" />
         </span>
         <div className="mt-9 flex flex-col gap-3 text-[color:var(--on-surface-variant)]">
@@ -482,7 +482,7 @@ export function PdfGuidedReadingModal({
           <div className="flex min-w-0 items-center gap-4">
             <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[color:var(--on-surface-variant)] neo-inset md:hidden" onClick={handleClose} type="button" aria-label="Voltar"><Icon name="arrow_back" /></button>
             <div className="min-w-0">
-              <p className="truncate text-lg font-black">StudyHub <span className="ml-2 font-bold text-[color:var(--primary)]">{title}</span></p>
+              <p className="truncate text-lg font-black">masterStudy <span className="ml-2 font-bold text-[color:var(--primary)]">{title}</span></p>
               <p className="mt-0.5 max-w-[42vw] truncate text-xs font-semibold text-[color:var(--on-surface-variant)]">{pdfTitle}</p>
             </div>
           </div>

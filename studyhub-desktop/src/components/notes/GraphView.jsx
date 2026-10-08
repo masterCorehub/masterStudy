@@ -23,6 +23,7 @@ export function GraphView({
   className = "",
 }) {
   const canvasRef = useRef(null);
+  const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const animationRef = useRef(null);
   const simulationRef = useRef(null);
   const [hoveredNode, _setHoveredNode] = useState(null);
@@ -88,6 +89,21 @@ export function GraphView({
     [activeNoteId]
   );
 
+  // Observe the actual canvas box after layout, including panel reopening.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const measure = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      setViewport(previous => previous.width === rect.width && previous.height === rect.height ? previous : { width: rect.width, height: rect.height });
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(canvas);
+    measure();
+    return () => observer.disconnect();
+  }, [filteredNodes.length > 0]);
+
   // Inicializa simulação force-directed
   useEffect(() => {
     if (!filteredNodes.length) return;
@@ -95,13 +111,13 @@ export function GraphView({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * window.devicePixelRatio;
-    canvas.height = rect.height * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-
-    const width = rect.width;
-    const height = rect.height;
+    const theme = getComputedStyle(canvas);
+    const { width, height } = viewport;
+    if (!width || !height) return;
+    canvas.width = Math.round(width * window.devicePixelRatio);
+    canvas.height = Math.round(height * window.devicePixelRatio);
+    // Reset scaling on each resize; accumulated scales distort the drawing.
+    ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
 
     // Inicializa posições dos nós em círculo
     const sim = filteredNodes.map((node, i) => {
@@ -211,8 +227,10 @@ export function GraphView({
         ctx.strokeStyle = isHighlighted
           ? "rgba(99, 102, 241, 0.6)"
           : "rgba(128, 128, 128, 0.25)";
+        ctx.setLineDash(edge.kind === "tag" ? [4, 4] : []);
         ctx.lineWidth = isHighlighted ? 1.5 : 0.8;
         ctx.stroke();
+        ctx.setLineDash([]);
       });
 
       // Desenha nós
@@ -252,8 +270,8 @@ export function GraphView({
           ctx.font = `${isActive ? "600" : "400"} 11px 'Plus Jakarta Sans', sans-serif`;
           ctx.fillStyle =
             isActive || isHovered
-              ? "var(--on-surface)"
-              : "var(--on-surface-variant)";
+              ? theme.getPropertyValue("--on-surface").trim()
+              : theme.getPropertyValue("--on-surface-variant").trim();
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           const label = (node.title || "").length > 25
@@ -273,7 +291,7 @@ export function GraphView({
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [filteredNodes, filteredEdges, activeNoteId, getNodeColor]);
+  }, [filteredNodes, filteredEdges, activeNoteId, getNodeColor, viewport]);
 
   // Mouse handlers
   const handleMouseMove = useCallback((e) => {
@@ -390,7 +408,7 @@ export function GraphView({
         <div className="text-center">
           <Icon name="hub" className="text-5xl mb-3 block mx-auto opacity-40" />
           <p className="text-sm font-medium">
-            {isLocal ? "Nenhuma conexão encontrada" : "Crie notas com [[wikilinks]] para ver o grafo"}
+            {isLocal ? "Nenhuma conexão encontrada" : "Conecte notas com #tags, [[links]] ou notas internas"}
           </p>
         </div>
       </div>
@@ -401,7 +419,8 @@ export function GraphView({
     <div className={`relative h-full w-full ${className}`}>
       <canvas
         ref={canvasRef}
-        className="w-full h-full"
+        className="absolute inset-0 block w-full h-full"
+        aria-label="Grafo de conexões entre notas"
         onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
@@ -412,6 +431,7 @@ export function GraphView({
       {/* Stats overlay */}
       <div className="absolute bottom-3 left-3 text-[10px] text-[var(--on-surface-variant)] opacity-50 select-none font-mono">
         {filteredNodes.length} notas · {filteredEdges.length} conexões
+        <div>Tracejadas: tags em comum</div>
       </div>
 
       {/* Zoom controls */}

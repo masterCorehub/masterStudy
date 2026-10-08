@@ -375,10 +375,12 @@ test("findPython prioriza o executável do ambiente gerenciado", async () => {
   const managedPaths = getManagedWhisperPaths(directory);
   try {
     await fsp.mkdir(path.dirname(managedPaths.python), { recursive: true });
-    try {
-      await fsp.link(process.execPath, managedPaths.python);
-    } catch {
+    if (process.platform === "win32") {
       await fsp.copyFile(process.execPath, managedPaths.python);
+    } else {
+      // A shell fixture avoids relocating a signed macOS executable and
+      // supplies the version output expected from a Python environment.
+      await fsp.writeFile(managedPaths.python, "#!/bin/sh\nprintf 'Python 3.11.0\\n'\n", { mode: 0o755 });
     }
     const python = await findPython({ userDataPath: directory });
     assert.equal(python.available, true);

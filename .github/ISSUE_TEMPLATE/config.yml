@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Conhecer o masterStudy
+    url: https://github.com/alexandre-wayss/masterStudy#readme
+    about: Consulte funcionalidades, acesso e instalação no README.
+  - name: Política de segurança
+    url: https://github.com/alexandre-wayss/masterStudy/blob/main/SECURITY.md
+    about: Não exponha vulnerabilidades ou credenciais em issues públicas.

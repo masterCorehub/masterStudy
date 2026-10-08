@@ -45,3 +45,25 @@ playwright-report/
 *.exe
 *.AppImage
 Mairo Vergara/
+
+# Local agent configuration and generated QA evidence
+.agents/
+.codex/
+studyhub-desktop/qa/
+studyhub-desktop/audit/
+studyhub-desktop/audits/
+*.err
+
+# Retired prototypes and documentation website
+/DESIGNNOVO/
+/stitch_immersive_study_hub/
+/docs/
+/documentation/
+/portfolio/
+
+# Local user data and credentials
+*.sqlite
+*.sqlite-*
+*.db
+*.pem
+*.p12

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Icon } from "../ui/Icon";
 import { useStudyStore } from "../store/useStore";
 import { SCREEN_IDS } from "../app/screenIds";
@@ -8,6 +8,7 @@ import {
   resourceFileName,
 } from "../domain/academicResource";
 import { calculateSubjectGrade } from "../domain/academic";
+import { parseStudyTool, studyToolPrompt, isStructuredStudyTool } from "../domain/studyTools";
 import { markdownToNoteHtml } from "../domain/aiStudio";
 import { sanitizeGeneratedHtml } from "../utils/sanitizeHtml";
 import { getLocalDateKey } from "../utils/dateUtils";
@@ -124,10 +125,11 @@ export function FormattedMarkdown({ content }) {
 }
 
 // Real Ollama Local AI helper
-async function generateWithOllama(ollamaUrl, modelName, systemPrompt, userPrompt) {
+async function generateWithOllama(ollamaUrl, modelName, systemPrompt, userPrompt, format) {
   if (window.studyhubDesktop?.academicAI?.chat) {
     const result = await window.studyhubDesktop.academicAI.chat({
       model: modelName,
+      format,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -143,7 +145,8 @@ async function generateWithOllama(ollamaUrl, modelName, systemPrompt, userPrompt
     body: JSON.stringify({
       model: modelName || "llama3.2",
       prompt: `${systemPrompt}\n\nPergunta do aluno: ${userPrompt}`,
-      stream: false
+      stream: false,
+      ...(format ? { format } : {})
     })
   });
 
@@ -156,8 +159,18 @@ async function generateWithOllama(ollamaUrl, modelName, systemPrompt, userPrompt
   return data.response;
 }
 
+// A recursão desenha cada conceito e depois seus filhos, preservando a hierarquia.
+function MindMapNode({ node }) {
+  return <div className="study-mindmap-node">
+    <span>{node.label}</span>
+    {node.children.length > 0 && <ul>{node.children.map((child, index) => <li key={index}><MindMapNode node={child} /></li>)}</ul>}
+  </div>;
+}
+
 export function AcademicSubjectScreenV2({ onNavigate }) {
   const activeSubjectId = useStudyStore((state) => state.activeAcademicSubjectId);
+  // Class attendance and linked notes need the active semester from the store.
+  const activeSemesterId = useStudyStore((state) => state.academic?.activeSemesterId);
   const subjects = useStudyStore((state) => state.academic?.subjects || []);
   const subject = subjects.find(s => s.id === activeSubjectId);
 
@@ -184,12 +197,11 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
   const deleteAcademicEntity = useStudyStore(
     (state) => state.deleteAcademicEntity,
   );
-  const setAcademicAiChatHistory = useStudyStore(
-    (state) => state.setAcademicAiChatHistory,
-  );
-  const aiChatHistories = useStudyStore(
-    (state) => state.academic?.aiChatHistories || {},
-  );
+  const setAcademicAiChats = useStudyStore((state) => state.setAcademicAiChats);
+  const createAcademicAiChat = useStudyStore((state) => state.createAcademicAiChat);
+  const updateAcademicAiChat = useStudyStore((state) => state.updateAcademicAiChat);
+  const deleteAcademicAiChat = useStudyStore((state) => state.deleteAcademicAiChat);
+  const aiChatsBySubject = useStudyStore((state) => state.academic?.aiChats || {});
   const collaboration = useStudyStore(
     (state) => state.collaboration || {},
   );
@@ -462,6 +474,8 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
     }
   };
 
+  const [studioPanel, setStudioPanel] = useState(null);
+  const [sourceQuery, setSourceQuery] = useState("");
   const [activeTab, setActiveTab] = useState("Estúdio IA");
   const [showSubjectShareModal, setShowSubjectShareModal] = useState(false);
   const [cloudInvitations, setCloudInvitations] = useState([]);
@@ -818,12 +832,15 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
   // AI Chat State
   const [message, setMessage] = useState("");
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [renamingChat, setRenamingChat] = useState(false);
+  const [chatTitleDraft, setChatTitleDraft] = useState("");
 
   const defaultInitialChat = useMemo(
     () => [
       {
         role: "ai",
-        content: `### 💡 Como posso ajudar?\n\nOlá! Sou o tutor inteligente da disciplina de **${subject?.name || "sua matéria"}** conectado via **Ollama IA local**.\n\n- Analiso seus materiais marcados\n- Respondo suas dúvidas com base exclusiva nos arquivos da matéria\n- Gera simulados e flashcards dinâmicos`,
+        content: `### Vamos estudar ${subject?.name || "sua matéria"}?\n\nFaça uma pergunta ou abra **Fontes** para escolher seus materiais. Em **Ferramentas**, você encontra resumos, flashcards e exercícios.`,
         time: "Agora",
         sources: [],
       },
@@ -831,17 +848,32 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
     [subject?.name],
   );
 
-  const chatHistory = useMemo(() => {
-    if (!activeSubjectId) return defaultInitialChat;
-    const stored = aiChatHistories[activeSubjectId];
-    return Array.isArray(stored) && stored.length > 0 ? stored : defaultInitialChat;
-  }, [aiChatHistories, activeSubjectId, defaultInitialChat]);
+  const subjectChats = useMemo(
+    () => (activeSubjectId ? aiChatsBySubject[activeSubjectId] || [] : []),
+    [activeSubjectId, aiChatsBySubject],
+  );
+
+  useEffect(() => {
+    setActiveChatId(subjectChats[0]?.id || null);
+    setMessage("");
+  }, [activeSubjectId]);
+
+  const activeChat = subjectChats.find((chat) => chat.id === activeChatId) || subjectChats[0] || null;
+  const chatHistory = activeChat?.messages?.length ? activeChat.messages : defaultInitialChat;
+
+  const saveChatMessages = (messages, chatId = activeChat?.id) => {
+    if (!activeSubjectId || !chatId) return;
+    // Atualiza somente a conversa original; respostas atrasadas preservam chats novos.
+    updateAcademicAiChat(activeSubjectId, chatId, { messages });
+  };
 
   // AI Modal Tools State
   const [activeAiToolModal, setActiveAiToolModal] = useState(null);
   const [aiToolLoading, setAiToolLoading] = useState(false);
   const [aiToolError, setAiToolError] = useState("");
   const [aiToolContent, setAiToolContent] = useState(null);
+  const toolGenerationId = useRef(0);
+  const closeAiToolModal = () => { toolGenerationId.current += 1; setActiveAiToolModal(null); };
 
   const [generatedQuizIndex, setGeneratedQuizIndex] = useState(0);
   const [selectedQuizAnswers, setSelectedQuizAnswers] = useState({});
@@ -1226,7 +1258,6 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
       return { ok: false, failed: [] };
     }
     const payloadSources = selectedSources
-      .filter((source) => !source.fromLessonNote)
       .map(buildAcademicAiSourcePayload)
       .filter(Boolean);
     if (!payloadSources.length) return { ok: true, failed: [] };
@@ -1244,11 +1275,20 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
     const query = textToSend || message;
     if (!query.trim() || isAiThinking || !activeSubjectId) return;
 
+    let chatId = activeChat?.id;
+    if (!chatId) {
+      chatId = createAcademicAiChat(activeSubjectId, {
+        title: query.trim().slice(0, 42),
+        messages: defaultInitialChat,
+      });
+      setActiveChatId(chatId);
+    }
+
     const userTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const userMsg = { role: "user", content: query, time: userTime };
 
     const updatedWithUser = [...chatHistory, userMsg];
-    setAcademicAiChatHistory(activeSubjectId, updatedWithUser);
+    saveChatMessages(updatedWithUser, chatId);
 
     if (!textToSend) setMessage("");
     setIsAiThinking(true);
@@ -1285,7 +1325,7 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             sources: response.citations || selectedSrcNames.slice(0, 2),
           };
-          setAcademicAiChatHistory(activeSubjectId, [...updatedWithUser, aiMsg]);
+          saveChatMessages([...updatedWithUser, aiMsg], chatId);
           setIsAiThinking(false);
           return;
         }
@@ -1294,7 +1334,7 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
         if (configuredAiProvider === "gemini") {
           const detail = String(e?.message || e || "");
           const busy = /high demand|resource.?exhausted|429/i.test(detail);
-          setAcademicAiChatHistory(activeSubjectId, [
+          saveChatMessages([
             ...updatedWithUser,
             {
               role: "ai",
@@ -1304,7 +1344,7 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
               time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
               sources: [],
             },
-          ]);
+          ], chatId);
           setIsAiThinking(false);
           return;
         }
@@ -1352,9 +1392,9 @@ INSTRUÇÕES DE RESPOSTA:
         sources: selectedSrcNames.slice(0, 2),
       };
 
-      setAcademicAiChatHistory(activeSubjectId, [...updatedWithUser, aiMsg]);
+      saveChatMessages([...updatedWithUser, aiMsg], chatId);
     } catch (err) {
-      setAcademicAiChatHistory(activeSubjectId, [
+      saveChatMessages([
         ...updatedWithUser,
         {
           role: "ai",
@@ -1364,7 +1404,7 @@ INSTRUÇÕES DE RESPOSTA:
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           sources: [],
         },
-      ]);
+      ], chatId);
     } finally {
       setIsAiThinking(false);
     }
@@ -1372,6 +1412,7 @@ INSTRUÇÕES DE RESPOSTA:
 
   // AI Tool Modal Generator via Ollama
   const openAiToolModal = async (toolId) => {
+    const generationId = ++toolGenerationId.current;
     setActiveAiToolModal(toolId);
     setAiToolLoading(true);
     setAiToolError("");
@@ -1382,98 +1423,37 @@ INSTRUÇÕES DE RESPOSTA:
     setFlashcardFlipped(false);
     setCurrentFlashcardIndex(0);
 
-    const selectedSrcNames = sources.filter(s => s.selected).map(s => s.name);
-    const context = `Disciplina: "${subject?.name}". Fontes selecionadas: ${selectedSrcNames.join(", ") || "Todas"}.`;
-
     try {
-      if (isOllamaConnected) {
-        if (toolId === "guide") {
-          const sys = `Gere um Guia de Estudo em Markdown para ${subject?.name} com títulos (###), tópicos essenciais, glossário e dicas de exame.`;
-          const res = await generateWithOllama(ollamaUrl, selectedModel, sys, context);
-          setAiToolContent({ type: "text", text: res });
-        } else if (toolId === "summary") {
-          const sys = `Gere um Resumo Executivo em Markdown consolidando os materiais de ${subject?.name}.`;
-          const res = await generateWithOllama(ollamaUrl, selectedModel, sys, context);
-          setAiToolContent({ type: "text", text: res });
-        } else if (toolId === "flashcards") {
-          const sys = `Gere 4 flashcards para ${subject?.name}. Responda APENAS um JSON estrito no formato: [{"front": "pergunta", "back": "resposta"}] sem nenhum texto explicativo extra.`;
-          const raw = await generateWithOllama(ollamaUrl, selectedModel, sys, context);
-          const cleanJson = raw.substring(raw.indexOf("["), raw.lastIndexOf("]") + 1);
-          const parsed = JSON.parse(cleanJson);
-          setAiToolContent({ type: "flashcards", cards: parsed });
-        } else if (toolId === "quiz") {
-          const sys = `Gere um Quiz de 3 questões de múltipla escolha para ${subject?.name}. Responda APENAS um JSON estrito no formato: [{"question": "pergunta", "options": ["A", "B", "C", "D"], "correctIndex": 0, "explanation": "explicacao"}] sem nenhum texto extra.`;
-          const raw = await generateWithOllama(ollamaUrl, selectedModel, sys, context);
-          const cleanJson = raw.substring(raw.indexOf("["), raw.lastIndexOf("]") + 1);
-          const parsed = JSON.parse(cleanJson);
-          setAiToolContent({ type: "quiz", questions: parsed });
-        } else {
-          const sys = `Gere um Plano de Revisão em Markdown para ${subject?.name}.`;
-          const res = await generateWithOllama(ollamaUrl, selectedModel, sys, context);
-          setAiToolContent({ type: "text", text: res });
-        }
+      const selectedSources = sources.filter(source => source.selected);
+      let raw;
+      if (window.studyhubDesktop?.academicAI?.generate) {
+        if (!selectedSources.length) throw new Error("Selecione pelo menos uma fonte para gerar material de estudo.");
+        // O serviço nativo lê os trechos dos arquivos, em vez de enviar só seus nomes.
+        const indexed = await ensureSelectedSourcesIndexed(selectedSources);
+        if (!indexed.ok || indexed.failed.length) throw new Error("Não foi possível ler todas as fontes selecionadas. Confira os arquivos e links e tente novamente.");
+        const result = await window.studyhubDesktop.academicAI.generate({
+          subjectId: activeSubjectId,
+          semesterId: subject?.semesterId,
+          kind: toolId === "plan" ? "study-plan" : toolId,
+          sourceIds: selectedSources.map(source => source.id),
+          model: selectedModel,
+        });
+        if (result?.truncated) throw new Error("A resposta da IA ficou incompleta. Tente novamente com menos fontes.");
+        raw = result?.content;
+      } else if (isOllamaConnected) {
+        raw = await generateWithOllama(ollamaUrl, selectedModel, studyToolPrompt(toolId), getSourcesContext(), isStructuredStudyTool(toolId) ? "json" : undefined);
+      } else if (!window.studyhubDesktop && isWebLlmAvailable()) {
+        raw = await askWithWebLLM({ system: studyToolPrompt(toolId), prompt: getSourcesContext() });
       } else {
-        await new Promise(r => setTimeout(r, 600));
-        if (toolId === "flashcards") {
-          setAiToolContent({
-            type: "flashcards",
-            cards: [
-              { front: `Qual o objetivo principal da disciplina de ${subject.name}?`, back: "Fornecer ferramentas conceituais e práticas para solução de problemas complexos." },
-              { front: "O que é Escalabilidade Horizontal?", back: "Adição de mais servidores ou nós de processamento para distribuir a carga de trabalho." },
-              { front: "Diferença entre Latência e Throughput?", back: "Latência é o tempo de resposta; Throughput é a quantidade de requisições processadas por segundo." },
-              { front: "O que garante Tolerância a Falhas?", back: "Redundância de dados, réplicas ativas e rotinas automáticas de recuperação." }
-            ]
-          });
-        } else if (toolId === "quiz") {
-          setAiToolContent({
-            type: "quiz",
-            questions: [
-              {
-                question: `Qual das opções melhor descreve o objetivo central de ${subject.name}?`,
-                options: [
-                  "Otimizar a alocação de recursos e modelar soluções eficientes no domínio estudado.",
-                  "Memorizar apenas definições teóricas sem aplicação real.",
-                  "Evitar qualquer tipo de sincronização de dados.",
-                  "Substituir todos os sistemas tradicionais."
-                ],
-                correctIndex: 0,
-                explanation: "A modelagem eficiente e a gestão de recursos é a base dos princípios estudados na disciplina."
-              },
-              {
-                question: "Qual técnica é amplamente recomendada para resolver gargalos de desempenho?",
-                options: [
-                  "Aumentar o tempo de espera arbitrariamente.",
-                  "Particionamento de carga, paralelismo e cache de alta velocidade.",
-                  "Eliminar logs e monitoramentos.",
-                  "Forçar reinicializações constantes no sistema."
-                ],
-                correctIndex: 1,
-                explanation: "O uso de cache, paralelismo e divisão de carga reduz latência e evita sobrecargas."
-              },
-              {
-                question: "Diante de uma falha de rede parcial, qual propriedade garante maior resiliência?",
-                options: [
-                  "Tolerância a particionamentos e mecanismos de fallback.",
-                  "Acoplamento rígido entre todos os componentes.",
-                  "Bloqueio indefinido da aplicação.",
-                  "Desconexão permanente de todos os nós."
-                ],
-                correctIndex: 0,
-                explanation: "O isolamento de falhas e mecanismos de fallback mantêm a aplicação operacional mesmo durante instabilidades."
-              }
-            ]
-          });
-        } else {
-          setAiToolContent({
-            type: "text",
-            text: `### 📚 Guia de Estudo — ${subject.name}\n\n### 1. Principais Tópicos\n- Fundamentos Teóricos e Estrutura Lógica\n- Algoritmos de Comunicação e Concorrência\n- Boas Práticas e Resolução de Exercícios\n\n### 2. Conceitos Chave\n- **Throughput**: Capacidade de processamento contínuo.\n- **Failover**: Redirecionamento automático em caso de parada.\n\n*(Inicie o serviço do Ollama em \`http://localhost:11434\` para utilizar a sua IA local em tempo real!)*`
-          });
-        }
+        throw new Error(configuredAiProvider === "gemini" ? "Configure o Gemini nas configurações de IA para gerar este material." : "Conecte o Ollama nas configurações de IA para gerar este material.");
       }
+      // Uma resposta antiga não pode sobrescrever uma ferramenta aberta depois.
+      if (generationId !== toolGenerationId.current) return;
+      setAiToolContent(parseStudyTool(toolId, raw));
     } catch (err) {
-      setAiToolError(err.message || "Erro ao conectar com o Ollama.");
+      if (generationId === toolGenerationId.current) setAiToolError(err.message || "Não foi possível gerar o material de estudo.");
     } finally {
-      setAiToolLoading(false);
+      if (generationId === toolGenerationId.current) setAiToolLoading(false);
     }
   };
 
@@ -1502,7 +1482,9 @@ INSTRUÇÕES DE RESPOSTA:
     store.setActiveVaultId?.(vaultId);
     addNote({
       id: newNoteId,
-      title: classLog.title ? `Nota · ${classLog.title}` : `Nota da Aula #${classLog.lessonNumber || 1}`,
+      title: `Nota da aula — ${classLog.date ? new Date(`${classLog.date}T12:00:00`).toLocaleDateString("pt-BR") : new Date().toLocaleDateString("pt-BR")} · ${classLog.title || subject?.name || "Disciplina"}`,
+      category: "Nota de aula",
+      date: classLog.date || getLocalDateKey(),
       content: classLog.contentSummary
         ? `<p><strong>Conteúdo da Aula:</strong></p><p>${classLog.contentSummary}</p>`
         : `<p>Anotações da aula <strong>${classLog.title || "sem título"}</strong> de ${subject?.name || "Disciplina"}.</p>`,
@@ -1532,110 +1514,39 @@ INSTRUÇÕES DE RESPOSTA:
   }
 
   return (
-    <div className="flex h-screen w-full bg-[color:var(--background)] font-sans overflow-hidden">
+    <div className="study-subject-page flex h-full min-h-0 w-full flex-col bg-[color:var(--background)] font-sans overflow-hidden">
       
-      {/* 1. DISCIPLINE SIDEBAR */}
-      <aside className="w-72 bg-[color:var(--surface)] border-r border-[color:var(--outline-variant)]/20 flex flex-col flex-shrink-0 relative z-10">
-        
-        {/* Header - Back Button */}
-        <div className="p-4 flex items-center justify-between mb-2">
-          <button 
-            onClick={() => onNavigate("BACK")}
-            className="flex items-center gap-2 text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)] transition-colors text-xs font-bold uppercase tracking-wider"
-          >
-            <Icon name="arrow_back" className="text-[16px]" />
-            Voltar
-          </button>
+      {/* Keep discipline navigation above the workspace instead of a second sidebar. */}
+      <header className="study-subject-header">
+        <div className="study-subject-heading">
+          <button type="button" aria-label="Voltar à biblioteca" onClick={() => onNavigate("BACK")}><Icon name="arrow_back" /></button>
+          <div><span className="campus-eyebrow">Disciplina</span><h1>{subject.name}</h1><p>{subject.professor ? `${subject.professor} · ` : ""}{formatScheduleString(subject.schedule)}</p></div>
+          <button type="button" onClick={handleOpenEditModal} title="Editar disciplina"><Icon name="edit" /><span>Editar</span></button>
         </div>
-        
-        {/* Discipline Info Card */}
-        <div className="px-6 pb-6 border-b border-[color:var(--outline-variant)]/10">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[color:var(--primary)] rounded-2xl flex items-center justify-center text-white shadow-md relative">
-              <Icon name="school" className="text-2xl" />
-              <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-[color:var(--surface)]" />
-            </div>
-
-            <button 
-              onClick={handleOpenEditModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[color:var(--surface-container-high)] text-[color:var(--on-surface-variant)] hover:text-[color:var(--primary)] hover:bg-[color:var(--primary)]/10 transition-all text-xs font-bold"
-              title="Editar disciplina"
-            >
-              <Icon name="edit" className="text-[14px]" />
-              <span>Editar</span>
-            </button>
-          </div>
-          
-          <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--primary)] mb-1">
-            {subject.semester ? `${subject.semester}º SEMESTRE` : "SEMESTRE ATUAL"} • {subject.abbreviation || subject.name.substring(0,3).toUpperCase()}
-          </p>
-          <h1 className="text-2xl font-black leading-tight text-[color:var(--on-surface)] mb-3 line-clamp-2">
-            {subject.name}
-          </h1>
-          
-          <div className="flex flex-col gap-1.5 text-xs font-semibold text-[color:var(--on-surface-variant)]">
-            {subject.professor && (
-              <span className="flex items-center gap-2"><Icon name="person" className="text-[14px]" /> Prof. {formatTextValue(subject.professor, "Não informado")}</span>
-            )}
-            <div className="flex items-center gap-4 mt-1 text-[11px] opacity-80">
-              <span className="flex items-center gap-1"><Icon name="schedule" className="text-[13px]" /> {formatScheduleString(subject.schedule)}</span>
-              <span className="flex items-center gap-1"><Icon name="assignment" className="text-[13px]" /> {formatTextValue(subject.credits, "4")} crd</span>
-            </div>
-          </div>
-        </div>
-        
-        {/* Navigation Tabs */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1 custom-scrollbar">
-          {TABS.map((tabLabel) => {
-            const isActive = activeTab === tabLabel;
-            const isAI = tabLabel === "Estúdio IA";
-            
-            return (
-              <button
-                key={tabLabel}
-                onClick={() => setActiveTab(tabLabel)}
-                className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all ${
-                  isActive 
-                    ? isAI ? 'bg-[color:var(--primary)] text-white shadow-md font-bold' : 'bg-[color:var(--surface-container-high)] text-[color:var(--on-surface)] font-bold'
-                    : 'text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-low)] font-medium'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon 
-                    name={
-                      tabLabel === "Estúdio IA" ? "auto_awesome" :
-                      tabLabel === "Visão geral" ? "dashboard" :
-                      tabLabel === "Aulas" ? "play_lesson" :
-                      tabLabel === "Anotações" ? "edit_note" :
-                      tabLabel === "Arquivos e links" ? "folder_open" :
-                      tabLabel === "Tarefas e trabalhos" ? "task_alt" :
-                      tabLabel === "Provas e notas" ? "monitoring" :
-                      tabLabel === "Flashcards" ? "style" :
-                      tabLabel === "Pessoas" ? "group" :
-                      "map"
-                    } 
-                    className="text-[18px]" 
-                  />
-                  <span className="text-xs tracking-wide">{tabLabel}</span>
-                </div>
-                {isAI && (
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${isActive ? 'bg-white text-[color:var(--primary)]' : 'bg-[color:var(--primary)] text-white'}`}>
-                    AI
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        <nav className="study-subject-nav" aria-label="Áreas da disciplina">
+          {["Estúdio IA", "Visão geral", "Aulas", "Anotações", "Arquivos e links"].map(label => (
+            <button key={label} type="button" aria-current={activeTab === label ? "page" : undefined} onClick={() => setActiveTab(label)}>{label === "Estúdio IA" ? "Estúdio de estudo" : label}</button>
+          ))}
+          <details className="study-more-nav">
+            <summary>{["Estúdio IA", "Visão geral", "Aulas", "Anotações", "Arquivos e links"].includes(activeTab) ? "Mais" : activeTab}<Icon name="expand_more" /></summary>
+            <div>{TABS.filter(label => !["Estúdio IA", "Visão geral", "Aulas", "Anotações", "Arquivos e links"].includes(label)).map(label => (
+              <button key={label} type="button" aria-current={activeTab === label ? "page" : undefined} onClick={event => { setActiveTab(label); event.currentTarget.closest("details").removeAttribute("open"); }}>{label}</button>
+            ))}</div>
+          </details>
         </nav>
-      </aside>
+      </header>
 
       {/* 2. MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col overflow-hidden bg-[color:var(--surface)] relative">
+      <main className="study-subject-main min-w-0 min-h-0 flex-1 flex flex-col overflow-hidden bg-[color:var(--surface)] relative">
         
         {/* Top Navbar Header */}
         <header className="h-16 border-b border-[color:var(--outline-variant)]/10 flex items-center justify-between px-8 bg-[color:var(--surface)] sticky top-0 z-20">
           <div className="flex items-center gap-3">
-            <h2 className="text-base font-black text-[color:var(--on-surface)]">{activeTab}</h2>
+            <h2 className="text-base font-black text-[color:var(--on-surface)]">{activeTab === "Estúdio IA" ? "Estúdio de estudo" : activeTab}</h2>
+            {activeTab === "Estúdio IA" && <div className="study-panel-switcher">
+              <button type="button" aria-expanded={studioPanel === "sources"} aria-controls="study-sources-panel" onClick={() => setStudioPanel(studioPanel === "sources" ? null : "sources")}><Icon name="library_books" />Fontes <span>{selectedSourcesCount}/{sources.length}</span></button>
+              <button type="button" aria-expanded={studioPanel === "tools"} aria-controls="study-tools-panel" onClick={() => setStudioPanel(studioPanel === "tools" ? null : "tools")}><Icon name="auto_awesome" />Ferramentas</button>
+            </div>}
           </div>
           
           <div className="flex items-center gap-3 shrink-0">
@@ -1650,7 +1561,7 @@ INSTRUÇÕES DE RESPOSTA:
               </button>
             ) : null}
             {/* AI provider status & model selector */}
-            <div className={`items-center gap-2 ${activeTab === "Pessoas" ? "hidden" : "flex"}`}>
+            <div className={`items-center gap-2 ${activeTab !== "Estúdio IA" ? "hidden" : "flex"}`}>
               <button 
                 onClick={() => configuredAiProvider === "gemini" ? useStudyStore.getState().openSettingsModal?.("ai") : (setTempUrl(ollamaUrl), setShowOllamaConfigModal(true))}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
@@ -1684,13 +1595,13 @@ INSTRUÇÕES DE RESPOSTA:
 
         {/* TAB 1: ESTÚDIO IA (3-COLUMN STUDIO LAYOUT) */}
         {activeTab === "Estúdio IA" && (
-          <div className="flex-1 flex overflow-hidden p-6 gap-6 bg-[color:var(--background)]">
+          <div className="study-studio-layout flex-1 min-h-0 flex overflow-hidden bg-[color:var(--background)]">
             
             {/* COLUMN 1: FONTES */}
-            <section className="w-72 bg-[color:var(--surface)] rounded-3xl border border-[color:var(--outline-variant)]/20 shadow-sm flex flex-col overflow-hidden shrink-0">
+            {studioPanel === "sources" && <section id="study-sources-panel" aria-label="Fontes de conhecimento" className="study-sources-panel w-72 bg-[color:var(--surface)] rounded-3xl border border-[color:var(--outline-variant)]/20 shadow-sm flex flex-col overflow-hidden shrink-0">
               <div className="p-5 border-b border-[color:var(--outline-variant)]/10">
                 <div className="flex justify-between items-start mb-2">
-                  <h2 className="text-base font-black text-[color:var(--on-surface)]">Fontes de Conhecimento</h2>
+                  <h2 className="text-base font-black text-[color:var(--on-surface)]">Fontes de conhecimento</h2><button type="button" aria-label="Fechar fontes" onClick={() => setStudioPanel(null)}><Icon name="close" /></button>
                   <button 
                     onClick={() => setShowAddSourceModal(true)}
                     className="w-8 h-8 rounded-full bg-[color:var(--primary)]/10 text-[color:var(--primary)] flex items-center justify-center hover:bg-[color:var(--primary)]/20 transition-colors"
@@ -1700,15 +1611,18 @@ INSTRUÇÕES DE RESPOSTA:
                   </button>
                 </div>
                 <p className="text-xs text-[color:var(--on-surface-variant)] leading-relaxed">
-                  Marque os arquivos e anotações para incluir na resposta da IA Ollama.
+                  Selecione os materiais que a IA deve consultar.
                 </p>
                 <div className="mt-3 text-[10px] font-black uppercase tracking-widest text-[color:var(--primary)]">
                   {selectedSourcesCount} de {sources.length} selecionadas
                 </div>
               </div>
               
+              <input className="study-source-search" aria-label="Buscar fontes" placeholder="Buscar material..." value={sourceQuery} onChange={event => setSourceQuery(event.target.value)} />
               <div className="flex-1 overflow-y-auto p-3 custom-scrollbar flex flex-col gap-2">
-                {sources.map(source => (
+                {sources.length === 0 && <p className="study-panel-empty">Adicione um arquivo ou link para estudar com suas próprias fontes.</p>}
+                {sources.length > 0 && !sources.some(source => String(source.name || source.title || "").toLocaleLowerCase().includes(sourceQuery.toLocaleLowerCase())) && <p className="study-panel-empty">Nenhuma fonte encontrada.</p>}
+                {sources.filter(source => String(source.name || source.title || "").toLocaleLowerCase().includes(sourceQuery.toLocaleLowerCase())).map(source => (
                   <label 
                     key={source.id} 
                     className={`flex items-start gap-3 p-3 rounded-2xl cursor-pointer border transition-all ${
@@ -1722,7 +1636,7 @@ INSTRUÇÕES DE RESPOSTA:
                     }`}>
                       {source.selected && <Icon name="check" className="text-[12px] font-bold" />}
                     </div>
-                    <input type="checkbox" className="hidden" checked={source.selected} onChange={() => toggleSource(source.id)} />
+                    <input type="checkbox" className="sr-only" checked={source.selected} onChange={() => toggleSource(source.id)} />
                     
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
@@ -1739,7 +1653,7 @@ INSTRUÇÕES DE RESPOSTA:
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-[color:var(--on-surface)] truncate">{source.name}</h4>
+                        <h4 className="text-xs font-bold text-[color:var(--on-surface)] truncate">{source.name || source.title}</h4>
                         <p className="text-[10px] text-[color:var(--on-surface-variant)] mt-0.5 truncate">
                           {source.type.toUpperCase()} • {source.size}
                         </p>
@@ -1749,18 +1663,10 @@ INSTRUÇÕES DE RESPOSTA:
                 ))}
               </div>
               
-              <div className="p-4 bg-[color:var(--surface)] border-t border-[color:var(--outline-variant)]/10">
-                <button 
-                  onClick={() => setShowAddSourceModal(true)}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-[color:var(--primary)]/30 text-[color:var(--primary)] font-bold text-xs hover:bg-[color:var(--primary)]/5 transition-colors"
-                >
-                  <Icon name="add" className="text-[18px]" /> Nova Fonte
-                </button>
-              </div>
-            </section>
+            </section>}
 
             {/* COLUMN 2: ASSISTENTE (CHAT) */}
-            <section className="flex-1 flex flex-col min-w-[360px]">
+            <section className="study-chat-panel flex-1 flex flex-col min-w-0">
               
               {/* Header */}
               <div className="flex items-center justify-between mb-4 px-2">
@@ -1769,26 +1675,62 @@ INSTRUÇÕES DE RESPOSTA:
                     <Icon name="memory" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-[color:var(--on-surface)]">Tutor IA ({configuredAiProvider === "gemini" ? "Google Gemini" : "Ollama local"}) — {subject?.name}</h2>
+                    <h2 className="text-base font-black text-[color:var(--on-surface)]">Conversa com suas fontes</h2>
                     <p className="text-xs text-[color:var(--on-surface-variant)]">
                       {isOllamaConnected 
                         ? `Modelo ativo: ${selectedModel || "Llama3"}` 
-                        : configuredAiProvider === "gemini" ? "Configure sua chave Gemini nas configurações de IA" : "Ollama desconectado. Inicie o serviço local em http://localhost:11434"}
+                        : configuredAiProvider === "gemini" ? "Configure sua chave Gemini nas configurações de IA" : "Conecte a IA para conversar com os materiais da disciplina."}
                     </p>
                   </div>
                 </div>
-                {chatHistory.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <select
+                    aria-label="Selecionar conversa"
+                    disabled={renamingChat}
+                    className="study-chat-select"
+                    value={activeChat?.id || ""}
+                    onChange={(event) => setActiveChatId(event.target.value || null)}
+                  >
+                    <option value="">Nova conversa</option>
+                    {subjectChats.map((chat) => (
+                      <option key={chat.id} value={chat.id}>{chat.title || "Sem título"}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="study-chat-action"
+                    aria-label="Criar novo chat"
+                    title="Criar novo chat"
+                    onClick={() => {
+                      const id = createAcademicAiChat(activeSubjectId, { title: `Chat ${subjectChats.length + 1}`, messages: defaultInitialChat });
+                      setActiveChatId(id);
+                    }}
+                  ><Icon name="add" /></button>
+                  {activeChat ? <button
+                    type="button"
+                    className="study-chat-action"
+                    aria-label="Renomear chat"
+                    title="Renomear chat"
+                    onClick={() => {
+                      setChatTitleDraft(activeChat.title || "Novo chat");
+                      setRenamingChat(true);
+                    }}
+                  ><Icon name="edit" /></button> : null}
+                </div>
+                {renamingChat && activeChat && <input aria-label="Nome do chat" autoFocus value={chatTitleDraft} onChange={event => setChatTitleDraft(event.target.value)} onBlur={() => { if (chatTitleDraft.trim()) updateAcademicAiChat(activeSubjectId, activeChat.id, { title: chatTitleDraft.trim() }); setRenamingChat(false); }} onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") setRenamingChat(false); }} className="study-chat-select" />}
+                {activeChat && (
                   <button
                     type="button"
                     onClick={() => {
-                      if (window.confirm("Deseja apagar o histórico de conversa desta matéria?")) {
-                        setAcademicAiChatHistory(activeSubjectId, []);
+                      if (window.confirm("Deseja apagar este chat?")) {
+                        deleteAcademicAiChat(activeSubjectId, activeChat.id);
+                        setActiveChatId(subjectChats.find((chat) => chat.id !== activeChat.id)?.id || null);
                       }
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors"
                   >
                     <Icon name="delete" className="text-[15px]" />
-                    Limpar histórico
+                    Excluir chat
                   </button>
                 )}
               </div>
@@ -1845,8 +1787,9 @@ INSTRUÇÕES DE RESPOSTA:
                   </div>
                 )}
                 
-                {/* Suggested Questions */}
-                <div className="mt-auto pt-4 flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+              </div>
+                {/* As sugestões não encolhem junto com o histórico da conversa. */}
+                <div className="study-chat-suggestions" aria-label="Perguntas sugeridas">
                   {[
                     `Resumir os pontos essenciais de ${subject.name}`,
                     "Gerar 3 perguntas de prova",
@@ -1861,13 +1804,12 @@ INSTRUÇÕES DE RESPOSTA:
                     </button>
                   ))}
                 </div>
-              </div>
               
               {/* Input Form */}
               <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="bg-[color:var(--surface)] border border-[color:var(--outline-variant)]/30 rounded-3xl p-4 mt-2 shadow-md relative">
                 <input 
                   type="text" 
-                  placeholder={`Pergunte algo ao Ollama sobre os materiais de ${subject.name}...`}
+                  aria-label="Pergunta para a IA" placeholder="O que você quer entender ou revisar?"
                   value={message}
                   onChange={e => setMessage(e.target.value)}
                   className="w-full bg-transparent border-none outline-none text-sm px-2 pb-6 placeholder-[color:var(--on-surface-variant)]/50 text-[color:var(--on-surface)]"
@@ -1888,15 +1830,13 @@ INSTRUÇÕES DE RESPOSTA:
             </section>
 
             {/* COLUMN 3: ESTÚDIO DE ESTUDO (FERRAMENTAS DE IA) */}
-            <section className="w-72 flex flex-col shrink-0 pl-2">
+            {studioPanel === "tools" && <section id="study-tools-panel" aria-label="Ferramentas de estudo" className="study-tools-panel w-72 flex flex-col shrink-0 pl-2">
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-1">
-                  <h2 className="text-base font-black text-[color:var(--on-surface)]">Estúdio de Estudo</h2>
-                  <div className="w-7 h-7 rounded-full bg-[color:var(--primary)]/10 text-[color:var(--primary)] flex items-center justify-center">
-                    <Icon name="memory" className="text-[14px]" />
-                  </div>
+                  <h2 className="text-base font-black text-[color:var(--on-surface)]">Ferramentas de estudo</h2><button type="button" aria-label="Fechar ferramentas" onClick={() => setStudioPanel(null)}><Icon name="close" /></button>
+
                 </div>
-                <p className="text-[11px] text-[color:var(--on-surface-variant)] leading-relaxed">Geradores de conteúdo via Ollama Local.</p>
+                <p className="text-[11px] text-[color:var(--on-surface-variant)] leading-relaxed">Transforme as fontes selecionadas em material de revisão.</p>
               </div>
               
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-3">
@@ -1926,7 +1866,7 @@ INSTRUÇÕES DE RESPOSTA:
                   </button>
                 ))}
               </div>
-            </section>
+            </section>}
 
           </div>
         )}
@@ -2442,7 +2382,9 @@ INSTRUÇÕES DE RESPOSTA:
 
             {sources.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                {sources.map((source) => (
+                {[...new Set(sources.map(source => source.linkedFolderName || (source.fromLessonNote ? "Materiais de aulas" : source.type === "link" ? "Links" : source.type === "pdf" ? "PDFs" : "Documentos")))].map(group => <details key={group} className="subject-material-group">
+                  <summary>{group} <small>{sources.filter(source => (source.linkedFolderName || (source.fromLessonNote ? "Materiais de aulas" : source.type === "link" ? "Links" : source.type === "pdf" ? "PDFs" : "Documentos")) === group).length} materiais</small></summary>
+                {sources.filter(source => (source.linkedFolderName || (source.fromLessonNote ? "Materiais de aulas" : source.type === "link" ? "Links" : source.type === "pdf" ? "PDFs" : "Documentos")) === group).map((source) => (
                   <article
                     key={source.id}
                     className="group bg-[color:var(--surface)] p-5 rounded-3xl border border-[color:var(--outline-variant)]/20 shadow-sm"
@@ -2489,6 +2431,7 @@ INSTRUÇÕES DE RESPOSTA:
                     </button>
                   </article>
                 ))}
+                </details>)}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-[color:var(--on-surface-variant)]">
@@ -3192,7 +3135,7 @@ INSTRUÇÕES DE RESPOSTA:
                         <Icon name="group_add" className="text-4xl text-[color:var(--on-surface-variant)]/50" />
                         <h4 className="mt-3 text-sm font-black text-[color:var(--on-surface)]">Só você tem acesso</h4>
                         <p className="mt-1 max-w-sm text-xs leading-5 text-[color:var(--on-surface-variant)]">
-                          Convide um colega pelo e-mail cadastrado no StudyHub.
+                          Convide um colega pelo e-mail cadastrado no masterStudy.
                         </p>
                       </div>
                     ) : null}
@@ -3418,16 +3361,16 @@ INSTRUÇÕES DE RESPOSTA:
 
       {/* AI TOOL MODALS (GUIA DE ESTUDO, RESUMO, FLASHCARDS, QUIZ, PLANO, MAPA) */}
       {activeAiToolModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div role="dialog" aria-modal="true" aria-label="Ferramenta de estudo" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-[color:var(--surface)] w-full max-w-2xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <button onClick={() => setActiveAiToolModal(null)} className="absolute top-4 right-4 text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)]">
+            <button type="button" aria-label="Fechar ferramenta de estudo" onClick={closeAiToolModal} className="absolute top-4 right-4 text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)]">
               <Icon name="close" />
             </button>
 
             {aiToolLoading ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4 text-[color:var(--primary)]">
                 <Icon name="memory" className="animate-spin text-4xl" />
-                <p className="font-bold text-sm">Gerando conteúdo com Ollama Local ({selectedModel || "modelo"})...</p>
+                <p className="font-bold text-sm">Gerando conteúdo com {configuredAiProvider === "gemini" ? "Google Gemini" : "IA local"} ({selectedModel || "modelo"})...</p>
               </div>
             ) : aiToolError ? (
               <div className="flex flex-col items-center justify-center py-12 text-red-500 gap-3">
@@ -3458,6 +3401,13 @@ INSTRUÇÕES DE RESPOSTA:
                   </div>
                 )}
 
+                {aiToolContent?.type === "mindmap" && (
+                  <div className="study-mindmap">
+                    <h2 className="text-xl font-bold mb-6">Mapa mental — {subject.name}</h2>
+                    <MindMapNode node={aiToolContent.root} />
+                  </div>
+                )}
+
                 {/* FLASHCARDS IA */}
                 {aiToolContent?.type === "flashcards" && (
                   <div>
@@ -3467,7 +3417,7 @@ INSTRUÇÕES DE RESPOSTA:
                           <Icon name="style" />
                         </div>
                         <div>
-                          <h2 className="text-xl font-black">Flashcards IA Gerados com Ollama</h2>
+                          <h2 className="text-xl font-black">Flashcards gerados por IA</h2>
                           <p className="text-xs text-[color:var(--on-surface-variant)]">Cartão {currentFlashcardIndex + 1} de {aiToolContent.cards.length}</p>
                         </div>
                       </div>
@@ -3498,11 +3448,11 @@ INSTRUÇÕES DE RESPOSTA:
                         onClick={() => {
                           addFlashcardDeck({
                             id: `deck-${Date.now()}`,
-                            title: `Deck Ollama - ${subject.name}`,
+                            title: `Flashcards - ${subject.name}`,
                             academicSubjectId: activeSubjectId,
                             cards: aiToolContent.cards
                           });
-                          setActiveAiToolModal(null);
+                          closeAiToolModal();
                         }}
                         className="px-5 py-2.5 bg-[color:var(--primary)] text-white rounded-xl text-xs font-bold shadow-md uppercase tracking-wider"
                       >
@@ -3582,7 +3532,7 @@ INSTRUÇÕES DE RESPOSTA:
                         <p className="text-sm font-bold text-[color:var(--on-surface-variant)]">
                           Você respondeu todas as questões geradas pelo Ollama.
                         </p>
-                        <button onClick={() => { setShowQuizResults(false); setGeneratedQuizIndex(0); setSelectedQuizAnswers({}); setActiveAiToolModal(null); }} className="px-6 py-3 bg-[color:var(--primary)] text-white rounded-xl text-xs font-bold uppercase tracking-wider">
+                        <button onClick={() => { setShowQuizResults(false); setGeneratedQuizIndex(0); setSelectedQuizAnswers({}); closeAiToolModal(); }} className="px-6 py-3 bg-[color:var(--primary)] text-white rounded-xl text-xs font-bold uppercase tracking-wider">
                           Fechar Quiz
                         </button>
                       </div>

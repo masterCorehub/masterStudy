@@ -96,7 +96,7 @@ export function PomodoroWidgetScreen() {
                 }
               }}
               className="flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--primary)] hover:bg-[color:var(--primary)]/15 transition-colors"
-              title="Abrir o Programa Principal (StudyHub)"
+              title="Abrir o Programa Principal (masterStudy)"
             >
               <Icon name="launch" className="text-sm" />
             </button>

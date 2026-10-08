@@ -178,7 +178,7 @@ export function AddLessonScreen({ onNavigate }) {
                   <div className="absolute left-4 text-[color:var(--primary)]"><Icon name="link" className="text-xl" /></div>
                   <input className="w-full bg-[color:var(--surface)] text-[color:var(--on-surface)] placeholder:text-[color:var(--outline)] py-4 pr-4 pl-12 rounded-xl neo-inset focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)]/20 border-none" placeholder="Ex: https://www.udemy.com/course/..." type="url" value={externalUrl} onChange={e => setExternalUrl(e.target.value)} />
                 </div>
-                <p className="ml-2 text-xs text-[color:var(--on-surface-variant)]">O StudyHub apenas abre o conteúdo na plataforma original.</p>
+                <p className="ml-2 text-xs text-[color:var(--on-surface-variant)]">O masterStudy apenas abre o conteúdo na plataforma original.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">

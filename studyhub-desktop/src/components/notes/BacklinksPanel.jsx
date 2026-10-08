@@ -7,6 +7,7 @@ import {
   findUnlinkedMentions,
   resolveWikilink
 } from '../../domain/wikilinks';
+import { referencedNotes } from '../../domain/wikilinks';
 
 const SectionHeader = ({ title, count, isExpanded, onToggle }) => (
   <button
@@ -102,11 +103,11 @@ export const BacklinksPanel = ({ currentNote, currentContent, allNotes, onNoteCl
       };
     });
 
-    const incomingLinks = findBacklinks(currentNote.title, allNotes) || [];
+    const incomingLinks = allNotes.filter(note => note.id !== currentNote.id && referencedNotes(note, allNotes).some(target => target.id === currentNote.id)).map(note => ({ noteId: note.id, noteTitle: note.title, context: 'Esta nota menciona a nota aberta.' }));
     const unlinked = findUnlinkedMentions(currentNote.title, allNotes) || [];
 
     return {
-      links: outgoingLinks,
+      links: [...new Map([...outgoingLinks, ...incomingLinks.map(note => ({ id: note.noteId, title: note.noteTitle, context: note.context }))].map(note => [note.id || note.title, note])).values()],
       backlinks: incomingLinks,
       unlinkedMentions: unlinked
     };

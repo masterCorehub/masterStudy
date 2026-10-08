@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { readAuthRedirect } from "../domain/authRedirect";
 import {
   prepareStudyStateForCloud,
   cloudStateSizeBytes,
@@ -25,13 +26,31 @@ const browserOrigin = () => {
     : "";
 };
 
+export const initialAuthRedirect = readAuthRedirect(
+  typeof window !== "undefined" ? window.location : {},
+);
+
 const client = collaborationCloudConfigured
   ? createClient(url, publishableKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        flowType: "pkce",
+        flowType: initialAuthRedirect.flowType,
+      },
+    })
+  : null;
+
+// Recovery emails must work when the request and callback use different origins.
+// This client only sends emails; it neither stores a session nor reads callbacks.
+const recoveryClient = collaborationCloudConfigured
+  ? createClient(url, publishableKey, {
+      auth: {
+        flowType: "implicit",
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        storageKey: "studyhub-recovery-request",
       },
     })
   : null;
@@ -268,8 +287,11 @@ export const collaborationCloud = {
 
   requestPasswordReset: async (email) => {
     const redirectBase = browserOrigin();
+    if (!redirectBase) {
+      throw new Error("Este aplicativo foi gerado sem o endereço de recuperação. Configure VITE_PUBLIC_APP_URL e atualize o aplicativo.");
+    }
     return unwrap(
-      await assertClient().auth.resetPasswordForEmail(
+      await (recoveryClient || assertClient()).auth.resetPasswordForEmail(
         String(email || "").trim().toLowerCase(),
         redirectBase
           ? { redirectTo: `${redirectBase}/?auth=recovery` }

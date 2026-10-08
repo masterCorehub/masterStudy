@@ -2,7 +2,10 @@ import React, { useEffect, useRef, useState, useCallback, forwardRef, useImperat
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { Icon } from "../../ui/Icon";
-import { getLocalFilePath, getLocalFileUrl } from "../../utils/localFileUrl";
+import { readBookBytes } from "../../services/book-files";
+
+import { READER_THEMES, READER_FONTS } from "./readerAppearance";
+import { animatePageTurn } from "./readerPageTurn";
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -14,50 +17,32 @@ const HIGHLIGHT_COLORS = {
   orange: "rgba(251, 146, 60, 0.42)",
 };
 
-const THEME_STYLES = {
-  light:  { bg: "#ffffff", text: "#1a1a1a", filter: "none" },
-  sepia:  { bg: "#f5ede0", text: "#3d2b1f", filter: "sepia(0.55) contrast(0.95) brightness(0.96)" },
-  dark:   { bg: "#1e1e2e", text: "#cdd6f4", filter: "invert(0.92) hue-rotate(180deg) contrast(0.95)" },
-  night:  { bg: "#0d0d0d", text: "#a0a0a0", filter: "invert(0.96) hue-rotate(180deg) brightness(0.85) contrast(0.95)" },
-};
-
-const FONT_FAMILIES = {
-  serif: "Georgia, 'Times New Roman', serif",
-  sans:  "'Inter', system-ui, sans-serif",
-  mono:  "'Courier New', Courier, monospace",
-};
+const THEME_STYLES = READER_THEMES;
+const FONT_FAMILIES = READER_FONTS;
 
 async function loadPdfFromPath(filePath) {
   try {
-    const localPath = getLocalFilePath(filePath);
-    if (localPath && window.studyhubDesktop?.readFileBinary) {
-      try {
-        const binary = await window.studyhubDesktop.readFileBinary(localPath);
-        let uint8 = null;
-        if (binary instanceof ArrayBuffer) {
-          uint8 = new Uint8Array(binary);
-        } else if (ArrayBuffer.isView(binary)) {
-          uint8 = new Uint8Array(binary.buffer, binary.byteOffset, binary.byteLength);
-        }
-
-        if (uint8) {
-          return await getDocument({ data: uint8 }).promise;
-        }
-      } catch (binErr) {
-        console.warn("PDF binary load fallback to URL:", binErr);
-      }
-    }
-    const url = getLocalFileUrl(filePath);
-    return await getDocument({ url }).promise;
+    return await getDocument({ data: await readBookBytes(filePath) }).promise;
   } catch (e) {
     console.error("PDF load error:", e);
     return null;
   }
 }
 
+function renderSharpPage(page, canvas, viewport) {
+  // Keep CSS coordinates for selection, but use Retina pixels for sharp text.
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 3);
+  canvas.width = Math.floor(viewport.width * pixelRatio);
+  canvas.height = Math.floor(viewport.height * pixelRatio);
+  canvas.style.width = viewport.width + "px";
+  canvas.style.height = viewport.height + "px";
+  return page.render({ canvasContext: canvas.getContext("2d"), viewport, transform: pixelRatio === 1 ? undefined : [pixelRatio, 0, 0, pixelRatio, 0, 0] });
+}
+
 function buildTextLayer(textContent, viewport, targetLayer, pageNum, settings) {
   if (!targetLayer) return;
   targetLayer.innerHTML = "";
+  targetLayer.dataset.page = pageNum;
   targetLayer.style.width = `${viewport.width}px`;
   targetLayer.style.height = `${viewport.height}px`;
 
@@ -198,10 +183,7 @@ function PdfContinuousPage({
         const viewport = page.getViewport({ scale: computedScale });
         const canvas = canvasRef.current;
         if (canvas) {
-          const ctx = canvas.getContext("2d");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const renderTask = page.render({ canvasContext: ctx, viewport });
+          const renderTask = renderSharpPage(page, canvas, viewport);
           renderTaskRef.current = renderTask;
           await renderTask.promise;
           if (!active) return;
@@ -253,6 +235,7 @@ function PdfContinuousPage({
           return (
             <svg
               key={h.id}
+              data-highlight-id={h.id}
               viewBox={`0 0 ${viewBoxW} ${viewBoxH}`}
               className="absolute inset-0 w-full h-full"
               style={{ mixBlendMode: isDarkTheme ? "screen" : "multiply" }}
@@ -303,14 +286,12 @@ function PdfContinuousPage({
 }
 
 export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
-  { filePath, currentPage, settings, isTwoPage, highlights, searchQuery, onTotalPages, onTextSelected, onPageRendered, onPageChange, onHighlightClick },
+  { filePath, currentPage, settings, isTwoPage, highlights, searchQuery, onTotalPages, onTextSelected, onPageRendered, onPageChange, onHighlightClick, onTocLoaded, focusTarget },
   ref
 ) {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [fitMode, setFitMode] = useState("page"); // "page" | "width" | "custom"
-  const [customScale, setCustomScale] = useState(1.0);
   const [computedScale, setComputedScale] = useState(1.0);
 
   const isContinuous = (settings?.scrollMode || "paginated") === "continuous";
@@ -325,21 +306,65 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
   const isScrollingToPageRef = useRef(false);
   const lastReportedPageRef = useRef(currentPage);
 
+  const latestCallbacks = useRef({ onTotalPages, onTocLoaded });
+  latestCallbacks.current = { onTotalPages, onTocLoaded };
   useImperativeHandle(ref, () => ({
     getPageCount: () => pdfDoc?.numPages || 0,
+    thumbnail: async pageNum => {
+      if (!pdfDoc) return "";
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 120 / page.getViewport({ scale: 1 }).width });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width; canvas.height = viewport.height;
+      await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+      return canvas.toDataURL();
+    },
+    search: async query => {
+      if (!pdfDoc) return [];
+      const matches = [];
+      const needle = query.toLocaleLowerCase();
+      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+        const page = await pdfDoc.getPage(pageNum);
+        const text = (await page.getTextContent()).items.map(item => item.str).join(" ");
+        const lower = text.toLocaleLowerCase();
+        let offset = 0;
+        while ((offset = lower.indexOf(needle, offset)) !== -1) {
+          matches.push({ page: pageNum, excerpt: text.slice(Math.max(0, offset - 50), offset + query.length + 100) });
+          offset += needle.length;
+          if (matches.length >= 100) return matches;
+        }
+      }
+      return matches;
+    },
   }));
 
-  // Load PDF
   useEffect(() => {
-    if (!filePath) return;
-    setLoading(true);
-    setError(null);
-    loadPdfFromPath(filePath).then(doc => {
+    let cancelled = false;
+    let loaded;
+    setLoading(true); setError(null);
+    loadPdfFromPath(filePath).then(async doc => {
+      loaded = doc;
+      if (cancelled) { doc?.destroy(); return; }
       if (!doc) { setError("Não foi possível abrir o PDF."); setLoading(false); return; }
       setPdfDoc(doc);
-      onTotalPages?.(doc.numPages);
+      latestCallbacks.current.onTotalPages?.(doc.numPages);
       setLoading(false);
-    });
+      const outline = await doc.getOutline();
+      const walk = async (items, level = 0) => {
+        const entries = [];
+        for (const item of items || []) {
+          let page;
+          try {
+            const dest = typeof item.dest === "string" ? await doc.getDestination(item.dest) : item.dest;
+            if (dest?.[0] != null) page = typeof dest[0] === "number" ? dest[0] + 1 : (await doc.getPageIndex(dest[0])) + 1;
+          } catch {}
+          entries.push({ label: item.title, page, level }, ...await walk(item.items, level + 1));
+        }
+        return entries;
+      };
+      if (!cancelled) latestCallbacks.current.onTocLoaded?.(await walk(outline));
+    }).catch(err => { if (!cancelled) { console.error("PDF outline:", err); } });
+    return () => { cancelled = true; loaded?.destroy(); };
   }, [filePath]);
 
   const updateScale = useCallback(async () => {
@@ -357,7 +382,7 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
       if (!isContinuous) {
         const scaleW = availableWidth / unscaledViewport.width;
         const scaleH = availableHeight / unscaledViewport.height;
-        baseScale = Math.min(scaleW, scaleH);
+        baseScale = settings.pdfFit === "width" ? scaleW : Math.min(scaleW, scaleH);
       } else {
         baseScale = availableWidth / unscaledViewport.width;
       }
@@ -367,7 +392,7 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
       
       setComputedScale(nextScale);
     } catch {}
-  }, [pdfDoc, currentPage, isTwoPage, isContinuous, settings?.pdfZoom]);
+  }, [pdfDoc, currentPage, isTwoPage, isContinuous, settings?.pdfZoom, settings?.pdfFit]);
 
   // Recalculate scale whenever container resizes (e.g., toolbar show/hide)
   useEffect(() => {
@@ -434,10 +459,12 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
     return () => container.removeEventListener("scroll", handleScroll);
   }, [isContinuous, pdfDoc, onPageChange]);
 
+  const renderedPositionRef = useRef(null);
   // Paginated Mode Rendering (Page 1 & Page 2)
   useEffect(() => {
     if (isContinuous || !pdfDoc || !canvasRef.current || computedScale <= 0) return;
 
+    let cancelled = false;
     const renderPages = async () => {
       if (renderTaskRef.current) {
         try { renderTaskRef.current.cancel(); } catch {}
@@ -448,16 +475,15 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
 
       // Page 1
       const page1 = await pdfDoc.getPage(currentPage);
+      if (cancelled) return;
       const viewport1 = page1.getViewport({ scale: computedScale });
       const canvas1 = canvasRef.current;
       if (canvas1) {
-        const ctx1 = canvas1.getContext("2d");
-        canvas1.width = viewport1.width;
-        canvas1.height = viewport1.height;
-        const renderTask1 = page1.render({ canvasContext: ctx1, viewport: viewport1 });
+        const renderTask1 = renderSharpPage(page1, canvas1, viewport1);
         renderTaskRef.current = renderTask1;
         try {
           await renderTask1.promise;
+          if (cancelled) return;
           const textContent1 = await page1.getTextContent();
           buildTextLayer(textContent1, viewport1, textLayerRef.current, currentPage, settings);
         } catch (e) {
@@ -469,15 +495,14 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
       const page2Number = currentPage + 1;
       if (isTwoPage && page2Number <= pdfDoc.numPages && canvas2Ref.current) {
         const page2 = await pdfDoc.getPage(page2Number);
+        if (cancelled) return;
         const viewport2 = page2.getViewport({ scale: computedScale });
         const canvas2 = canvas2Ref.current;
-        const ctx2 = canvas2.getContext("2d");
-        canvas2.width = viewport2.width;
-        canvas2.height = viewport2.height;
-        const renderTask2 = page2.render({ canvasContext: ctx2, viewport: viewport2 });
+        const renderTask2 = renderSharpPage(page2, canvas2, viewport2);
         renderTask2Ref.current = renderTask2;
         try {
           await renderTask2.promise;
+          if (cancelled) return;
           const textContent2 = await page2.getTextContent();
           buildTextLayer(textContent2, viewport2, textLayer2Ref.current, page2Number, settings);
         } catch (e) {
@@ -485,13 +510,38 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
         }
       }
 
+      const previous = renderedPositionRef.current;
+      renderedPositionRef.current = { filePath, page: currentPage };
+      // Wait for both pages before animating their text and highlights together.
+      if (previous?.filePath === filePath && previous.page !== currentPage) {
+        const direction = currentPage > previous.page ? "next" : "prev";
+        animatePageTurn(canvasRef.current?.parentElement, direction);
+        if (isTwoPage) animatePageTurn(canvas2Ref.current?.parentElement, direction);
+      }
       onPageRendered?.(currentPage);
     };
 
     renderPages().catch(e => {
-      if (e?.name !== "RenderingCancelledException") setError("Erro ao renderizar páginas.");
+      if (!cancelled && e?.name !== "RenderingCancelledException") setError("Erro ao renderizar páginas.");
     });
+    return () => { cancelled = true; renderTaskRef.current?.cancel(); renderTask2Ref.current?.cancel(); };
   }, [pdfDoc, currentPage, computedScale, isTwoPage, isContinuous, settings]);
+
+  useEffect(() => {
+    if (!focusTarget || !pdfDoc || loading || focusTarget.page !== currentPage) return;
+    const timer = setTimeout(() => {
+      const root = containerRef.current;
+      const highlight = Array.from(root?.querySelectorAll("svg[data-highlight-id]") || []).find(el => el.dataset.highlightId === focusTarget.highlightId);
+      const container = isContinuous ? root : highlight?.closest(".relative.flex") || root;
+      const rect = highlight?.querySelector("rect");
+      if (!rect || !container) return;
+      const bounds = rect.getBoundingClientRect();
+      const viewport = container.getBoundingClientRect();
+      container.scrollBy({ top: bounds.top - viewport.top - viewport.height / 2, left: bounds.left - viewport.left - viewport.width / 2, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      rect.animate([{ stroke: "#bb812d", strokeWidth: "2px" }, { stroke: "transparent", strokeWidth: "2px" }], { duration: 1400 });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [focusTarget, pdfDoc, loading, currentPage, computedScale, isContinuous]);
 
   // Text selection handling across pages
   useEffect(() => {
@@ -503,16 +553,17 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
         try {
           const range = selection.getRangeAt(0);
           const rangeRects = Array.from(range.getClientRects());
-          const anchorNode = selection.anchorNode?.parentElement;
-          const selectedPage = Number(anchorNode?.dataset?.page) || currentPage;
+          const anchorNode = selection.anchorNode?.nodeType === Node.TEXT_NODE ? selection.anchorNode.parentElement : selection.anchorNode;
+          // Keyboard/DOM selections may anchor on the span itself, not its text node.
+          const selectedPage = Number(anchorNode?.closest?.("[data-page]")?.dataset?.page) || currentPage;
 
-          const targetPageEl = document.getElementById(`pdf-page-${selectedPage}`) || canvasRef.current;
+          const targetPageEl = document.getElementById(`pdf-page-${selectedPage}`) || (selectedPage === currentPage + 1 ? canvas2Ref.current : canvasRef.current);
           const targetCanvas = targetPageEl?.querySelector?.("canvas") || targetPageEl;
           const canvasBounds = targetCanvas ? targetCanvas.getBoundingClientRect() : null;
 
           if (canvasBounds && targetCanvas && rangeRects.length > 0 && canvasBounds.width > 0 && canvasBounds.height > 0) {
-            const canvasWidth = targetCanvas.width || canvasBounds.width;
-            const canvasHeight = targetCanvas.height || canvasBounds.height;
+            const canvasWidth = canvasBounds.width;
+            const canvasHeight = canvasBounds.height;
             const scaleX = canvasWidth / canvasBounds.width;
             const scaleY = canvasHeight / canvasBounds.height;
 
@@ -550,7 +601,7 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (e.target?.closest?.("input, textarea, select, button, [contenteditable=true]") || e.ctrlKey || e.metaKey || e.altKey) return;
       const container = containerRef.current;
 
       if (isContinuous && container) {
@@ -599,7 +650,7 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
   return (
     <div
       ref={containerRef}
-      className={`flex-1 relative w-full h-full ${
+      className={`reader-pdf-engine flex-1 relative w-full h-full ${
         isContinuous
           ? "overflow-y-auto overflow-x-auto flex flex-col items-center py-6 gap-6 scroll-smooth pdf-continuous-container"
           : "overflow-auto flex items-center justify-center"
@@ -678,6 +729,7 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
                 return (
                   <svg
                     key={h.id}
+                    data-highlight-id={h.id}
                     viewBox={`0 0 ${viewBoxW} ${viewBoxH}`}
                     className="absolute inset-0 w-full h-full"
                     style={{ mixBlendMode: isDarkTheme ? "screen" : "multiply" }}
@@ -737,6 +789,7 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
                   return (
                     <svg
                       key={h.id}
+                      data-highlight-id={h.id}
                       viewBox={`0 0 ${viewBoxW} ${viewBoxH}`}
                       className="absolute inset-0 w-full h-full"
                       style={{ mixBlendMode: isDarkTheme ? "screen" : "multiply" }}
@@ -788,7 +841,7 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
 
       {/* Prev page lateral button */}
       {!loading && !error && (
-        <div className="fixed left-4 top-1/2 -translate-y-1/2 w-12 flex items-center justify-center z-30 pointer-events-none">
+        <div className="reader-pdf-edge previous">
           <button
             onClick={() => currentPage > 1 && onPageChange?.(Math.max(1, currentPage - (!isContinuous && isTwoPage ? 2 : 1)))}
             disabled={currentPage <= 1}
@@ -802,7 +855,7 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
 
       {/* Next page lateral button */}
       {!loading && !error && (
-        <div className="fixed right-4 top-1/2 -translate-y-1/2 w-12 flex items-center justify-center z-30 pointer-events-none">
+        <div className="reader-pdf-edge next">
           <button
             onClick={() => pdfDoc && currentPage < pdfDoc.numPages && onPageChange?.(Math.min(pdfDoc.numPages, currentPage + (!isContinuous && isTwoPage ? 2 : 1)))}
             disabled={pdfDoc && currentPage >= pdfDoc.numPages}
@@ -814,57 +867,7 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
         </div>
       )}
 
-      {/* View Mode Controls (Fit Page / Fit Width / Zoom) */}
-      {!loading && !error && (
-        <div className="fixed bottom-6 right-6 flex items-center gap-1.5 bg-[color:var(--surface)] rounded-2xl shadow-xl border border-[color:var(--outline-variant)]/20 p-1.5 z-30">
-          <button
-            onClick={() => setFitMode("page")}
-            title="Ajustar à Tela"
-            className={`px-2.5 py-1 rounded-xl text-[10px] font-bold transition-colors ${
-              fitMode === "page"
-                ? "bg-[color:var(--primary)] text-white"
-                : "text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-high)]"
-            }`}
-          >
-            {isContinuous ? "Ajustar" : "Tela Inteira"}
-          </button>
-          <button
-            onClick={() => setFitMode("width")}
-            title="Ajustar à Largura"
-            className={`px-2.5 py-1 rounded-xl text-[10px] font-bold transition-colors ${
-              fitMode === "width"
-                ? "bg-[color:var(--primary)] text-white"
-                : "text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-high)]"
-            }`}
-          >
-            Largura
-          </button>
-          <div className="h-4 w-px bg-[color:var(--outline-variant)]/20 mx-0.5" />
-          <button
-            onClick={() => {
-              setFitMode("custom");
-              setCustomScale(s => Math.min(s + 0.2, 3.0));
-            }}
-            title="Aumentar Zoom"
-            className="w-7 h-7 flex items-center justify-center rounded-xl text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-high)] transition-colors"
-          >
-            <Icon name="add" className="text-[16px]" />
-          </button>
-          <span className="text-[10px] font-bold text-center text-[color:var(--on-surface-variant)] px-1">
-            {Math.round(computedScale * 100)}%
-          </span>
-          <button
-            onClick={() => {
-              setFitMode("custom");
-              setCustomScale(s => Math.max(s - 0.2, 0.4));
-            }}
-            title="Diminuir Zoom"
-            className="w-7 h-7 flex items-center justify-center rounded-xl text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-high)] transition-colors"
-          >
-            <Icon name="remove" className="text-[16px]" />
-          </button>
-        </div>
-      )}
+
     </div>
   );
 });

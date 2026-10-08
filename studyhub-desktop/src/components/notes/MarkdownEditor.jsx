@@ -12,7 +12,7 @@ import { createHashtagPlugin } from "./plugins/hashtagPlugin";
 import { shortcutLabel } from "../../utils/keyboardShortcuts";
 
 /**
- * Tema personalizado do editor Markdown estilo Obsidian para o CampusFlow.
+ * Tema personalizado do editor Markdown estilo Obsidian para o masterStudy.
  * Usa as variáveis CSS do design system (--background, --on-surface, etc.)
  */
 const campusFlowEditorTheme = EditorView.theme({

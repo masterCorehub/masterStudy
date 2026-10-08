@@ -1,4 +1,6 @@
 import { getLocalDateKey } from "../utils/dateUtils.js";
+import { migrateTasksNavigation } from "./sidebarNavigation.js";
+import { getTaskCompletionDate } from "./taskDates.js";
 
 export const ACADEMIC_COLLECTIONS = [
   "subjects",
@@ -148,6 +150,30 @@ export const normalizeAcademicData = (academic = {}) => {
     ]),
   );
 
+  const legacyChatHistories =
+    source.aiChatHistories && typeof source.aiChatHistories === "object"
+      ? source.aiChatHistories
+      : {};
+  const rawAiChats =
+    source.aiChats && typeof source.aiChats === "object" ? source.aiChats : {};
+  const aiChats = { ...rawAiChats };
+
+  // Migra o histórico antigo de uma conversa por disciplina sem apagar dados.
+  for (const [subjectId, history] of Object.entries(legacyChatHistories)) {
+    if (!Array.isArray(history) || history.length === 0 || aiChats[subjectId]?.length) {
+      continue;
+    }
+    aiChats[subjectId] = [
+      {
+        id: `chat-legacy-${subjectId}`,
+        title: "Conversa anterior",
+        messages: history,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    ];
+  }
+
   return {
     ...source,
     semesters,
@@ -155,10 +181,9 @@ export const normalizeAcademicData = (academic = {}) => {
     semester,
     subjects,
     ...collections,
-    aiChatHistories:
-      source.aiChatHistories && typeof source.aiChatHistories === "object"
-        ? source.aiChatHistories
-        : {},
+    // Mantém o campo legado para backups e integrações antigas.
+    aiChatHistories: legacyChatHistories,
+    aiChats,
     aiSourcePermissions: asArray(source.aiSourcePermissions).filter(
       (permission) => permission?.sourceKey && permission?.subjectId,
     ),
@@ -490,6 +515,7 @@ export function resolveAcademicSubjectId(item = {}, subjects = []) {
 }
 
 export function normalizeAcademicStateSnapshot(state = {}) {
+  state = migrateTasksNavigation(state);
   const academic = normalizeAcademicData(state.academic);
   const subjects = academic.subjects;
   const withContext = (item = {}) => {
@@ -836,7 +862,7 @@ export function buildAcademicCalendarEvents(state = {}, options = {}) {
   for (const task of taskItems) {
     // Include tasks even if no subject could be resolved — they should still
     // appear on the calendar if they have a due date.
-    const taskDate = task.dueDate || task.date || task.deadline;
+    const taskDate = task.dueDate || task.date || task.deadline || getTaskCompletionDate(task);
     if (!taskDate) continue;
     const subjectId = resolveAcademicSubjectId(task, subjects);
     const subject = subjectById.get(subjectId) || null;

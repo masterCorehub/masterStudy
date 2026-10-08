@@ -1,38 +1,22 @@
-# Extensão StudyHub Companion (Multi-Navegador: Firefox, Chrome, Edge, Brave)
+# masterStudy Companion — Capturas
 
-Extensão oficial de captura rápida e resumos inteligentes para o **StudyHub**.
+Extensão para Chrome, Edge e Brave. Salva páginas, textos selecionados e conteúdos extraídos no Hub do masterStudy Desktop, pela ponte local `127.0.0.1:47820`.
 
----
+## Instalação
 
-## 🦊 Como Instalar no Mozilla Firefox:
+1. Abra `chrome://extensions` (ou a página de extensões do Edge/Brave).
+2. Ative **Modo do desenvolvedor**.
+3. Escolha **Carregar sem compactação** e selecione esta pasta `studyhub-extension`.
+4. Abra o masterStudy Desktop e use o painel da extensão para salvar o conteúdo.
 
-1. Abra o Firefox e digite na barra de endereços:
-   `about:debugging#/runtime/this-firefox`
-2. Clique no botão **"Carregar extensão temporária..."** (*Load Temporary Add-on*).
-3. Navegue até a pasta:
-   `/home/ale/Downloads/StudyHub/studyhub-desktop/studyhub-extension`
-4. Selecione o arquivo `manifest.json`.
-5. Pronto! O ícone do StudyHub aparecerá na barra de ferramentas do Firefox. Ao clicar nele, a barra lateral (*Sidebar*) abrirá com os resumos e timestamps em tempo real.
+Se já instalou uma versão anterior, clique em **Atualizar/Recarregar** na página de extensões para aplicar esta versão e autorizar a permissão de alarmes.
 
----
+## Entrega e conteúdos
 
-## 🌐 Como Instalar no Google Chrome / Brave / Microsoft Edge / Opera:
+O painel captura URL, título, texto e metadados disponíveis. Extrações de vídeos dependem dos dados disponibilizados pela página. Se o aplicativo estiver fechado, a captura fica no armazenamento local da extensão. Novas tentativas acontecem ao abrir a extensão, enviar outra captura e a cada minuto. O ID original é preservado para evitar duplicação.
 
-1. Abra o navegador e acesse:
-   - Chrome: `chrome://extensions`
-   - Edge: `edge://extensions`
-   - Brave: `brave://extensions`
-2. Ative o **Modo do desenvolvedor** (chave no canto superior direito).
-3. Clique em **"Carregar sem compactação"** (*Load unpacked*).
-4. Selecione a pasta:
-   `/home/ale/Downloads/StudyHub/studyhub-desktop/studyhub-extension`
-5. Pronto! Fixe o ícone da extensão na sua barra de ferramentas.
+O desktop mantém sua própria fila em disco e só remove uma entrega quando a interface confirma o armazenamento no Hub. O Hub oferece filtros por origem e tags e grupos por data.
 
----
+## Limites
 
-## ✨ Funcionalidades Principais:
-
-- **Painel Lateral Nativo (Side Panel / Sidebar):** Abre na lateral sem sobrepor nem fechar o site atual.
-- **Detecção Inteligente de YouTube:** Captura capas, capítulos e gera timestamps interativos.
-- **Timestamps Clicáveis:** Clicar em qualquer timestamp dentro do resumo salta o vídeo no YouTube imediatamente para o ponto exato.
-- **Sincronização 100% Offline (Porta 47820):** O botão *"Salvar no StudyHub"* envia instantaneamente os dados para o StudyHub Desktop via servidor local interno.
+A versão web não oferece a ponte local do desktop. Não há validação de instalação real para esta versão no Firefox; seu manifesto usa service worker do Chrome. Os testes automatizados validam o reenvio com rede simulada. Confirme a instalação no navegador, selecione um texto, salve e verifique o conteúdo no Hub antes de depender da extensão para seu fluxo diário.

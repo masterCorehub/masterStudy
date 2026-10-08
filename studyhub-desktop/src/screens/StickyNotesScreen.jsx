@@ -1,3 +1,4 @@
+import { StickyMarkdown } from "../components/StickyMarkdown";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../ui/Icon";
 import { useStudyStore } from "../store/useStore";
@@ -96,7 +97,8 @@ function StickyCard({ note, autoFocus, onDelete }) {
 
   return (
     <article
-      className={`group relative flex min-h-[270px] break-inside-avoid flex-col rounded-lg border shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${color.card}`}
+      className="sticky-note-themed group relative flex min-h-[270px] break-inside-avoid flex-col rounded-lg border shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      style={{ "--note-accent": ({ yellow: "#d5a65b", rose: "#c67f91", blue: "#6d9bb7", green: "#7b9e80", purple: "#a28ab9", slate: "#8d949d" })[note.color] || "#d5a65b" }}
     >
       <div className="flex items-center justify-between border-b border-black/5 px-3 py-2 dark:border-white/10">
         <div className="relative">
@@ -195,17 +197,7 @@ function StickyCard({ note, autoFocus, onDelete }) {
           ref={titleRef}
           value={note.title}
         />
-        <textarea
-          aria-label="Conteúdo da nota"
-          className="mt-2 min-h-[150px] w-full flex-1 resize-none overflow-hidden border-0 bg-transparent p-0 text-sm leading-6 text-[color:var(--on-surface)] placeholder:text-[color:var(--on-surface-variant)]/55 focus:ring-0"
-          maxLength={10000}
-          onChange={(event) =>
-            commitUpdate({ content: event.target.value })
-          }
-          placeholder="Escreva alguma coisa…"
-          ref={contentRef}
-          value={note.content}
-        />
+        <StickyMarkdown content={note.content} onChange={content => commitUpdate({ content })} textareaProps={{ 'aria-label': 'Conteúdo da nota', className: 'mt-2 min-h-[150px] w-full flex-1 resize-none border-0 bg-transparent p-0 text-sm leading-6 focus:ring-0', maxLength: 10000, placeholder: 'Escreva alguma coisa…', ref: contentRef }} />
         <div className="mt-3 flex items-center justify-between border-t border-black/5 pt-2 text-[10px] font-medium text-[color:var(--on-surface-variant)]/70 dark:border-white/10">
           <span>Salvo automaticamente</span>
           <span>{formatUpdatedAt(note.updatedAt)}</span>

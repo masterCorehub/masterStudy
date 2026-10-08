@@ -1501,7 +1501,7 @@ function getDecorations(doc) {
   doc.descendants((node, pos) => {
     if (node.isText) {
       const text = node.text;
-      const regex = /(^|[\s(])#[\w\u00C0-\u00FF-]+/g;
+      const regex = /(^|[\s([{])#[\p{L}\p{N}_-]+(?:\/[\p{L}\p{N}_-]+)*/gu;
       let match;
       while ((match = regex.exec(text)) !== null) {
         const trimmed = match[0].trimStart();
@@ -1895,6 +1895,7 @@ export const RichTextEditor = forwardRef(({
   onAiChatLinkClick,
   onNestedNoteClick,
   onCreateNestedNote,
+  nestedNoteTitle,
   onAddTopicsAbordados,
   onSelectionChange,
   readOnly = false,
@@ -2262,24 +2263,10 @@ export const RichTextEditor = forwardRef(({
       desc: 'Criar nota interna vinculada',
       icon: 'note_add',
       run: async (ed, range) => {
-        const title = 'Nova nota interna';
+        const title = nestedNoteTitle || 'Nova nota interna';
         let childId;
         if (onCreateNestedNote) {
           childId = await onCreateNestedNote(title);
-        } else {
-          const { useStudyStore } = await import('../store/useStore');
-          const store = useStudyStore.getState();
-          childId = `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-          store.addNote({
-            id: childId,
-            title,
-            content: '',
-            sourceKind: 'nested-note',
-            itemType: 'note',
-            category: 'Nota interna',
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          });
         }
         if (childId) {
           ed.chain().focus().deleteRange(range).insertContent({
@@ -2295,7 +2282,7 @@ export const RichTextEditor = forwardRef(({
         }
       },
     },
-  ], [onCreateNestedNote]);
+  ].filter(command => command.id !== "nota" || onCreateNestedNote), [onCreateNestedNote, nestedNoteTitle]);
 
   const executeSlashCommandItem = async (item) => {
     if (!isEditorAvailable(editor) || !item) return;

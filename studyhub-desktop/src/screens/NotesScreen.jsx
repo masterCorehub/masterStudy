@@ -1,3 +1,4 @@
+import { nestedNoteContext, repairNestedNotes } from "../domain/nestedNotes";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStudyStore } from "../store/useStore";
@@ -47,7 +48,7 @@ export function NotesScreen({ onNavigate }) {
   
   // Sidebar state
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const lastNavigatedNoteIdRef = useRef(null);
 
   // Desestruturação segura do store
@@ -87,9 +88,9 @@ export function NotesScreen({ onNavigate }) {
 
   // Filtra todas as notas do sistema
   const allNotes = useMemo(() => {
-    return studyItems.filter(
+    return repairNestedNotes(studyItems.filter(
       (item) => item.itemType === "note" || item.itemType === "drawing" || item.type === "note"
-    );
+    ));
   }, [studyItems]);
 
   // Filtra apenas as notas pertencentes ao vault ativo
@@ -138,23 +139,7 @@ export function NotesScreen({ onNavigate }) {
   }, [vaultNotes, activeNote?.id, currentContent]);
 
   // Calcula arestas do grafo baseadas em wikilinks e tags do vault ativo
-  const graphEdges = useMemo(() => {
-    const edges = [];
-    vaultNotes.forEach(sourceNote => {
-      const content = sourceNote.markdownContent || sourceNote.content;
-      if (!content || typeof content !== 'string') return;
-      
-      const matches = [...content.matchAll(/\[\[(.*?)\]\]/g)];
-      matches.forEach(match => {
-        const targetTitle = match[1];
-        const targetNote = vaultNotes.find(n => n.title?.toLowerCase() === targetTitle.toLowerCase());
-        if (targetNote && targetNote.id !== sourceNote.id) {
-          edges.push({ source: sourceNote.id, target: targetNote.id });
-        }
-      });
-    });
-    return edges;
-  }, [vaultNotes]);
+  const graph = useMemo(() => buildLinkGraph(vaultNotes.map(note => note.id === activeNote?.id ? { ...note, content: currentContent, markdownContent: currentContent } : note)), [vaultNotes, activeNote?.id, currentContent]);
 
   // Sincroniza navegação externa (activeNoteId) abrindo a aba e trocando de vault se necessário
   useEffect(() => {
@@ -308,6 +293,14 @@ export function NotesScreen({ onNavigate }) {
       }
     });
   }, [store, activeVaultId, currentVault]);
+
+  const handleCreateNestedNote = (title = "Nova nota interna") => {
+    if (!activeNote || activeNote.sharedReadOnly) return null;
+    if (title === "Nova nota interna") title = `Nota interna — ${activeNote.title || "Sem título"}`;
+    const child = { id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title, content: "", markdownContent: "", itemType: "note", ...nestedNoteContext(activeNote) };
+    store.addStudyItem(child);
+    return child.id;
+  };
 
   const handleCreateFolder = useCallback((parentPath = "") => {
     setPromptDialog({
@@ -590,6 +583,7 @@ export function NotesScreen({ onNavigate }) {
                   <span className="text-xs font-bold truncate max-w-[300px]">
                     {activeNote.title || "Sem título"}
                   </span>
+                  {(activeNote.category === "Nota de aula" || activeNote.classLogId) && <span className="text-[11px] text-[var(--primary)] inline-flex items-center gap-1"><Icon name="school" className="text-sm" />Nota de aula{activeNote.date ? ` · ${new Date(`${activeNote.date}T12:00:00`).toLocaleDateString("pt-BR")}` : ""}</span>}
                   {activeNote.path && (
                     <span className="text-[11px] text-[var(--on-surface-variant)] opacity-60 truncate max-w-[200px]">
                       • {activeNote.path}
@@ -633,12 +627,19 @@ export function NotesScreen({ onNavigate }) {
         {/* Editor Content Area */}
         {activeNote && (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative bg-[var(--surface)]">
+            <div className="flex shrink-0 flex-wrap items-center gap-2 px-4 py-2 border-b border-[var(--outline-variant)] text-xs">
+              {activeNote.parentNoteId && <button type="button" onClick={() => { const parent = allNotes.find(note => note.id === activeNote.parentNoteId); if (parent) store.openTab(parent); }}>← {allNotes.find(note => note.id === activeNote.parentNoteId)?.title || "Nota principal"}</button>}
+              {vaultNotes.filter(note => note.parentNoteId === activeNote.id).map(child => <button type="button" key={child.id} onClick={() => store.openTab(child)} className="rounded border border-[var(--outline-variant)] px-2 py-1">↳ {child.title}</button>)}
+            </div>
             <RichTextEditor
               key={activeNote.id}
               content={currentContent}
               drawings={activeNote.drawings || []}
               onDrawingsChange={handleDrawingsChange}
               onChange={handleContentChange}
+              onCreateNestedNote={handleCreateNestedNote}
+              nestedNoteTitle={`Nota interna — ${activeNote.title || "Sem título"}`}
+              onNestedNoteClick={(id) => { const child = allNotes.find(note => note.id === id); if (child) store.openTab(child); }}
               documentMode={true}
               placeholder="Comece a estruturar suas ideias... Digite # para títulos, - para listas ou / para inserir blocos..."
             />
@@ -709,8 +710,8 @@ export function NotesScreen({ onNavigate }) {
             {activeSidePanel === "graph" && (
               <div className="w-full h-full">
                 <GraphView
-                  nodes={vaultNotes}
-                  edges={graphEdges}
+                  nodes={graph.nodes}
+                  edges={graph.edges}
                   activeNoteId={activeTabId}
                   isLocal={true}
                   onNodeClick={(id) => {

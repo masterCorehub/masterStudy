@@ -168,14 +168,14 @@ export function CampusFlowCoursesScreen({ onNavigate, initialTab = "all" }) {
 
   return (
     <main className="campus-page">
-      <div className="campus-library-page">
+      <div className="campus-library-page study-library-page">
         <header className="campus-library-header">
           <div>
             <span className="campus-eyebrow">Hub de Aprendizagem</span>
             <h1>Cursos e Disciplinas</h1>
-            <p>Trilhas de aprendizagem, vídeo-aulas e matérias acadêmicas em um único lugar.</p>
+            <p>Seu semestre e suas trilhas de aprendizagem.</p>
           </div>
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <details className="study-create-menu" onClick={event => { if (event.target.closest("button")) event.currentTarget.removeAttribute("open"); }}><summary className="campus-primary-button"><Icon name="add" />Adicionar<Icon name="expand_more" /></summary><div>
             <button
               className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-[color:var(--outline-variant)] bg-[color:var(--surface-container)] hover:bg-[color:var(--surface-container-high)] text-xs font-bold text-[color:var(--on-surface)] transition-all cursor-pointer shadow-xs"
               type="button"
@@ -187,7 +187,7 @@ export function CampusFlowCoursesScreen({ onNavigate, initialTab = "all" }) {
             <button className="campus-primary-button" type="button" onClick={() => onNavigate?.(SCREEN_IDS.CREATE_COURSE)}>
               <Icon name="add" /> Novo Curso
             </button>
-          </div>
+          </div></details>
         </header>
 
         {/* Toolbar com Filtros de Abas e Barra de Busca */}
@@ -246,8 +246,12 @@ export function CampusFlowCoursesScreen({ onNavigate, initialTab = "all" }) {
           description="Cursos, aulas e disciplinas aceitos entram diretamente na sua biblioteca."
         />
 
+        {activeTab === "all" && !subjects.length && !filteredCourses.length && (
+          <div className="study-library-empty"><Icon name="school" /><h2>{search ? "Nenhum resultado" : "Comece sua biblioteca"}</h2><p>{search ? "Tente outro nome de curso, disciplina ou professor." : "Use Adicionar para cadastrar uma disciplina ou um curso."}</p></div>
+        )}
+
         {/* 1. SEÇÃO DE DISCIPLINAS (QUANDO ABA 'ALL' OU 'DISCIPLINES') */}
-        {(activeTab === "all" || activeTab === "disciplines") && (
+        {(activeTab === "disciplines" || (activeTab === "all" && subjects.length > 0)) && (
           <section className="space-y-3">
             {activeTab === "all" && (
               <div className="flex items-center justify-between border-b border-[color:var(--outline-variant)]/20 pb-2">
@@ -325,7 +329,7 @@ export function CampusFlowCoursesScreen({ onNavigate, initialTab = "all" }) {
                         >
                           <Icon name="delete" className="text-[16px]" />
                         </button>
-                        <span>{subject.code || "DISC"}</span>
+                        {subject.code && <span>{subject.code}</span>}
                       </div>
                     </header>
                     <div className="campus-discipline-metrics">
@@ -335,9 +339,9 @@ export function CampusFlowCoursesScreen({ onNavigate, initialTab = "all" }) {
                       </span>
                       <span>
                         <small>Frequência</small>
-                        <strong>{attendancePct}%</strong>
+                        <strong>{attendance.total > 0 ? `${attendancePct}%` : "—"}</strong>
                         <em>
-                          <b style={{ width: `${Math.max(0, Math.min(100, attendancePct))}%` }} />
+                          <b style={{ width: `${attendance.total > 0 ? Math.max(0, Math.min(100, attendancePct)) : 0}%` }} />
                         </em>
                       </span>
                     </div>
@@ -365,7 +369,7 @@ export function CampusFlowCoursesScreen({ onNavigate, initialTab = "all" }) {
         )}
 
         {/* 2. SEÇÃO DE CURSOS (QUANDO ABA 'ALL' OU 'COURSES') */}
-        {(activeTab === "all" || activeTab === "courses") && (
+        {(activeTab === "courses" || (activeTab === "all" && filteredCourses.length > 0)) && (
           <section className="space-y-3 pt-2">
             {activeTab === "all" && (
               <div className="flex items-center justify-between border-b border-[color:var(--outline-variant)]/20 pb-2">

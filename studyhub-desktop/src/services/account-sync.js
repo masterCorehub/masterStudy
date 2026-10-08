@@ -141,7 +141,7 @@ const LOCAL_PATH_KEYS = new Set([
 
 const looksLikeLocalValue = (value) =>
   typeof value === "string" &&
-  /^(?:[a-z]:[\\/]|\/|file:|safe-file:|data:)/i.test(value.trim());
+  /^(?:[a-z]:[\\/]|\/|file:|safe-file:|book-file:|data:)/i.test(value.trim());
 
 const stripEmbeddedDataUrls = (value) => {
   if (typeof value !== "string") return value;
@@ -186,6 +186,18 @@ export function cloudStateSizeBytes(state = {}) {
 export function mergeStudyStates(base = {}, local = {}, remote = {}) {
   const report = { conflicts: [] };
   const state = mergeNode(base, local, remote, "", report) || {};
+  // Cloud snapshots omit device files and embedded covers. Absence there is
+  // not deletion: retain these fields on surviving books, matched by ID.
+  const localBooks = new Map((local.books?.list || []).map(book => [String(book.id), book]));
+  for (const book of state.books?.list || []) {
+    const previous = localBooks.get(String(book.id));
+    if (!previous) continue;
+    if (!Object.hasOwn(book, "filePath") && looksLikeLocalValue(previous.filePath)) book.filePath = previous.filePath;
+    if (!Object.hasOwn(book, "coverUrl") && /^(?:data:image\/|blob:)/i.test(previous.coverUrl || "")) {
+      book.coverUrl = previous.coverUrl;
+      book.coverSource = previous.coverSource;
+    }
+  }
   return {
     state,
     conflicts: [...new Set(report.conflicts.filter(Boolean))],

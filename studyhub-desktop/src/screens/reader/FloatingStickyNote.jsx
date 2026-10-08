@@ -95,7 +95,7 @@ export function FloatingStickyNote({ saveMode, noteForm, setNoteForm, onSave, on
               className="px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-md transition-colors flex items-center gap-1.5"
             >
               <Icon name="check" className="text-[14px]" />
-              Salvar Nota
+              {isQuote ? "Salvar citação" : "Salvar anotação"}
             </button>
           </div>
         </div>

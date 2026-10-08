@@ -1,0 +1,288 @@
+.study-tray-root {
+  height: 100dvh;
+  padding: 8px;
+  padding-top: 14px;
+  background: transparent;
+  color: var(--on-surface);
+}
+.study-tray-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--outline-variant);
+  border-radius: 15px;
+  background: var(--surface);
+  box-shadow: 0 8px 22px #0002;
+  overflow: hidden;
+}
+.study-tray-panel button:focus-visible,
+.study-tray-panel summary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.study-tray-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+.study-tray-logo {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.study-tray-logo .material-symbols-outlined {
+  font-size: 21px;
+}
+.study-tray-header h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+}
+.study-tray-header p {
+  margin: 3px 0 0;
+  font-size: 11px;
+  color: var(--on-surface-variant);
+}
+.study-tray-more {
+  margin-left: auto;
+  position: relative;
+}
+.study-tray-more summary {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--on-surface-variant);
+}
+.study-tray-more summary::-webkit-details-marker {
+  display: none;
+}
+.study-tray-more[open] summary,
+.study-tray-more summary:hover {
+  background: var(--surface-container);
+}
+.study-tray-more > div {
+  position: absolute;
+  z-index: 2;
+  top: 34px;
+  right: 0;
+  width: 220px;
+  padding: 5px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 10px;
+  background: var(--surface-container);
+  box-shadow: 0 6px 24px #0002;
+}
+.study-tray-more button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 8px;
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+  border-radius: 6px;
+}
+.study-tray-more button:hover {
+  background: var(--surface-container-high);
+}
+.study-tray-more button .material-symbols-outlined {
+  font-size: 17px;
+  color: var(--on-surface-variant);
+}
+.study-tray-tasks {
+  padding: 14px 16px 10px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.study-tray-tasks > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.study-tray-tasks h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+}
+.study-tray-tasks > header > span {
+  font-size: 10px;
+  color: var(--on-surface-variant);
+}
+.study-tray-add {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px;
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-low);
+  border-radius: 8px;
+}
+.study-tray-add:focus-within {
+  border-color: var(--primary);
+}
+.study-tray-add input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 6px;
+  font-size: 12px;
+  color: var(--on-surface);
+  box-shadow: none;
+  outline: none;
+}
+.study-tray-add input::placeholder {
+  color: var(--on-surface-variant);
+}
+.study-tray-add button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.study-tray-add button:disabled {
+  opacity: 0.4;
+}
+.study-tray-add button .material-symbols-outlined {
+  font-size: 18px;
+}
+.study-tray-task-list {
+  overflow-y: auto;
+  margin-top: 8px;
+  min-height: 0;
+}
+.study-tray-task {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 8px 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--outline-variant) 60%, transparent);
+}
+.study-tray-task:last-child {
+  border-bottom: 0;
+}
+.study-tray-check {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  color: var(--on-surface-variant);
+}
+.study-tray-check:hover {
+  background: var(--surface-container);
+  color: var(--primary);
+}
+.study-tray-check .material-symbols-outlined {
+  font-size: 18px;
+}
+.study-tray-check[aria-pressed="true"] {
+  color: var(--primary);
+}
+.study-tray-task > div {
+  flex: 1;
+  min-width: 0;
+}
+.study-tray-task strong {
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 500;
+  display: block;
+  overflow-wrap: anywhere;
+}
+.study-tray-task small {
+  font-size: 10px;
+  margin-top: 2px;
+  display: block;
+  color: var(--on-surface-variant);
+}
+.study-tray-task.is-done strong {
+  text-decoration: line-through;
+  color: var(--on-surface-variant);
+}
+.study-tray-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0;
+  color: var(--on-surface-variant);
+  font-size: 12px;
+}
+.study-tray-empty .material-symbols-outlined {
+  font-size: 18px;
+}
+.study-tray-error {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--error);
+}
+.study-tray-shortcuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  padding: 4px 16px 12px;
+}
+.study-tray-shortcuts button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 5px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+  color: var(--on-surface-variant);
+  font-size: 11px;
+}
+.study-tray-shortcuts button:hover {
+  background: var(--surface-container);
+  color: var(--on-surface);
+}
+.study-tray-shortcuts .material-symbols-outlined {
+  font-size: 16px;
+}
+.study-tray-panel > footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--outline-variant);
+  background: var(--surface-container-low);
+}
+.study-tray-open {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 7px;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.study-tray-open .material-symbols-outlined {
+  font-size: 16px;
+}
+.study-tray-all-tasks {
+  padding: 6px 0;
+  font-size: 10px;
+  color: var(--on-surface-variant);
+}

@@ -90,7 +90,7 @@ export function CaptureOverlay() {
     const api = getTranslatorApi();
 
     if (!api?.getCapture) {
-      setError("A captura de tela não está disponível. Reinicie o StudyHub.");
+      setError("A captura de tela não está disponível. Reinicie o masterStudy.");
       setPhase("error");
     } else {
       Promise.resolve(api.getCapture())

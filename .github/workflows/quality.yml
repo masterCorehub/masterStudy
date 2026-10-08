@@ -1,0 +1,56 @@
+name: Quality and security
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        # The application package lives below the repository root.
+        working-directory: studyhub-desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: studyhub-desktop/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: test-publishable-key
+          VITE_PUBLIC_APP_URL: http://studyhub.test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Guardar evidências de falhas
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failures
+          path: |
+            studyhub-desktop/test-results/
+            studyhub-desktop/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+  audit:
+    # Relatório separado: falhas de dependências não ocultam os resultados funcionais.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: studyhub-desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm run audit:prod

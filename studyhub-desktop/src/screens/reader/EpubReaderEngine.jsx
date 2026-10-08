@@ -1,576 +1,244 @@
-import React, { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from "react";
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import Epub from "epubjs";
 import { Icon } from "../../ui/Icon";
-import { getLocalFilePath, getLocalFileUrl } from "../../utils/localFileUrl";
-
-const THEME_STYLES = {
-  light:  { bg: "#ffffff", text: "#1a1a1a", link: "#2563eb" },
-  sepia:  { bg: "#f5ede0", text: "#3d2b1f", link: "#92400e" },
-  dark:   { bg: "#1e1e2e", text: "#cdd6f4", link: "#89b4fa" },
-  night:  { bg: "#0d0d0d", text: "#a0a0a0", link: "#6b7280" },
-};
-
-const FONT_FAMILIES = {
-  serif: "Georgia, 'Times New Roman', serif",
-  sans:  "'Inter', system-ui, sans-serif",
-  mono:  "'Courier New', Courier, monospace",
-};
+import { readBookBytes } from "../../services/book-files";
+import { READER_THEMES, READER_FONTS } from "./readerAppearance";
+import { animatePageTurn } from "./readerPageTurn";
 
 async function resolveSrc(filePath) {
-  if (!filePath) return "";
-  const localPath = getLocalFilePath(filePath);
-  if (localPath && window.studyhubDesktop?.readFileBinary) {
-    try {
-      const binary = await window.studyhubDesktop.readFileBinary(localPath);
-      let buffer = null;
-      if (binary instanceof ArrayBuffer) {
-        buffer = binary;
-      } else if (ArrayBuffer.isView(binary)) {
-        buffer = binary.buffer.slice(binary.byteOffset, binary.byteOffset + binary.byteLength);
-      }
-
-      if (buffer) {
-        return buffer;
-      }
-    } catch (binErr) {
-      console.warn("EPUB binary load fallback to URL:", binErr);
-    }
-  }
-  return getLocalFileUrl(filePath);
+  const bytes = await readBookBytes(filePath);
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+}
+function applyTheme(rendition, settings) {
+  const theme = READER_THEMES[settings.theme] || READER_THEMES.light;
+  rendition.themes.default({
+    html: { background: theme.bg, "scroll-behavior": "auto" },
+    body: {
+      background: theme.bg + " !important", color: theme.text + " !important",
+      "font-family": (READER_FONTS[settings.fontFamily] || READER_FONTS.serif) + " !important",
+      "font-size": settings.fontSize + "px !important", "line-height": settings.lineSpacing + " !important",
+      "padding": `24px ${settings.margin || 40}px !important`,
+      "text-align": (settings.textAlign || "left") + " !important",
+      "overflow-wrap": "break-word", "hyphens": "auto",
+    },
+    "p, li": { "font-size": "inherit !important", "line-height": "inherit !important" },
+    a: { color: theme.link + " !important" },
+    "img, svg": { "max-width": "100% !important", height: "auto !important" },
+    pre: { "white-space": "pre-wrap !important", "overflow-wrap": "anywhere" },
+    "::selection": { background: "#e8bc7866 !important" },
+  });
+}
+function flattenToc(items, level = 0) {
+  return (items || []).flatMap(item => [{ label: item.label?.trim(), cfi: item.href, level }, ...flattenToc(item.subitems, level + 1)]);
 }
 
-function buildThemeCss(settings) {
-  const theme = THEME_STYLES[settings?.theme] || THEME_STYLES.light;
-  const fontFamily = FONT_FAMILIES[settings?.fontFamily] || FONT_FAMILIES.serif;
-  const fontSize = settings?.fontSize || 16;
-  const lineHeight = settings?.lineSpacing || 1.6;
-  return { theme, fontFamily, fontSize, lineHeight };
-}
-
-export const EpubReaderEngine = forwardRef(function EpubReaderEngine(
-  { filePath, currentCfi, settings, isTwoPage, highlights, onTotalPages, onTextSelected, onCfiChanged, onPageChange, onTocLoaded, onHighlightClick },
-  ref
-) {
+export const EpubReaderEngine = forwardRef(function EpubReaderEngine(props, ref) {
+  const { filePath, settings, currentCfi, isTwoPage, highlights } = props;
   const containerRef = useRef(null);
   const bookRef = useRef(null);
   const renditionRef = useRef(null);
-  const mountedRef = useRef(true);
-  const lastPageTurnRef = useRef(0);
+  const callbacks = useRef(props);
+  callbacks.current = props; // Long-lived EPUB listeners always call the latest React handlers.
+  const positionRef = useRef(currentCfi);
+  if (currentCfi) positionRef.current = currentCfi;
+  const turnBusy = useRef(false);
+  const searchQueue = useRef(Promise.resolve());
   const [loading, setLoading] = useState(true);
-  const [loadingStep, setLoadingStep] = useState("Lendo arquivo...");
-  const [error, setError] = useState(null);
-  const [hoverZone, setHoverZone] = useState(null);
+  const [error, setError] = useState("");
+  const theme = READER_THEMES[settings.theme] || READER_THEMES.light;
+  const continuous = settings.scrollMode === "continuous";
 
-  const applyTheme = useCallback((rendition, s) => {
-    if (!rendition) return;
-    const currentSettings = s || settings;
-    const { theme, fontFamily, fontSize, lineHeight } = buildThemeCss(currentSettings);
-    const isContinuous = (currentSettings?.scrollMode || "paginated") === "continuous";
-    rendition.themes.default({
-      html: {
-        "overflow-y": isContinuous ? "auto !important" : "hidden !important",
-        "-webkit-overflow-scrolling": "touch !important",
-        "scroll-behavior": "smooth !important",
-      },
-      body: {
-        background: `${theme.bg} !important`,
-        color: `${theme.text} !important`,
-        fontFamily: `${fontFamily} !important`,
-        fontSize: `${fontSize}px !important`,
-        lineHeight: `${lineHeight} !important`,
-        padding: isContinuous ? "24px 36px 48px 36px !important" : "24px 48px !important",
-        margin: isContinuous ? "0 auto !important" : "0 !important",
-        "max-width": isContinuous ? "800px !important" : "none !important",
-        "-webkit-overflow-scrolling": "touch !important",
-        "scroll-behavior": "smooth !important",
-      },
-      "a": { color: `${theme.link} !important` },
-      "::selection": { background: "rgba(99,102,241,0.3) !important" },
-      "img": { "max-width": "100% !important", height: "auto !important" },
-      "svg": { "max-width": "100% !important" },
-      "table": { "max-width": "100% !important", "overflow-x": "auto !important" },
-      "pre": { "max-width": "100% !important", "overflow-x": "auto !important", "white-space": "pre-wrap !important" },
-    });
-  }, [settings]);
+  const turn = async direction => {
+    if (turnBusy.current || !renditionRef.current) return;
+    turnBusy.current = true;
+    try {
+      const rendition = renditionRef.current;
+      const before = rendition.currentLocation()?.start?.cfi;
+      await rendition[direction]();
+      if (rendition === renditionRef.current && callbacks.current.settings.scrollMode !== "continuous" && rendition.currentLocation()?.start?.cfi !== before) {
+        animatePageTurn(containerRef.current, direction);
+      }
+    }
+    catch (err) { console.warn("EPUB page turn:", err); }
+    finally { turnBusy.current = false; }
+  };
+  useImperativeHandle(ref, () => ({
+    nextPage: () => turn("next"),
+    prevPage: () => turn("prev"),
+    clearSelection: () => renditionRef.current?.getContents().forEach(contents => contents.window.getSelection()?.removeAllRanges()),
+    getLayout: () => ({ columns: renditionRef.current?.layout?.divisor || 1 }),
+    goToPage: page => {
+      const cfi = bookRef.current?.locations.cfiFromLocation(Math.max(0, page - 1));
+      if (cfi) renditionRef.current?.display(cfi);
+    },
+    displayCfi: cfi => renditionRef.current?.display(cfi),
+    search: query => {
+      const task = searchQueue.current.catch(() => {}).then(async () => {
+      const book = bookRef.current;
+      if (!book) return [];
+      const results = [];
+      // Search the whole spine sequentially, releasing sections after scanning.
+      for (const section of book.spine.spineItems) {
+        if (bookRef.current !== book) break;
+        const alreadyLoaded = !!section.document;
+        await section.load(book.load.bind(book));
+        try {
+          results.push(...section.find(query).map(match => ({ ...match, page: book.locations.locationFromCfi(match.cfi) + 1, label: book.navigation?.get(section.href)?.label || "Trecho do livro" })));
+        } finally { if (!alreadyLoaded) section.unload(); }
+        if (results.length >= 100) break;
+      }
+      return results.slice(0, 100);
+      });
+      searchQueue.current = task;
+      return task;
+    },
+  }));
 
-  // Handle Highlights
+  useEffect(() => {
+    let cancelled = false;
+    let instance;
+    setLoading(true); setError("");
+    const load = async () => {
+      try {
+        const src = await resolveSrc(filePath);
+        if (cancelled) return;
+        instance = Epub(src, { openAs: typeof src === "string" ? "epub" : "binary" });
+        bookRef.current = instance;
+        await instance.ready;
+        if (cancelled) return;
+        const rendition = instance.renderTo(containerRef.current, {
+          width: "100%", height: "100%",
+          flow: continuous ? "scrolled-doc" : "paginated",
+          manager: continuous ? "continuous" : "default",
+          spread: isTwoPage && !continuous ? "always" : "none", minSpreadWidth: 1,
+        });
+        renditionRef.current = rendition;
+        applyTheme(rendition, callbacks.current.settings);
+        // Install hooks BEFORE display; the first chapter needs them too.
+        rendition.hooks.content.register(contents => {
+          const doc = contents.document;
+          doc.addEventListener("mousemove", event => {
+            const frame = contents.window.frameElement?.getBoundingClientRect();
+            window.dispatchEvent(new MouseEvent("mousemove", { clientX: (frame?.left || 0) + event.clientX, clientY: (frame?.top || 0) + event.clientY }));
+          });
+          let lastWheel = 0;
+          let startTouch = null;
+          doc.addEventListener("wheel", event => {
+            if (callbacks.current.settings.scrollMode === "continuous" || event.ctrlKey) return;
+            // Vertical trackpad movements remain available for text selection;
+            // deliberate horizontal swipes turn a page once per gesture.
+            if (Math.abs(event.deltaX) < Math.max(20, Math.abs(event.deltaY))) return;
+            event.preventDefault();
+            if (Date.now() - lastWheel < 650) return;
+            lastWheel = Date.now(); turn(event.deltaX > 0 ? "next" : "prev");
+          }, { passive: false });
+          doc.addEventListener("touchstart", e => { startTouch = e.touches[0]?.clientX; }, { passive: true });
+          doc.addEventListener("touchend", e => {
+            if (startTouch == null || callbacks.current.settings.scrollMode === "continuous" || contents.window.getSelection()?.toString()) return;
+            const distance = (e.changedTouches[0]?.clientX ?? startTouch) - startTouch;
+            if (Math.abs(distance) > 70) turn(distance < 0 ? "next" : "prev");
+            startTouch = null;
+          });
+          doc.addEventListener("mousedown", () => window.postMessage("EPUB_CLICK", window.location.origin));
+          doc.addEventListener("keydown", e => {
+            if (e.key === "Escape") window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+            else handleKey(e);
+          });
+        });
+        const report = loc => {
+          if (cancelled || !loc?.start?.cfi) return;
+          positionRef.current = loc.start.cfi;
+          callbacks.current.onCfiChanged?.(loc.start.cfi);
+          const index = instance.locations.locationFromCfi(loc.start.cfi);
+          if (typeof index === "number" && index >= 0) callbacks.current.onPageChange?.(index + 1, true);
+        };
+        rendition.on("relocated", report);
+        rendition.on("selected", (cfi, contents) => {
+          const selection = contents.window.getSelection();
+          const text = selection?.toString()?.trim();
+          if (!text || !selection.rangeCount) return;
+          const rect = selection.getRangeAt(0).getBoundingClientRect();
+          const frame = contents.window.frameElement?.getBoundingClientRect() || containerRef.current.getBoundingClientRect();
+          callbacks.current.onTextSelected?.({ text, cfi, position: { x: frame.left + rect.left + rect.width / 2, y: frame.top + rect.top - 8 } });
+        });
+        callbacks.current.onTocLoaded?.(flattenToc((await instance.loaded.navigation).toc));
+        try { await rendition.display(positionRef.current || undefined); }
+        catch (err) { if (!positionRef.current) throw err; await rendition.display(); }
+        if (cancelled) return;
+        setLoading(false);
+        await instance.locations.generate(1600);
+        if (cancelled) return;
+        // Locations are character-based positions, not visual page numbers.
+        callbacks.current.onTotalPages?.(instance.locations.length());
+        report(rendition.location);
+      } catch (err) {
+        if (!cancelled) { console.error("EPUB load:", err); setError("Não foi possível abrir este EPUB."); setLoading(false); }
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+      if (bookRef.current === instance) { bookRef.current = null; renditionRef.current = null; }
+      try { instance?.destroy(); } catch {}
+    };
+  }, [filePath, continuous]);
+
+  function handleKey(e) {
+    if (e.target?.closest?.("input, textarea, select, button, [contenteditable=true]") || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (callbacks.current.settings.scrollMode === "continuous" && ["ArrowUp", "ArrowDown", "PageUp", "PageDown", " "].includes(e.key)) return;
+    if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); turn("prev"); }
+    if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); turn(e.shiftKey ? "prev" : "next"); }
+  }
+  useEffect(() => {
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+  useEffect(() => {
+    if (!renditionRef.current || loading || !currentCfi || renditionRef.current.location?.start?.cfi === currentCfi) return;
+    renditionRef.current.display(currentCfi).catch(err => console.warn("EPUB destination:", err));
+  }, [currentCfi, loading]);
   useEffect(() => {
     const rendition = renditionRef.current;
     if (!rendition || loading) return;
-
-    // Remove existing annotations
-    const currAnnotations = rendition.annotations?._annotations;
-    if (currAnnotations) {
-      Object.keys(currAnnotations).forEach(cfi => rendition.annotations.remove(cfi, "highlight"));
-      Object.keys(currAnnotations).forEach(cfi => rendition.annotations.remove(cfi, "underline"));
-    }
-
-    // Add new highlights
-    if (highlights && highlights.length > 0) {
-      highlights.forEach(h => {
-        if (!h.cfi) return;
-        try {
-          if (h.type === "quote") {
-            rendition.annotations.highlight(h.cfi, {}, (e) => { onHighlightClick?.(h.id); }, undefined, {
-              fill: "rgba(59, 130, 246, 0.2)",
-              "border-bottom": "2px dashed #3b82f6",
-              "cursor": "pointer"
-            });
-          } else if (h.type === "note") {
-            rendition.annotations.highlight(h.cfi, {}, (e) => { onHighlightClick?.(h.id); }, undefined, {
-              fill: "rgba(249, 115, 22, 0.3)",
-              "border-bottom": "2px solid #f97316",
-              "cursor": "pointer"
-            });
-          } else {
-            rendition.annotations.highlight(h.cfi, {}, (e) => { onHighlightClick?.(h.id); }, undefined, {
-              fill: "rgba(250, 204, 21, 0.4)",
-              "cursor": "pointer"
-            });
-          }
-        } catch(e) {}
-      });
-    }
-  }, [highlights, loading, onHighlightClick]);
-
-  const prevPage = useCallback(() => {
-    const now = Date.now();
-    if (now - lastPageTurnRef.current < 500) return;
-    lastPageTurnRef.current = now;
-    if (renditionRef.current) {
-      renditionRef.current.prev();
-    }
+    const cfi = positionRef.current;
+    applyTheme(rendition, settings);
+    rendition.spread(isTwoPage && !continuous ? "always" : "none", 1);
+    rendition.resize();
+    if (cfi) rendition.display(cfi).catch(() => {});
+  }, [settings, isTwoPage, loading, continuous]);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      const container = containerRef.current;
+      const rendition = renditionRef.current;
+      // renderTo starts its manager asynchronously; a resize can arrive first.
+      if (rendition?.manager?.rendered && rendition.manager.stage && container.clientWidth && container.clientHeight) rendition.resize(container.clientWidth, container.clientHeight);
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
   }, []);
-
-  const nextPage = useCallback(() => {
-    const now = Date.now();
-    if (now - lastPageTurnRef.current < 500) return;
-    lastPageTurnRef.current = now;
-    if (renditionRef.current) {
-      renditionRef.current.next();
-    }
-  }, []);
-
-  const goToPage = useCallback((page) => {
-    if (bookRef.current && bookRef.current.locations && renditionRef.current) {
+  useEffect(() => {
+    const rendition = renditionRef.current;
+    if (!rendition || loading) return;
+    const colors = { yellow: "#f5ce57", green: "#8fce9b", blue: "#8ebeea", pink: "#eaa4c9", orange: "#e8ad73" };
+    const added = [];
+    for (const h of highlights || []) {
+      if (!h.cfi || added.includes(h.cfi)) continue;
       try {
-        // page is 1-indexed from UI, locations are 0-indexed
-        const locIndex = Math.max(0, page - 1);
-        const cfi = bookRef.current.locations.cfiFromLocation(locIndex);
-        if (cfi) {
-          renditionRef.current.display(cfi);
-        }
-      } catch (err) {
-        console.error("Error going to page:", err);
-      }
+        rendition.annotations.highlight(h.cfi, {}, () => callbacks.current.onHighlightClick?.(h.id), "reader-passage-highlight", { fill: colors[h.color] || colors.yellow, "fill-opacity": ".4", "mix-blend-mode": settings.theme === "dark" || settings.theme === "night" ? "screen" : "multiply" });
+        added.push(h.cfi);
+      } catch {}
     }
-  }, []);
+    return () => added.forEach(cfi => { try { rendition.annotations.remove(cfi, "highlight"); } catch {} });
+  }, [highlights, loading, settings.theme]);
 
-  useImperativeHandle(ref, () => ({
-    nextPage,
-    prevPage,
-    goToPage,
-    displayCfi: (cfi) => renditionRef.current?.display(cfi),
-  }));
-
-  // Update spread and recalculate layout when isTwoPage changes
-  useEffect(() => {
-    if (renditionRef.current && !loading) {
-      try {
-        const rendition = renditionRef.current;
-        const currCfi = rendition.location?.start?.cfi;
-        rendition.spread(isTwoPage ? "always" : "none", isTwoPage ? 1 : 9999);
-        
-        // Force resize to apply any max-width CSS changes based on isTwoPage
-        if (containerRef.current) {
-          rendition.resize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-        }
-
-        if (currCfi) {
-          renditionRef.current.display(currCfi);
-        }
-      } catch (err) {
-        console.error("Spread toggle error:", err);
-      }
-    }
-  }, [isTwoPage, loading]);
-
-  const lastEmittedCfiRef = useRef(null);
-
-  // Handle external CFI changes (e.g. from TOC or Bookmarks)
-  useEffect(() => {
-    if (!renditionRef.current || loading || !currentCfi) return;
-    if (currentCfi === lastEmittedCfiRef.current) return;
-    try {
-      const currentLoc = renditionRef.current.location?.start?.cfi;
-      const currentHref = renditionRef.current.location?.start?.href;
-      
-      if (currentLoc !== currentCfi && currentHref !== currentCfi) {
-        lastEmittedCfiRef.current = currentCfi;
-        renditionRef.current.display(currentCfi);
-      }
-    } catch (e) {
-      console.error("Error displaying CFI:", e);
-    }
-  }, [currentCfi, loading]);
-
-  // Window resize handler for EPUB rendition
-  useEffect(() => {
-    const handleResize = () => {
-      if (renditionRef.current && containerRef.current) {
-        const w = containerRef.current.clientWidth;
-        const h = containerRef.current.clientHeight;
-        if (w > 0 && h > 0) {
-          try {
-            renditionRef.current.resize(w, h);
-          } catch {}
-        }
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    if (!filePath || !containerRef.current) return;
-
-    const loadEpub = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        setLoadingStep("Lendo arquivo...");
-
-        const src = await resolveSrc(filePath);
-        if (!mountedRef.current) return;
-
-        setLoadingStep("Inicializando livro...");
-
-        if (bookRef.current) {
-          try { bookRef.current.destroy(); } catch {}
-          bookRef.current = null;
-          renditionRef.current = null;
-        }
-
-        const openOptions = typeof src === "string" ? { openAs: "epub" } : { openAs: "binary" };
-        const book = Epub(src, openOptions);
-        bookRef.current = book;
-
-        const containerWidth = containerRef.current?.clientWidth || window.innerWidth;
-        const containerHeight = containerRef.current?.clientHeight || window.innerHeight;
-
-        const isContinuous = settings?.scrollMode === "continuous";
-        const rendition = book.renderTo(containerRef.current, {
-          width: "100%",
-          height: "100%",
-          flow: isContinuous ? "scrolled" : "paginated",
-          manager: "default",
-          spread: isTwoPage && !isContinuous ? "always" : "none",
-          minSpreadWidth: isTwoPage ? 1 : 9999,
-        });
-        renditionRef.current = rendition;
-
-        applyTheme(rendition, settings);
-
-        setLoadingStep("Renderizando...");
-
-        try {
-          if (currentCfi) {
-            await rendition.display(currentCfi);
-          } else {
-            await rendition.display();
-          }
-        } catch (dispErr) {
-          console.warn("EPUB rendition.display with CFI failed, falling back to start:", dispErr);
-          try {
-            await rendition.display();
-          } catch (err2) {
-            console.error("EPUB display failed completely:", err2);
-          }
-        }
-
-        if (!mountedRef.current) return;
-
-        setLoading(false);
-
-        // Generate locations for page number count (1600 chars ≈ 1 visual page)
-        book.ready.then(() => {
-          return book.locations.generate(1600);
-        }).then(() => {
-          if (mountedRef.current && book.locations) {
-            const total = book.locations.total || 0;
-            if (total > 0) {
-              onTotalPages?.(total);
-              // Report initial page position now that locations are ready
-              const loc = renditionRef.current?.location;
-              if (loc?.start?.cfi) {
-                try {
-                  const pg = book.locations.locationFromCfi(loc.start.cfi);
-                  if (pg && pg > 0) onPageChange?.(pg, true);
-                } catch {}
-              }
-            }
-          }
-        }).catch(() => {});
-
-        // Load TOC
-        book.loaded.navigation.then(nav => {
-          if (!mountedRef.current) return;
-          onTocLoaded?.(flattenToc(nav.toc));
-        }).catch(() => {});
-
-        // Neutralize wheel trackpad inertia in paginated mode
-        rendition.hooks.content.register((contents) => {
-          const doc = contents.document;
-          let wheelTimer = null;
-          doc.addEventListener("wheel", (e) => {
-            const isCont = settings?.scrollMode === "continuous";
-            if (isCont) return;
-
-            e.preventDefault();
-            if (wheelTimer) return;
-            
-            wheelTimer = setTimeout(() => { wheelTimer = null; }, 600);
-            
-            if (e.deltaY > 0 || e.deltaX > 0) {
-              nextPage();
-            } else if (e.deltaY < 0 || e.deltaX < 0) {
-              prevPage();
-            }
-          }, { passive: false });
-        });
-
-        // Selection event
-        rendition.on("selected", (cfiRange, contents) => {
-          const selection = contents.window.getSelection();
-          const text = selection?.toString()?.trim();
-          if (text && text.length > 1) {
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            const containerRect = containerRef.current?.getBoundingClientRect() || { top: 0, left: 0 };
-            onTextSelected?.({
-              text,
-              cfi: cfiRange,
-              position: {
-                x: containerRect.left + rect.left + rect.width / 2,
-                y: containerRect.top + rect.top - 8,
-              }
-            });
-          }
-        });
-
-        // Outside click handler
-        rendition.on("mousedown", () => {
-          window.parent.postMessage("EPUB_CLICK", "*");
-        });
-        rendition.on("touchstart", () => {
-          window.parent.postMessage("EPUB_CLICK", "*");
-        });
-
-        // Keyboard navigation inside EPUB iframe
-        rendition.on("keydown", (e) => {
-          if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-          const isContinuous = (settings?.scrollMode || "continuous") === "continuous";
-          const container = containerRef.current?.parentElement || containerRef.current;
-
-          if (isContinuous && container) {
-            const lineStep = 60;
-            const pageStep = container.clientHeight * 0.85;
-
-            if (e.key === "ArrowDown") {
-              e.preventDefault();
-              container.scrollBy({ top: lineStep, behavior: "smooth" });
-            } else if (e.key === "ArrowUp") {
-              e.preventDefault();
-              container.scrollBy({ top: -lineStep, behavior: "smooth" });
-            } else if (e.key === "PageDown" || (e.key === " " && !e.shiftKey)) {
-              e.preventDefault();
-              container.scrollBy({ top: pageStep, behavior: "smooth" });
-            } else if (e.key === "PageUp" || (e.key === " " && e.shiftKey)) {
-              e.preventDefault();
-              container.scrollBy({ top: -pageStep, behavior: "smooth" });
-            } else if (e.key === "ArrowRight") {
-              e.preventDefault();
-              nextPage();
-            } else if (e.key === "ArrowLeft") {
-              e.preventDefault();
-              prevPage();
-            }
-          } else {
-            if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") {
-              e.preventDefault();
-              prevPage();
-            } else if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown" || e.key === " ") {
-              e.preventDefault();
-              nextPage();
-            }
-          }
-        });
-
-        rendition.on("relocated", (location) => {
-          if (!mountedRef.current) return;
-          if (location.start?.cfi) {
-            lastEmittedCfiRef.current = location.start.cfi;
-            onCfiChanged?.(location.start.cfi);
-          }
-          // Only report page if locations have been generated
-          if (book.locations && book.locations.total > 0 && location.start?.cfi) {
-            try {
-              const pg = book.locations.locationFromCfi(location.start.cfi);
-              if (typeof pg === "number" && pg >= 0) {
-                // locations are 0-indexed, display as 1-indexed
-                onPageChange?.(pg + 1, true);
-              }
-            } catch {}
-          }
-        });
-
-      } catch (e) {
-        console.error("EPUB load error:", e);
-        if (mountedRef.current) {
-          setError("Não foi possível abrir o EPUB.");
-          setLoading(false);
-        }
-      }
-    };
-
-    loadEpub();
-
-    return () => {
-      mountedRef.current = false;
-    };
-  }, [filePath, settings?.scrollMode]);
-
-  // Apply theme live without reloading the book
-  useEffect(() => {
-    if (renditionRef.current && !loading) {
-      applyTheme(renditionRef.current, settings);
-    }
-  }, [settings?.theme, settings?.fontSize, settings?.fontFamily, settings?.lineSpacing]);
-
-  // Keyboard navigation on outer window
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-      const isContinuous = (settings?.scrollMode || "paginated") === "continuous";
-      const container = containerRef.current?.parentElement || containerRef.current;
-
-      if (isContinuous && container) {
-        const lineStep = 60;
-        const pageStep = container.clientHeight * 0.85;
-
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          container.scrollBy({ top: lineStep, behavior: "smooth" });
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          container.scrollBy({ top: -lineStep, behavior: "smooth" });
-        } else if (e.key === "PageDown" || (e.key === " " && !e.shiftKey)) {
-          e.preventDefault();
-          container.scrollBy({ top: pageStep, behavior: "smooth" });
-        } else if (e.key === "PageUp" || (e.key === " " && e.shiftKey)) {
-          e.preventDefault();
-          container.scrollBy({ top: -pageStep, behavior: "smooth" });
-        } else if (e.key === "ArrowRight") {
-          e.preventDefault();
-          nextPage();
-        } else if (e.key === "ArrowLeft") {
-          e.preventDefault();
-          prevPage();
-        }
-      } else {
-        if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") {
-          e.preventDefault();
-          prevPage();
-        } else if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown" || e.key === " ") {
-          e.preventDefault();
-          nextPage();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [prevPage, nextPage, settings?.scrollMode]);
-
-  const theme = THEME_STYLES[settings?.theme] || THEME_STYLES.light;
-
-  return (
-    <div className="flex-1 flex relative overflow-hidden" style={{ backgroundColor: theme.bg, maxWidth: "100%", maxHeight: "100%" }}>
-      {loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 z-20"
-          style={{ backgroundColor: theme.bg }}>
-          <div className="relative w-16 h-16">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ backgroundColor: `${theme.text}10` }}>
-              <Icon name="auto_stories" className="text-4xl" style={{ color: theme.text, opacity: 0.7 }} />
-            </div>
-            <svg className="absolute inset-0 w-full h-full animate-spin" viewBox="0 0 64 64" fill="none">
-              <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="3"
-                className="text-[color:var(--primary)] opacity-20" />
-              <path d="M32 4 A28 28 0 0 1 60 32" stroke="currentColor" strokeWidth="3"
-                strokeLinecap="round" className="text-[color:var(--primary)]" />
-            </svg>
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-bold" style={{ color: theme.text }}>{loadingStep}</p>
-            <p className="text-xs mt-1 opacity-50" style={{ color: theme.text }}>EPUB</p>
-          </div>
-        </div>
-      )}
-
-      {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-20">
-          <Icon name="error" className="text-5xl text-red-500" />
-          <p className="text-sm font-bold text-[color:var(--on-surface)]">{error}</p>
-          <p className="text-xs text-[color:var(--on-surface-variant)]">Verifique se o arquivo é um EPUB válido.</p>
-        </div>
-      )}
-
-      {/* Prev page button */}
-      {!loading && !error && (
-        <div className="absolute left-4 top-0 bottom-0 w-16 flex items-center justify-center z-30 pointer-events-none">
-          <button
-            onClick={prevPage}
-            aria-label="Página anterior"
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-[color:var(--surface)] shadow-xl border border-[color:var(--outline-variant)]/40 text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)] transition-all opacity-40 hover:opacity-100 pointer-events-auto"
-          >
-            <Icon name="chevron_left" className="text-[24px]" />
-          </button>
-        </div>
-      )}
-
-      {/* EPUB render target */}
-      <div className={`flex-1 flex justify-center w-full h-full ${(settings?.scrollMode || "paginated") === "continuous" ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden"}`}
-        style={{ scrollbarWidth: (settings?.scrollMode || "paginated") === "paginated" ? "none" : undefined }}
-      >
-        <div ref={containerRef} className={`w-full h-full ${!isTwoPage || (settings?.scrollMode || "paginated") === "continuous" ? "max-w-[800px]" : "max-w-7xl"}`}
-          style={{ overflow: "hidden" }}
-        />
-      </div>
-
-      {/* Next page button */}
-      {!loading && !error && (
-        <div className="absolute right-4 top-0 bottom-0 w-16 flex items-center justify-center z-30 pointer-events-none">
-          <button
-            onClick={nextPage}
-            aria-label="Próxima página"
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-[color:var(--surface)] shadow-xl border border-[color:var(--outline-variant)]/40 text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)] transition-all opacity-40 hover:opacity-100 pointer-events-auto"
-          >
-            <Icon name="chevron_right" className="text-[24px]" />
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  return <div className="reader-epub-engine" style={{ background: theme.bg, color: theme.text }}>
+    <div className={`reader-epub-paper ${isTwoPage ? "is-spread" : ""}`} ref={containerRef} />
+    {loading && <div className="reader-loading" role="status"><Icon name="auto_stories" /><p>Abrindo seu livro…</p></div>}
+    {error && <div className="reader-loading" role="alert"><Icon name="error_outline" /><p>{error}</p></div>}
+    {!loading && !error && !continuous && <>
+      <button className="reader-edge-turn previous" aria-label="Página anterior" onClick={() => turn("prev")}><Icon name="chevron_left" /></button>
+      <button className="reader-edge-turn next" aria-label="Próxima página" onClick={() => turn("next")}><Icon name="chevron_right" /></button>
+    </>}
+  </div>;
 });
-
-function flattenToc(items, level = 0) {
-  const result = [];
-  for (const item of (items || [])) {
-    result.push({ label: item.label?.trim(), cfi: item.href, level });
-    if (item.subitems?.length) result.push(...flattenToc(item.subitems, level + 1));
-  }
-  return result;
-}

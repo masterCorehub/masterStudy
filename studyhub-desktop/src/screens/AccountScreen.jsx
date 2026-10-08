@@ -3,6 +3,7 @@ import { normalizeAcademicStateSnapshot } from "../domain/academic";
 import {
   collaborationCloud,
   collaborationCloudConfigured,
+  initialAuthRedirect,
 } from "../services/collaboration-cloud";
 import { useStudyStore } from "../store/useStore";
 import { Icon } from "../ui/Icon";
@@ -27,9 +28,9 @@ const formatBackupDate = (value) => {
       }).format(date);
 };
 
-export function AccountScreen({ required = false, recovery = false }) {
+export function AccountScreen({ required = false, recovery = false, onRecoveryComplete }) {
   const initialRecovery =
-    recovery ||
+    recovery || initialAuthRedirect.isRecovery ||
     (typeof window !== "undefined" &&
       new URLSearchParams(window.location.search).get("auth") === "recovery");
   const [session, setSession] = useState(null);
@@ -39,8 +40,8 @@ export function AccountScreen({ required = false, recovery = false }) {
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
-  const [message, setMessage] = useState("");
-  const [messageKind, setMessageKind] = useState("info");
+  const [message, setMessage] = useState(initialAuthRedirect.errorMessage);
+  const [messageKind, setMessageKind] = useState(initialAuthRedirect.errorMessage ? "error" : "info");
   const [busy, setBusy] = useState(false);
   const [confirmationPending, setConfirmationPending] = useState(false);
   const [syncState, setSyncState] = useState({ status: "idle" });
@@ -116,14 +117,17 @@ export function AccountScreen({ required = false, recovery = false }) {
       }
 
       if (mode === "recovery") {
-        if (!session) throw new Error("Abra novamente o link de recuperação enviado ao seu e-mail.");
+        if (!session || initialAuthRedirect.errorMessage) throw new Error(initialAuthRedirect.errorMessage || "Este link não criou uma sessão de recuperação. Solicite um novo e-mail e abra o link mais recente.");
         if (password !== passwordConfirmation) throw new Error("As senhas não coincidem.");
         await collaborationCloud.updatePassword(password);
         setPassword("");
         setPasswordConfirmation("");
         announce("Senha alterada com segurança.", "success");
-        setMode("signin");
-        window.history.replaceState(null, "", window.location.pathname);
+        if (onRecoveryComplete) onRecoveryComplete();
+        else {
+          setMode("signin");
+          window.history.replaceState(null, "", window.location.pathname);
+        }
         return;
       }
 
@@ -253,8 +257,8 @@ export function AccountScreen({ required = false, recovery = false }) {
         {required ? (
           <aside className="account-auth-intro">
             <div className="flex items-center gap-3">
-              <div className="account-auth-logo"><Icon name="school" className="text-[26px]" /></div>
-              <div><strong className="block text-lg tracking-[-0.02em]">CampusFlow</strong><p className="text-xs text-white/60">Ambiente de estudos</p></div>
+              <div className="account-auth-logo"><img src={`${import.meta.env.BASE_URL}assets/masterstudy-logo.svg`} alt="" className="h-full w-full rounded-[inherit]" /></div>
+              <div><strong className="block text-lg tracking-[-0.02em]">masterStudy</strong><p className="text-xs text-white/60">Ambiente de estudos</p></div>
             </div>
             <div className="account-auth-copy">
               <span className="account-auth-kicker">SEU ESPAÇO ACADÊMICO</span>
@@ -269,7 +273,7 @@ export function AccountScreen({ required = false, recovery = false }) {
           </aside>
         ) : null}
 
-        {!required ? <><span className="campus-eyebrow">CONTA E SINCRONIZAÇÃO</span><h1 className="mt-2 text-4xl font-black md:text-5xl">Sua conta CampusFlow</h1><p className="mt-3 max-w-2xl text-[color:var(--on-surface-variant)]">Seus conteúdos são privados e as alterações são sincronizadas automaticamente entre web e desktop.</p></> : null}
+        {!required ? <><span className="campus-eyebrow">CONTA E SINCRONIZAÇÃO</span><h1 className="mt-2 text-4xl font-black md:text-5xl">Sua conta masterStudy</h1><p className="mt-3 max-w-2xl text-[color:var(--on-surface-variant)]">Seus conteúdos são privados e as alterações são sincronizadas automaticamente entre web e desktop.</p></> : null}
 
         {!collaborationCloudConfigured ? (
           <div className="mt-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-amber-800 dark:text-amber-200">
@@ -370,11 +374,12 @@ export function AccountScreen({ required = false, recovery = false }) {
               <label className="account-auth-field" htmlFor="account-email"><span>E-mail</span><div><Icon name="mail" /><input id="account-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="voce@exemplo.com" required /></div></label>
             ) : null}
             {mode !== "forgot" ? (
-              <label className="account-auth-field" htmlFor="account-password"><span>{mode === "recovery" ? "Nova senha" : "Senha"}</span><div><Icon name="lock" /><input id="account-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} autoComplete={mode === "signin" ? "current-password" : "new-password"} placeholder="Mínimo de 8 caracteres" required /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}><Icon name={showPassword ? "visibility_off" : "visibility"} /></button></div></label>
+              <label className="account-auth-field" htmlFor="account-password"><span>{mode === "recovery" ? "Nova senha" : "Senha"}</span><div><Icon name="lock" /><input id="account-password" aria-label={mode === "recovery" ? "Nova senha" : "Senha"} type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} autoComplete={mode === "signin" ? "current-password" : "new-password"} placeholder="Mínimo de 8 caracteres" required /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}><Icon name={showPassword ? "visibility_off" : "visibility"} /></button></div></label>
             ) : null}
             {mode === "recovery" ? (
-              <label className="account-auth-field" htmlFor="account-password-confirmation"><span>Repita a nova senha</span><div><Icon name="lock_reset" /><input id="account-password-confirmation" type={showPassword ? "text" : "password"} value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} minLength={8} autoComplete="new-password" placeholder="Repita a senha" required /></div></label>
+              <label className="account-auth-field" htmlFor="account-password-confirmation"><span>Repita a nova senha</span><div><Icon name="lock_reset" /><input id="account-password-confirmation" aria-label="Repita a nova senha" type={showPassword ? "text" : "password"} value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} minLength={8} autoComplete="new-password" placeholder="Repita a senha" required /></div></label>
             ) : null}
+            {mode === "recovery" ? <button type="button" className="account-auth-link mt-3 block" onClick={() => { setMode("forgot"); setMessage(""); }}>Solicitar novo link de recuperação</button> : null}
             {mode === "signin" ? <button type="button" className="account-auth-link ml-auto mt-3 block" onClick={() => { setMode("forgot"); setMessage(""); }}>Esqueci minha senha</button> : null}
 
             {message ? <p className={`mt-5 rounded-xl border p-3 text-sm font-semibold ${messageClasses}`} aria-live="polite">{message}</p> : null}

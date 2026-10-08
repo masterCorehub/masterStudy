@@ -5,6 +5,8 @@ import { SCREEN_IDS } from "../../app/screenIds";
 import { AccountScreen } from "../../screens/AccountScreen";
 import { THEMES, getThemeById } from "../../theme/themes";
 import { shortcutLabel } from "../../utils/keyboardShortcuts";
+import { showSystemNotification } from "../../services/system-notifications";
+import { DEFAULT_SIDEBAR_ORDER } from "../../domain/sidebarNavigation";
 
 export const ALL_SIDEBAR_ITEMS = [
   {
@@ -20,6 +22,13 @@ export const ALL_SIDEBAR_ITEMS = [
     label: "Cursos e Disciplinas",
     icon: "school",
     description: "Trilhas, vídeo-aulas, módulos e matérias acadêmicas",
+  },
+  {
+    key: "tasks",
+    id: SCREEN_IDS.TASKS,
+    label: "Tarefas",
+    icon: "task_alt",
+    description: "Todas as tarefas, prazos e itens concluídos",
   },
   {
     key: "projects",
@@ -73,31 +82,44 @@ export const ALL_SIDEBAR_ITEMS = [
 ];
 
 const DEFAULT_SHORTCUTS = [
-  { id: "sticky_notes", label: "Abrir Sticky Notes", keys: "⌘⇧⌥6", desc: "Abre o mural de Sticky Notes mesmo com o StudyHub em segundo plano" },
+  { id: "quick_note", nativeKey: "quickNoteShortcut", label: "Buscar ou criar nota rápida", keys: shortcutLabel("Mod+Shift+Alt+1"), desc: "Abre a busca de notas; permite criar uma nota rápida" },
+  { id: "quick_draw", nativeKey: "quickDrawShortcut", label: "Desenho rápido", keys: shortcutLabel("Mod+Shift+Alt+2"), desc: "Abre o quadro de desenho sobre outras janelas" },
+  { id: "translate", nativeKey: "translatorTextShortcut", label: "Traduzir texto", keys: shortcutLabel("Mod+Shift+Alt+3"), desc: "Abre a ferramenta de tradução de texto" },
+  { id: "ocr_capture", nativeKey: "translatorOcrShortcut", label: "Extrair texto de imagem", keys: shortcutLabel("Mod+Shift+Alt+4"), desc: "Captura uma área da tela e extrai o texto para tradução" },
+  { id: "ai_cards", nativeKey: "aiFlashcardShortcut", label: "Flashcards com IA", keys: shortcutLabel("Mod+Shift+Alt+5"), desc: "Abre a janela de geração de flashcards" },
+  { id: "quick_capture", label: "Criar captura", keys: shortcutLabel("Mod+Shift+K"), desc: "Salva um link, texto ou conteúdo no Hub de conhecimento" },
+  { id: "sticky_notes", nativeKey: "stickyNotesShortcut", label: "Abrir Sticky Notes", keys: shortcutLabel("Mod+Shift+Alt+6"), desc: "Abre o mural de Sticky Notes mesmo com o masterStudy em segundo plano" },
   { id: "quick_switcher", label: "Abrir nota rápida", keys: shortcutLabel("Mod+O"), desc: "Busca instantânea de notas em todos os cofres" },
   { id: "command_palette", label: "Paleta de comandos", keys: shortcutLabel("Mod+K"), desc: "Acessa qualquer tela ou comando com a busca inteligente" },
-  { id: "settings", label: "Abrir configurações", keys: shortcutLabel("Mod+,"), desc: "Abre o painel de personalização do CampusFlow" },
+  { id: "settings", label: "Abrir configurações", keys: shortcutLabel("Mod+,"), desc: "Abre o painel de personalização do masterStudy" },
   { id: "save", label: "Salvar conteúdo", keys: shortcutLabel("Mod+S"), desc: "Salva a nota ou entrada do Diário atual" },
   { id: "close_tab", label: "Fechar aba de nota", keys: shortcutLabel("Mod+W"), desc: "Fecha a aba ativa no editor de notas" },
   { id: "knowledge_search", label: "Buscar no Hub", keys: shortcutLabel("Mod+/"), desc: "Leva o foco para a busca do Hub de conhecimento" },
-  { id: "quick_capture", label: "Adicionar ao Hub", keys: shortcutLabel("Mod+Shift+K"), desc: "Abre a captura rápida de conhecimento" },
 ];
 
 const NOTIFICATION_TESTS = [
-  { id: "flashcards", icon: "style", title: "12 flashcards para revisar", subtitle: "CampusFlow • Revisão inteligente", body: "Uma revisão curta agora ajuda a fixar o conteúdo.", screen: SCREEN_IDS.FLASHCARDS, actionLabel: "Revisar agora" },
-  { id: "tasks", icon: "event_upcoming", title: "2 tarefas vencem hoje", subtitle: "CampusFlow • Planejamento acadêmico", body: "Confira seus prazos e escolha o próximo passo.", screen: SCREEN_IDS.TASKS, actionLabel: "Ver tarefas" },
-  { id: "exams", icon: "quiz", title: "Prova amanhã", subtitle: "CampusFlow • Calendário acadêmico", body: "Sua revisão final de Cálculo está programada para hoje.", screen: SCREEN_IDS.ACADEMIC, actionLabel: "Abrir calendário" },
-  { id: "attendance", icon: "warning", title: "Atenção à frequência", subtitle: "CampusFlow • Desempenho acadêmico", body: "Uma disciplina está próxima do limite mínimo de presença.", screen: SCREEN_IDS.ACADEMIC, actionLabel: "Ver frequência", persistent: true },
-  { id: "pomodoro", icon: "timer", title: "Ciclo de foco concluído", subtitle: "CampusFlow • Pomodoro", body: "Ótimo trabalho. Respire e aproveite seu intervalo.", screen: SCREEN_IDS.POMODORO, actionLabel: "Abrir Pomodoro" },
+  { id: "flashcards", icon: "style", title: "12 flashcards para revisar", subtitle: "masterStudy • Revisão inteligente", body: "Uma revisão curta agora ajuda a fixar o conteúdo.", screen: SCREEN_IDS.FLASHCARDS, actionLabel: "Revisar agora" },
+  { id: "tasks", icon: "event_upcoming", title: "2 tarefas vencem hoje", subtitle: "masterStudy • Planejamento acadêmico", body: "Confira seus prazos e escolha o próximo passo.", screen: SCREEN_IDS.TASKS, actionLabel: "Ver tarefas" },
+  { id: "exams", icon: "quiz", title: "Prova amanhã", subtitle: "masterStudy • Calendário acadêmico", body: "Sua revisão final de Cálculo está programada para hoje.", screen: SCREEN_IDS.ACADEMIC, actionLabel: "Abrir calendário" },
+  { id: "attendance", icon: "warning", title: "Atenção à frequência", subtitle: "masterStudy • Desempenho acadêmico", body: "Uma disciplina está próxima do limite mínimo de presença.", screen: SCREEN_IDS.ACADEMIC, actionLabel: "Ver frequência", persistent: true },
+  { id: "pomodoro", icon: "timer", title: "Ciclo de foco concluído", subtitle: "masterStudy • Pomodoro", body: "Ótimo trabalho. Respire e aproveite seu intervalo.", screen: SCREEN_IDS.POMODORO, actionLabel: "Abrir Pomodoro" },
 ];
 
 export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavigate }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [shortcutFilter, setShortcutFilter] = useState("");
+  const [nativeShortcuts, setNativeShortcuts] = useState({});
+  useEffect(() => {
+    if (isOpen) window.studyhubDesktop?.getGlobalShortcuts?.().then(setNativeShortcuts).catch(() => {});
+  }, [isOpen]);
   const [notificationTestStatus, setNotificationTestStatus] = useState("");
   const [aiConfig, setAiConfig] = useState({ provider: "ollama", geminiModel: "gemini-3.6-flash", geminiApiKey: "", geminiConfigured: false });
   const [aiConfigStatus, setAiConfigStatus] = useState("");
   const [aiConfigBusy, setAiConfigBusy] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) setActiveTab(initialTab);
+  }, [isOpen, initialTab]);
 
   const store = useStudyStore();
   const themePreference = useStudyStore((state) => state.themePreference || "system");
@@ -112,16 +134,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
     }).catch(() => {});
   }, [isOpen]);
 
-  const sidebarOrder = useStudyStore((state) => state.sidebarOrder || [
-    "dashboard",
-    "courses",
-    "projects",
-    "books",
-    "materials",
-    "journal",
-    "knowledge",
-    "reviews",
-  ]);
+  const sidebarOrder = useStudyStore((state) => state.sidebarOrder || DEFAULT_SIDEBAR_ORDER);
   const sidebarHiddenItems = useStudyStore((state) => state.sidebarHiddenItems || []);
   const appSettings = useStudyStore((state) => state.appSettings || {
     notificationsEnabled: true,
@@ -217,21 +230,16 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
   };
 
   const testSystemNotification = async (test) => {
-    const notifications = window.studyhubDesktop?.notifications;
-    if (!notifications?.show) {
-      setNotificationTestStatus("Os testes nativos estão disponíveis no aplicativo instalado para macOS.");
-      return;
-    }
     setNotificationTestStatus(`Enviando teste de ${test.id}...`);
     try {
-      const result = await notifications.show({
+      const result = await showSystemNotification({
         ...test,
         sound: appSettings.soundEnabled !== false,
-      });
+      }, { requestPermission: true });
       setNotificationTestStatus(
         result?.shown
           ? "Notificação enviada. Confira o canto superior direito ou a Central de Notificações."
-          : "O macOS não permitiu exibir a notificação. Verifique as permissões do StudyHub.",
+          : result?.error || "O sistema não confirmou a entrega. Verifique as permissões de notificações do masterStudy.",
       );
     } catch (error) {
       setNotificationTestStatus(error?.message || "Não foi possível enviar a notificação.");
@@ -279,16 +287,16 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
         </div>
 
         {/* Content Body: Sidebar + Main Panel */}
-        <div className="flex flex-1 min-h-0 overflow-hidden">
+        <div className="flex flex-1 min-h-0 flex-col overflow-hidden md:flex-row">
           {/* Left Tabs Nav */}
-          <div className="w-60 shrink-0 border-r border-[color:var(--outline-variant)]/30 bg-[color:var(--surface-container-lowest)] p-3 flex flex-col gap-1 overflow-y-auto">
+          <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-[color:var(--outline-variant)]/30 bg-[color:var(--surface-container-lowest)] p-3 md:w-60 md:flex-col md:overflow-y-auto md:border-b-0 md:border-r">
             {tabs.map((tab) => {
               const active = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all text-left ${
+                  className={`flex shrink-0 items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all text-left ${
                     active
                       ? "bg-[color:var(--primary)] text-white shadow-sm"
                       : "text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container)] hover:text-[color:var(--on-surface)]"
@@ -307,7 +315,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
           </div>
 
           {/* Right Content Panel */}
-          <div className="flex-1 overflow-y-auto p-6 bg-[color:var(--surface)]">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6 bg-[color:var(--surface)]">
             {/* 1. BARRA LATERAL */}
             {activeTab === "sidebar" && (
               <div className="flex flex-col gap-6">
@@ -449,7 +457,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
                         key={theme.id}
                         type="button"
                         onClick={() => setThemePreference(theme.id)}
-                        className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border-2 p-4 text-left transition-all duration-200 ${
+                        className={`theme-option ${isSelected ? "is-selected" : ""} group relative flex flex-col justify-between overflow-hidden rounded-2xl border-2 p-4 text-left transition-all duration-200 ${
                           isSelected
                             ? "border-[color:var(--primary)] bg-[color:var(--primary)]/10 shadow-lg ring-2 ring-[color:var(--primary)]/20"
                             : "border-[color:var(--outline-variant)]/40 bg-[color:var(--surface-container-low)] hover:border-[color:var(--primary)]/50 hover:bg-[color:var(--surface-container)]"
@@ -591,7 +599,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
                         </span>
                       </div>
                       <span className="px-3 py-1 rounded-xl bg-[color:var(--surface)] border border-[color:var(--outline-variant)]/60 text-xs font-mono font-bold text-[color:var(--primary)] shadow-sm">
-                        {sc.keys}
+                        {nativeShortcuts[sc.nativeKey] ? shortcutLabel(nativeShortcuts[sc.nativeKey].replace(/CommandOrControl|CmdOrCtrl/g, "Mod")) : sc.keys}
                       </span>
                     </div>
                   ))}
@@ -698,7 +706,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
                       desc: "Mantém vídeos e animações em movimento durante a seleção. Desative para usar uma captura congelada.",
                       icon: "screenshot_region",
                     },
-                  ].map((setting) => {
+                  ].filter(setting => setting.key !== "pomodoroAutoBreak").map((setting) => {
                     const isChecked = Boolean(appSettings[setting.key]);
                     return (
                       <div
@@ -747,12 +755,12 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
                       <Icon className="text-[18px]" name="notifications_active" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-[color:var(--on-surface)]">Testar notificações do macOS</h4>
+                      <h4 className="text-sm font-bold text-[color:var(--on-surface)]">Testar notificações do sistema</h4>
                       <p className="mt-0.5 text-[11px] text-[color:var(--on-surface-variant)]">Envie cada modelo para conferir texto, som, botão e destino.</p>
                     </div>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {NOTIFICATION_TESTS.map((test) => (
+                    {NOTIFICATION_TESTS.filter(test => test.id !== "pomodoro").map((test) => (
                       <button
                         className="flex items-center gap-3 rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] px-3 py-3 text-left text-xs font-bold text-[color:var(--on-surface)] transition hover:border-[color:var(--primary)]/40 hover:text-[color:var(--primary)]"
                         key={test.id}
@@ -853,7 +861,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
                 </div>
                 <div>
                   <h3 className="text-xl font-black text-[color:var(--on-surface)]">
-                    StudyHub / CampusFlow Desktop
+                    masterStudy Desktop
                   </h3>
                   <p className="text-xs font-semibold text-[color:var(--primary)] mt-1">
                     Versão 2.5.0 (Build 2026.08)

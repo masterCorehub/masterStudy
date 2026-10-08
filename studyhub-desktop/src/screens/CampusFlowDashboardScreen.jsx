@@ -1,12 +1,9 @@
-import { useMemo, useRef, useState } from "react";
-import { motion, useDragControls } from "framer-motion";
+import { StickyMarkdown } from "../components/StickyMarkdown";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { dashboardFlowLanes } from "../domain/dashboardFlow";
+import { selectTodayTasks } from "../domain/taskDates";
 import { SCREEN_IDS } from "../app/screenIds";
-import {
-  buildAcademicCalendarEvents,
-  calculateAttendance,
-  calculateSubjectGrade,
-  getAcademicSemesterData,
-} from "../domain/academic";
+import { getAcademicSemesterData } from "../domain/academic";
 import { dueFlashcards } from "../domain/studySelectors";
 import { usePomodoroStore } from "../store/usePomodoroStore";
 import { useStudyStore } from "../store/useStore";
@@ -29,7 +26,8 @@ const QUICK_NOTE_COLOR_MAP = {
   theme: {
     bg: "bg-[color:var(--surface-container-low)]",
     border: "border-[color:var(--outline-variant)]/60",
-    header: "bg-[color:var(--surface-container)] border-[color:var(--outline-variant)]/40",
+    header:
+      "bg-[color:var(--surface-container)] border-[color:var(--outline-variant)]/40",
     accent: "text-[color:var(--primary)]",
     text: "text-[color:var(--on-surface)]",
     placeholder: "placeholder:text-[color:var(--on-surface-variant)]/50",
@@ -40,7 +38,8 @@ const QUICK_NOTE_COLOR_MAP = {
     header: "bg-amber-500/15 border-amber-500/25",
     accent: "text-amber-600 dark:text-amber-400",
     text: "text-[color:var(--on-surface)]",
-    placeholder: "placeholder:text-amber-700/50 dark:placeholder:text-amber-200/40",
+    placeholder:
+      "placeholder:text-amber-700/50 dark:placeholder:text-amber-200/40",
   },
   lavender: {
     bg: "bg-purple-500/10 dark:bg-purple-950/30",
@@ -48,7 +47,8 @@ const QUICK_NOTE_COLOR_MAP = {
     header: "bg-purple-500/15 border-purple-500/25",
     accent: "text-purple-600 dark:text-purple-400",
     text: "text-[color:var(--on-surface)]",
-    placeholder: "placeholder:text-purple-700/50 dark:placeholder:text-purple-200/40",
+    placeholder:
+      "placeholder:text-purple-700/50 dark:placeholder:text-purple-200/40",
   },
   cyan: {
     bg: "bg-cyan-500/10 dark:bg-cyan-950/30",
@@ -56,7 +56,8 @@ const QUICK_NOTE_COLOR_MAP = {
     header: "bg-cyan-500/15 border-cyan-500/25",
     accent: "text-cyan-600 dark:text-cyan-400",
     text: "text-[color:var(--on-surface)]",
-    placeholder: "placeholder:text-cyan-700/50 dark:placeholder:text-cyan-200/40",
+    placeholder:
+      "placeholder:text-cyan-700/50 dark:placeholder:text-cyan-200/40",
   },
   emerald: {
     bg: "bg-emerald-500/10 dark:bg-emerald-950/30",
@@ -64,7 +65,8 @@ const QUICK_NOTE_COLOR_MAP = {
     header: "bg-emerald-500/15 border-emerald-500/25",
     accent: "text-emerald-600 dark:text-emerald-400",
     text: "text-[color:var(--on-surface)]",
-    placeholder: "placeholder:text-emerald-700/50 dark:placeholder:text-emerald-200/40",
+    placeholder:
+      "placeholder:text-emerald-700/50 dark:placeholder:text-emerald-200/40",
   },
   rose: {
     bg: "bg-rose-500/10 dark:bg-rose-950/30",
@@ -72,7 +74,8 @@ const QUICK_NOTE_COLOR_MAP = {
     header: "bg-rose-500/15 border-rose-500/25",
     accent: "text-rose-600 dark:text-rose-400",
     text: "text-[color:var(--on-surface)]",
-    placeholder: "placeholder:text-rose-700/50 dark:placeholder:text-rose-200/40",
+    placeholder:
+      "placeholder:text-rose-700/50 dark:placeholder:text-rose-200/40",
   },
   yellow: {
     bg: "bg-amber-500/10 dark:bg-amber-950/30",
@@ -80,7 +83,8 @@ const QUICK_NOTE_COLOR_MAP = {
     header: "bg-amber-500/15 border-amber-500/25",
     accent: "text-amber-600 dark:text-amber-400",
     text: "text-[color:var(--on-surface)]",
-    placeholder: "placeholder:text-amber-700/50 dark:placeholder:text-amber-200/40",
+    placeholder:
+      "placeholder:text-amber-700/50 dark:placeholder:text-amber-200/40",
   },
   blue: {
     bg: "bg-sky-500/10 dark:bg-sky-950/30",
@@ -96,7 +100,8 @@ const QUICK_NOTE_COLOR_MAP = {
     header: "bg-emerald-500/15 border-emerald-500/25",
     accent: "text-emerald-600 dark:text-emerald-400",
     text: "text-[color:var(--on-surface)]",
-    placeholder: "placeholder:text-emerald-700/50 dark:placeholder:text-emerald-200/40",
+    placeholder:
+      "placeholder:text-emerald-700/50 dark:placeholder:text-emerald-200/40",
   },
   purple: {
     bg: "bg-violet-500/10 dark:bg-violet-950/30",
@@ -104,7 +109,8 @@ const QUICK_NOTE_COLOR_MAP = {
     header: "bg-violet-500/15 border-violet-500/25",
     accent: "text-violet-600 dark:text-violet-400",
     text: "text-[color:var(--on-surface)]",
-    placeholder: "placeholder:text-violet-700/50 dark:placeholder:text-violet-200/40",
+    placeholder:
+      "placeholder:text-violet-700/50 dark:placeholder:text-violet-200/40",
   },
   slate: {
     bg: "bg-slate-500/10 dark:bg-slate-900/50",
@@ -112,20 +118,71 @@ const QUICK_NOTE_COLOR_MAP = {
     header: "bg-slate-500/15 border-slate-500/25",
     accent: "text-slate-600 dark:text-slate-300",
     text: "text-[color:var(--on-surface)]",
-    placeholder: "placeholder:text-slate-700/50 dark:placeholder:text-slate-200/40",
+    placeholder:
+      "placeholder:text-slate-700/50 dark:placeholder:text-slate-200/40",
   },
 };
 
-function QuickNoteWidgetCard({ note, onChange, onUnpin, onOpenStickyNotes, onOpenDesktop }) {
+function QuickNoteWidgetCard({
+  note,
+  onChange,
+  onUnpin,
+  onOpenStickyNotes,
+  onOpenDesktop,
+}) {
   const [showPalette, setShowPalette] = useState(false);
-  const colorKey = note.color && QUICK_NOTE_COLOR_MAP[note.color] ? note.color : "yellow";
+  const cardRef = useRef(null);
+  const resizeGesture = useRef(null);
+  const [previewSize, setPreviewSize] = useState(null);
+  const size = previewSize || note.dashboardSize || { width: null, height: 240 };
+  const clampSize = (width, height) => ({
+    width: Math.min(cardRef.current?.parentElement?.clientWidth || width, Math.max(240, width)),
+    height: Math.max(180, Math.min(800, height)),
+  });
+  const startResize = (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = cardRef.current.getBoundingClientRect();
+    resizeGesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, width: rect.width, height: rect.height };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const resize = (event) => {
+    const start = resizeGesture.current;
+    if (!start || start.id !== event.pointerId) return;
+    setPreviewSize(clampSize(start.width + event.clientX - start.x, start.height + event.clientY - start.y));
+  };
+  const finishResize = (event) => {
+    const start = resizeGesture.current;
+    if (!start || start.id !== event.pointerId) return;
+    // Salva apenas ao soltar a alça, evitando gravar a cada movimento do mouse.
+    if (event.type !== "pointercancel") onChange(note.id, { dashboardSize: clampSize(start.width + event.clientX - start.x, start.height + event.clientY - start.y) });
+    resizeGesture.current = null;
+    setPreviewSize(null);
+  };
+  const resizeWithKeyboard = (event) => {
+    const offsets = { ArrowLeft: [-24, 0], ArrowRight: [24, 0], ArrowUp: [0, -24], ArrowDown: [0, 24] };
+    if (!offsets[event.key]) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = cardRef.current.getBoundingClientRect();
+    const [dx, dy] = offsets[event.key];
+    onChange(note.id, { dashboardSize: clampSize(rect.width + dx, rect.height + dy) });
+  };
+  const colorKey =
+    note.color && QUICK_NOTE_COLOR_MAP[note.color] ? note.color : "yellow";
   const color = QUICK_NOTE_COLOR_MAP[colorKey];
 
   return (
     <article
-      className={`flex h-full min-h-[180px] flex-col overflow-hidden rounded-2xl border shadow-md transition-all duration-200 ${color.bg} ${color.border} ${color.text}`}
+      ref={cardRef}
+      data-today-note={note.id}
+      style={{ width: size.width || "100%", maxWidth: "100%", height: size.height }}
+      className={`today-resizable-note relative flex min-h-[180px] flex-col overflow-hidden rounded-2xl border shadow-md ${color.bg} ${color.border} ${color.text}`}
     >
-      <header className={`flex items-center gap-2 border-b px-3.5 py-2.5 transition-colors ${color.header}`}>
+      <header
+        className={`flex shrink-0 items-center gap-2 border-b px-3.5 py-2.5 transition-colors ${color.header}`}
+      >
         <Icon name="sticky_note_2" className={`text-[18px] ${color.accent}`} />
         <input
           value={note.title || ""}
@@ -161,7 +218,9 @@ function QuickNoteWidgetCard({ note, onChange, onUnpin, onOpenStickyNotes, onOpe
                     setShowPalette(false);
                   }}
                   className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 ${
-                    colorKey === p.id ? "border-[color:var(--on-surface)] scale-110 shadow-sm" : "border-transparent"
+                    colorKey === p.id
+                      ? "border-[color:var(--on-surface)] scale-110 shadow-sm"
+                      : "border-transparent"
                   }`}
                   style={{ backgroundColor: p.dot }}
                   title={p.label}
@@ -199,12 +258,13 @@ function QuickNoteWidgetCard({ note, onChange, onUnpin, onOpenStickyNotes, onOpe
           <Icon name="keep_off" className="text-[17px]" />
         </button>
       </header>
-      <textarea
-        value={note.content || ""}
-        onChange={(event) => onChange(note.id, { content: event.target.value })}
-        placeholder="Ideias, lembretes e metas rápidas..."
-        className={`min-h-0 flex-1 resize-none border-0 bg-transparent p-4 text-sm font-medium leading-relaxed outline-none focus:ring-0 ${color.placeholder}`}
-      />
+      <StickyMarkdown content={note.content || ''} onChange={content => onChange(note.id, { content })} textareaProps={{ 'aria-label': `Conteúdo de ${note.title || 'anotação'}`, placeholder: 'Ideias, lembretes e metas rápidas...', className: `min-h-0 flex-1 resize-none border-0 bg-transparent p-4 text-sm font-medium leading-relaxed outline-none focus:ring-0 ${color.placeholder}` }} />
+      <footer className="flex shrink-0 items-center justify-between px-3 pb-2 gap-2">
+        <button type="button" className="text-[11px] opacity-70 hover:opacity-100" onClick={() => onChange(note.id, { dashboardSize: { width: null, height: 240 } })}>Restaurar tamanho</button>
+        <button type="button" aria-label={`Redimensionar ${note.title || "anotação"}`} title="Arraste para redimensionar ou use as setas do teclado" className="today-note-resize-handle rounded p-1" onPointerDown={startResize} onPointerMove={resize} onPointerUp={finishResize} onPointerCancel={finishResize} onKeyDown={resizeWithKeyboard}>
+          <Icon name="south_east" className="text-[18px]" />
+        </button>
+      </footer>
     </article>
   );
 }
@@ -220,144 +280,290 @@ const DASHBOARD_WIDGET_META = {
   tasks: { label: "Tarefas de hoje", icon: "check_circle" },
 };
 
+function HabitsPanel({ size, onResize, children }) {
+  const frame = useRef(null);
+  const gesture = useRef(null);
+  const [preview, setPreview] = useState(null);
+  const [minimum, setMinimum] = useState(180);
+  const [listLimit, setListLimit] = useState(240);
+  const effective = preview || size;
+  useEffect(() => {
+    const root = frame.current;
+    const measure = () => {
+      const header = root.querySelector('.today-panel-header');
+      const form = root.querySelector('.today-add-form');
+      const list = root.querySelector('.today-list');
+      // Measure up to three complete habits, including wrapped titles/history.
+      const rows = Array.from(root.querySelectorAll('.today-habit')).slice(0, 3);
+      const firstThree = rows.length ? rows.at(-1).offsetTop + rows.at(-1).offsetHeight - rows[0].offsetTop : 0;
+      const limit = Math.max(180, firstThree);
+      setListLimit(limit);
+      setMinimum(Math.ceil((header?.offsetHeight || 0) + (form?.offsetHeight || 0) + Math.min(list?.scrollHeight || 0, limit) + 70));
+    };
+    const observer = new ResizeObserver(measure);
+    const mutations = new MutationObserver(measure);
+    observer.observe(root);
+    root.querySelectorAll('.today-panel-header, .today-add-form, .today-habit').forEach(el => observer.observe(el));
+    mutations.observe(root.querySelector('.today-list'), { subtree: true, childList: true, characterData: true });
+    measure();
+    return () => { observer.disconnect(); mutations.disconnect(); };
+  }, [children]);
+  const clamp = (width, height) => ({
+    width: Math.min(frame.current.parentElement.clientWidth, Math.max(240, width)),
+    height: Math.max(minimum, Math.min(900, height)),
+  });
+  const start = event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = frame.current.getBoundingClientRect();
+    gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, width: rect.width, height: rect.height };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const nextSize = event => clamp(gesture.current.width + event.clientX - gesture.current.x, gesture.current.height + event.clientY - gesture.current.y);
+  const finish = event => {
+    if (gesture.current?.id !== event.pointerId) return;
+    // Persist once per gesture, avoiding writes on every pointer movement.
+    if (event.type !== 'pointercancel') onResize(nextSize(event));
+    gesture.current = null;
+    setPreview(null);
+  };
+  return <div ref={frame} className={`today-habits-resizable ${effective?.height ? 'is-sized' : ''}`} style={{ '--habits-list-limit': `${listLimit}px`, width: effective?.width || '100%', maxWidth: '100%', height: effective?.height ? Math.max(minimum, effective.height) : 'auto' }}>
+    <WidgetPanel>{children}<div className="today-habits-size-controls">
+      <button type="button" onClick={() => { setPreview(null); onResize(null); }} aria-label="Restaurar tamanho automático dos hábitos" title="Tamanho automático"><Icon name="fit_screen" /></button>
+      <button type="button" className="today-note-resize-handle" aria-label="Redimensionar hábitos" title="Arraste ou use as setas do teclado" onPointerDown={start} onPointerMove={event => { if (gesture.current?.id === event.pointerId) setPreview(nextSize(event)); }} onPointerUp={finish} onPointerCancel={finish} onKeyDown={event => {
+        const delta = { ArrowLeft: [-24, 0], ArrowRight: [24, 0], ArrowUp: [0, -24], ArrowDown: [0, 24] }[event.key];
+        if (!delta) return;
+        event.preventDefault(); event.stopPropagation();
+        const rect = frame.current.getBoundingClientRect();
+        onResize(clamp(rect.width + delta[0], rect.height + delta[1]));
+      }}><Icon name="drag_handle" /></button>
+    </div></WidgetPanel>
+  </div>;
+}
+
+function WidgetPanel({ className = "", children }) {
+  return (
+    <article className={`today-panel ${className}`}>
+      {/* Natural height stays independent of the surrounding grid cell. */}
+      <div className="today-panel-layout">{children}</div>
+    </article>
+  );
+}
+
 function DashboardWidgetShell({
   config,
   label,
-  gridRef,
   editing,
   draggedId,
+  dropTarget,
   onDragStart,
   onPreview,
-  onPosition,
   onDragEnd,
-  onResize,
-  onResizeHeight,
+  onDrop,
+  onStep,
   onToggle,
   children,
 }) {
-  const dragControls = useDragControls();
-  const grabOffsetRef = useRef({ x: 0, y: 0 });
+  const gesture = useRef(null);
+  const preview = useRef(null);
+  const finish = () => {
+    gesture.current = null;
+    preview.current = null;
+    onDragEnd();
+  };
+  useEffect(() => {
+    if (!editing) {
+      gesture.current = null;
+      preview.current = null;
+    }
+  }, [editing]);
   if (!config || config.visible === false) return null;
-  const meta = DASHBOARD_WIDGET_META[config.id] || (config.id.startsWith("sticky-note:")
-    ? { label: label || "Sticky Note", icon: "sticky_note_2" }
-    : { label: config.id, icon: "widgets" });
-  const positionFromPoint = (point) => {
-    const rect = gridRef.current?.getBoundingClientRect();
-    if (!rect) return { x: Number(config.x || 0), y: Number(config.y || 0) };
-    const columnGap = 24;
-    const rowStep = 104;
-    const columnStep = (rect.width - columnGap * 11) / 12 + columnGap;
-    return {
-      x: Math.max(0, Math.min(12 - Number(config.size || 12), Math.round((point.x - rect.left) / columnStep - grabOffsetRef.current.x))),
-      y: Math.max(0, Math.round((point.y - rect.top) / rowStep - grabOffsetRef.current.y)),
-    };
+  const meta = DASHBOARD_WIDGET_META[config.id] || {
+    label: label || "Sticky Note",
+    icon: "sticky_note_2",
+  };
+  const start = (event) => {
+    if (event.button !== 0) return;
+    gesture.current = event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    onDragStart({
+      id: config.id,
+      label: meta.label,
+      x: event.clientX,
+      y: event.clientY,
+    });
+    event.preventDefault();
+  };
+  const move = (event) => {
+    if (gesture.current !== event.pointerId) return;
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const target = element?.closest("[data-dashboard-widget-id]");
+    const lane = element?.closest("[data-dashboard-lane]");
+    let next = null;
+    if (target && target.dataset.dashboardWidgetId !== config.id) {
+      const rect = target.getBoundingClientRect();
+      next = {
+        id: target.dataset.dashboardWidgetId,
+        placement:
+          event.clientY < rect.top + rect.height / 2 ? "before" : "after",
+        lane: lane?.dataset.dashboardLane,
+      };
+    } else if (!target && lane) {
+      // Dropping in a gap inserts beside the nearest card, not at the end.
+      const cards = [
+        ...lane.querySelectorAll("[data-dashboard-widget-id]"),
+      ].filter((card) => card.dataset.dashboardWidgetId !== config.id);
+      const following = cards.find((card) => {
+        const rect = card.getBoundingClientRect();
+        return event.clientY < rect.top + rect.height / 2;
+      });
+      const neighbor = following || cards.at(-1);
+      next = {
+        id: neighbor?.dataset.dashboardWidgetId || null,
+        placement: following ? "before" : "after",
+        lane: lane.dataset.dashboardLane,
+      };
+    }
+    preview.current = next;
+    onPreview({ target: next, x: event.clientX, y: event.clientY });
+    // Continue scrolling the actual page when a pointer approaches its edge.
+    let scroller = event.currentTarget.parentElement;
+    while (
+      scroller &&
+      !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)
+    )
+      scroller = scroller.parentElement;
+    if (scroller) {
+      const bounds = scroller.getBoundingClientRect();
+      if (event.clientY > bounds.bottom - 40) scroller.scrollTop += 12;
+      if (event.clientY < bounds.top + 40) scroller.scrollTop -= 12;
+    }
+  };
+  const end = (event) => {
+    if (gesture.current !== event.pointerId) return;
+    if (preview.current)
+      onDrop(
+        config.id,
+        preview.current.id,
+        preview.current.placement,
+        preview.current.lane,
+      );
+    finish();
   };
   return (
-    <motion.div
-      layout="position"
-      transition={{ layout: { type: "spring", stiffness: 420, damping: 38 } }}
-      className={`campus-dashboard-widget ${editing ? "is-editing" : ""} ${draggedId === config.id ? "is-dragging" : ""}`}
-      style={{
-        gridColumn: `${Number(config.x || 0) + 1} / span ${config.size || 12}`,
-        gridRow: `${Number(config.y || 0) + 1} / span ${config.rowSpan || 3}`,
-      }}
+    <div
+      className={`today-flow-widget ${editing ? "is-organizing" : ""} ${draggedId === config.id ? "is-dragging" : ""} ${dropTarget?.id === config.id ? `drop-${dropTarget.placement}` : ""}`}
       data-dashboard-widget-id={config.id}
-      drag={editing}
-      dragListener={false}
-      dragControls={dragControls}
-      dragMomentum={false}
-      dragElastic={0.08}
-      dragSnapToOrigin
-      whileDrag={{ scale: 1.025, rotate: 0.35, zIndex: 80 }}
-      onDragStart={(event) => {
-        const gridRect = gridRef.current?.getBoundingClientRect();
-        const widgetRect = event.currentTarget?.getBoundingClientRect?.();
-        if (gridRect && widgetRect) {
-          const columnStep = (gridRect.width - 24 * 11) / 12 + 24;
-          grabOffsetRef.current = {
-            x: Math.max(0, (event.clientX - widgetRect.left) / columnStep),
-            y: Math.max(0, (event.clientY - widgetRect.top) / 104),
-          };
-        }
-        onDragStart(config.id);
-      }}
-      onDrag={(_event, info) => {
-        onPreview({ id: config.id, ...positionFromPoint(info.point), size: config.size, rowSpan: config.rowSpan });
-        if (info.point.y < 90) window.scrollBy({ top: -12, behavior: "auto" });
-        if (info.point.y > window.innerHeight - 90) window.scrollBy({ top: 12, behavior: "auto" });
-      }}
-      onDragEnd={(_event, info) => {
-        const position = positionFromPoint(info.point);
-        onPosition(config.id, position.x, position.y);
-        onDragEnd();
-      }}
     >
       {editing ? (
-        <div className="campus-dashboard-widget-controls">
+        <div
+          className="today-flow-controls"
+          aria-label={`Organizar ${meta.label}`}
+        >
           <button
             type="button"
-            className="campus-dashboard-widget-drag"
-            onPointerDown={(event) => dragControls.start(event)}
-            title="Segure e arraste para reorganizar"
+            className="today-flow-drag"
+            title={`Arrastar ${meta.label}`}
+            aria-label={`Arrastar ${meta.label}`}
+            onPointerDown={start}
+            onPointerMove={move}
+            onPointerUp={end}
+            onPointerCancel={finish}
+            onLostPointerCapture={() => {
+              if (gesture.current != null) finish();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") finish();
+              if (["ArrowUp", "ArrowDown"].includes(event.key)) {
+                event.preventDefault();
+                onStep(config.id, event.key === "ArrowDown" ? 1 : -1);
+              }
+            }}
           >
-            <Icon name="drag_indicator" /> {meta.label}
+            <Icon name="drag_indicator" />
           </button>
-          <div className="campus-dashboard-widget-size-controls">
-            <button type="button" onClick={() => onResize(config.id, [4, 6, 8, 12][Math.max(0, [4, 6, 8, 12].indexOf(Number(config.size)) - 1)])} disabled={Number(config.size) <= 4} title="Diminuir largura"><Icon name="remove" /></button>
-            <span className="campus-dashboard-widget-dimension">{config.size}×{config.rowSpan || 3}</span>
-            <button type="button" onClick={() => onResize(config.id, [4, 6, 8, 12][Math.min(3, [4, 6, 8, 12].indexOf(Number(config.size)) + 1)])} disabled={Number(config.size) >= 12} title="Aumentar largura"><Icon name="add" /></button>
-            <button type="button" onClick={() => onResizeHeight(config.id, Number(config.rowSpan || 3) - 1)} disabled={Number(config.rowSpan || 3) <= 2} title="Diminuir altura"><Icon name="height" className="rotate-180" /></button>
-            <button type="button" onClick={() => onResizeHeight(config.id, Number(config.rowSpan || 3) + 1)} disabled={Number(config.rowSpan || 3) >= 10} title="Aumentar altura"><Icon name="height" /></button>
-            <button type="button" onClick={() => onToggle(config.id)} title="Ocultar widget">
-              <Icon name="visibility_off" />
-            </button>
-          </div>
+          <button
+            type="button"
+            title="Mover para cima"
+            onClick={() => onStep(config.id, -1)}
+          >
+            <Icon name="arrow_upward" />
+          </button>
+          <button
+            type="button"
+            title="Mover para baixo"
+            onClick={() => onStep(config.id, 1)}
+          >
+            <Icon name="arrow_downward" />
+          </button>
+          <button
+            type="button"
+            title="Trocar coluna"
+            onClick={() =>
+              onDrop(
+                config.id,
+                null,
+                "after",
+                config.lane === "main" ? "side" : "main",
+              )
+            }
+          >
+            <Icon name="swap_horiz" />
+          </button>
+          <button
+            type="button"
+            title="Ocultar widget"
+            onClick={() => onToggle(config.id)}
+          >
+            <Icon name="visibility_off" />
+          </button>
         </div>
       ) : null}
-      <div className={`campus-dashboard-widget-content ${editing ? "pointer-events-none select-none" : ""}`}>{children}</div>
-    </motion.div>
+      <div className="today-flow-content">{children}</div>
+    </div>
   );
 }
 
 const parseDateString = (value) => {
   if (!value) return new Date();
   if (value instanceof Date) return value;
-  if (typeof value === 'number') return new Date(value);
-  if (typeof value === 'string' && value.includes("T")) return new Date(value);
+  if (typeof value === "number") return new Date(value);
+  if (typeof value === "string" && value.includes("T")) return new Date(value);
   return new Date(`${value}T12:00:00`);
 };
 
 const formatDate = (value) => {
   if (!value) return "Sem data";
-  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(
-    parseDateString(value),
-  );
-};
-
-const formatDateWithWeekday = (value) => {
-  if (!value) return "Dia não informado";
-  const [weekday, date] = new Intl.DateTimeFormat("pt-BR", {
-    weekday: "short",
+  return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "short",
-  })
-    .format(parseDateString(value))
-    .split(",");
-  return `${weekday.replace(".", "")},${date ? date : ""}`.trim();
+  }).format(parseDateString(value));
 };
 
 export function CampusFlowDashboardScreen({ onNavigate }) {
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [editingTaskId, setEditingTaskId] = useState(null);
-  const [editingTaskTitle, setEditingTaskTitle] = useState("");
+  const [newTaskDate, setNewTaskDate] = useState(() => getLocalDateKey());
+  const [newTaskTime, setNewTaskTime] = useState("");
+  const [showTaskSchedule, setShowTaskSchedule] = useState(false);
   const [newHabitTitle, setNewHabitTitle] = useState("");
   const [showWaterSettingsModal, setShowWaterSettingsModal] = useState(false);
-  const [gridDisplayMode, setGridDisplayMode] = useState("bottle");
+  const [selectedWeekday, setSelectedWeekday] = useState(() => {
+    const day = new Date().getDay();
+    return day >= 1 && day <= 5 ? day : 1;
+  });
   const [editingWidgets, setEditingWidgets] = useState(false);
   const [showWidgetCatalog, setShowWidgetCatalog] = useState(false);
-  const [draggedWidgetId, setDraggedWidgetId] = useState("");
-  const [dragPreview, setDragPreview] = useState(null);
-  const dashboardGridRef = useRef(null);
+  useEffect(() => {
+    if (!showWidgetCatalog) return;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setShowWidgetCatalog(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [showWidgetCatalog]);
+  const [dragState, setDragState] = useState(null);
+  const [dropTarget, setDropTarget] = useState(null);
   const academicState = useStudyStore((state) => state.academic);
   const tasks = useStudyStore((state) => state.tasks?.list || []);
   const habits = useStudyStore((state) => state.habits?.list || []);
@@ -372,41 +578,56 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
   const setActiveNote = useStudyStore((state) => state.setActiveNote);
   const focusSessions = useStudyStore((state) => state.focusSessions || []);
   const setActiveTask = useStudyStore((state) => state.setActiveTask);
-  const setActiveAcademicSubject = useStudyStore((state) => state.setActiveAcademicSubject);
-  const courses = useStudyStore((state) => state.courses || []);
+  const setActiveAcademicSubject = useStudyStore(
+    (state) => state.setActiveAcademicSubject,
+  );
   const flashcardDecks = useStudyStore((state) => state.flashcardDecks || []);
   const setActiveDeck = useStudyStore((state) => state.setActiveDeck);
-  const createCourseForAcademicSubject = useStudyStore(
-    (state) => state.createCourseForAcademicSubject,
-  );
-  const setActiveCourse = useStudyStore((state) => state.setActiveCourse);
   const stickyNotes = useStudyStore((state) => state.stickyNotes || []);
   const updateStickyNote = useStudyStore((state) => state.updateStickyNote);
   const dashboardWidgetsState = useStudyStore(
     (state) => state.dashboardWidgets || EMPTY_DASHBOARD_WIDGETS,
   );
   const dashboardWidgets = useMemo(
-    () => dashboardWidgetsState.filter((widget) => !widget.id.startsWith("quick-note:")),
+    () =>
+      dashboardWidgetsState.filter(
+        (widget) => !widget.id.startsWith("quick-note:") && widget.id !== "focus",
+      ),
     [dashboardWidgetsState],
   );
-  const setDashboardWidgetSize = useStudyStore((state) => state.setDashboardWidgetSize);
-  const setDashboardWidgetHeight = useStudyStore((state) => state.setDashboardWidgetHeight);
-  const positionDashboardWidget = useStudyStore((state) => state.positionDashboardWidget);
-  const toggleDashboardWidget = useStudyStore((state) => state.toggleDashboardWidget);
-  const resetDashboardWidgets = useStudyStore((state) => state.resetDashboardWidgets);
+  const reorderDashboardWidgetFlow = useStudyStore(
+    (state) => state.reorderDashboardWidgetFlow,
+  );
+  const stepDashboardWidgetFlow = useStudyStore(
+    (state) => state.stepDashboardWidgetFlow,
+  );
+  const toggleDashboardWidget = useStudyStore(
+    (state) => state.toggleDashboardWidget,
+  );
+  const resetDashboardWidgets = useStudyStore(
+    (state) => state.resetDashboardWidgets,
+  );
+  const habitsPanelSize = useStudyStore(state => state.appSettings?.habitsPanelSize);
+  const updateAppSettings = useStudyStore(state => state.updateAppSettings);
   const waterTrackerState = useStudyStore((state) => state.waterTracker);
   const addWaterIntake = useStudyStore((state) => state.addWaterIntake);
   const resetWaterIntake = useStudyStore((state) => state.resetWaterIntake);
-  const setWaterTarget = useStudyStore((state) => state.setWaterTarget);
-  const updateWaterSettings = useStudyStore((state) => state.updateWaterSettings);
+  const updateWaterSettings = useStudyStore(
+    (state) => state.updateWaterSettings,
+  );
   const addAcademicEntity = useStudyStore((state) => state.addAcademicEntity);
-  const updateAcademicEntity = useStudyStore((state) => state.updateAcademicEntity);
-  const deleteAcademicEntity = useStudyStore((state) => state.deleteAcademicEntity);
-  const state = useStudyStore((store) => store);
-  const academic = useMemo(() => getAcademicSemesterData(academicState), [academicState]);
-  const startTimer = usePomodoroStore((state) => state.startTimer);
-  const widgetById = useMemo(
-    () => new Map(dashboardWidgets.map((widget, index) => [widget.id, { ...widget, order: index }])),
+  const updateAcademicEntity = useStudyStore(
+    (state) => state.updateAcademicEntity,
+  );
+  const deleteAcademicEntity = useStudyStore(
+    (state) => state.deleteAcademicEntity,
+  );
+  const academic = useMemo(
+    () => getAcademicSemesterData(academicState),
+    [academicState],
+  );
+  const flowLanes = useMemo(
+    () => dashboardFlowLanes(dashboardWidgets),
     [dashboardWidgets],
   );
   const pinnedStickyNotes = useMemo(
@@ -420,15 +641,16 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
 
   const pending = tasks
     .filter((task) => task.status !== "completed")
-    .sort((a, b) => String(a.dueDate || "9999").localeCompare(String(b.dueDate || "9999")));
-  const urgentTask = pending[0];
+    .sort((a, b) =>
+      String(a.dueDate || "9999").localeCompare(String(b.dueDate || "9999")),
+    );
+  const urgentTask = pending.find((task) => task.dueDate);
   const urgentTaskSubject = urgentTask
     ? subjectById.get(urgentTask.academicSubjectId || urgentTask.subjectId)
     : null;
-  const subjects = academic.subjects.filter((subject) => !subject.isArchived).slice(0, 3);
   const currentDate = useCurrentDate();
   const todayWeekday = currentDate.getDay();
-  
+
   const weekDays = [1, 2, 3, 4, 5]; // Segunda a Sexta
   const weekClasses = weekDays.map((dayIndex) => {
     const classes = academic.subjects
@@ -449,106 +671,25 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
 
   const todayKey = getLocalDateKey(currentDate);
   const todayIso = getLocalDateKey(currentDate);
-  const waterTracker = (waterTrackerState && waterTrackerState.date === todayIso)
-    ? waterTrackerState
-    : {
-        ...(waterTrackerState || {}),
-        date: todayIso,
-        targetMl: waterTrackerState?.targetMl || 2000,
-        cupSizeMl: waterTrackerState?.cupSizeMl || 250,
-        bottleSizeMl: waterTrackerState?.bottleSizeMl || 500,
-        consumedMl: 0,
-      };
+  const waterTracker =
+    waterTrackerState && waterTrackerState.date === todayIso
+      ? waterTrackerState
+      : {
+          ...(waterTrackerState || {}),
+          date: todayIso,
+          targetMl: waterTrackerState?.targetMl || 2000,
+          cupSizeMl: waterTrackerState?.cupSizeMl || 250,
+          bottleSizeMl: waterTrackerState?.bottleSizeMl || 500,
+          consumedMl: 0,
+        };
   const waterTarget = waterTracker.targetMl || 2000;
   const waterConsumed = waterTracker.consumedMl || 0;
   const cupSizeMl = waterTracker.cupSizeMl || 250;
   const bottleSizeMl = waterTracker.bottleSizeMl || 500;
-  const waterPercent = Math.min(100, Math.round((waterConsumed / waterTarget) * 100));
-
-  const handleMarkPresenceAndOpenNote = (subject, customDateKey = null) => {
-    if (!subject) return;
-
-    const dateKeyToUse = customDateKey || todayKey;
-    const classDateObj = new Date(`${dateKeyToUse}T12:00:00`);
-
-    const existing = (academic.attendance || []).find(
-      (entry) => entry.subjectId === subject.id && entry.date === dateKeyToUse,
-    );
-    const isPresent = existing?.status === "present" || existing?.status === "attended";
-
-    if (!isPresent) {
-      if (existing) {
-        deleteAcademicEntity("attendance", existing.id);
-      }
-      addAcademicEntity("attendance", {
-        subjectId: subject.id,
-        semesterId: academic.activeSemesterId,
-        date: dateKeyToUse,
-        status: "present",
-      });
-    }
-
-    const existingLogs = academic.classLogs || [];
-    const dateLogForSubject = existingLogs.find(
-      (log) => log.subjectId === subject.id && log.date === dateKeyToUse,
-    );
-
-    if (!dateLogForSubject) {
-      const subjectLogs = existingLogs.filter((l) => l.subjectId === subject.id);
-      const lessonNumber = subjectLogs.length + 1;
-      const subjectName = subject?.name || "Disciplina";
-
-      addAcademicEntity("classLogs", {
-        subjectId: subject.id,
-        semesterId: academic.activeSemesterId,
-        date: dateKeyToUse,
-        topic: `Aula ${lessonNumber} - ${subjectName}`,
-        status: "completed",
-        attendanceStatus: "attended",
-      });
-    }
-
-    const existingNote = (notesList || []).find(
-      (item) => item.academicSubjectId === subject.id && item.date === dateKeyToUse,
-    );
-
-    if (existingNote) {
-      setActiveNote(existingNote.id);
-      setActiveAcademicSubject(subject.id);
-      onNavigate?.(SCREEN_IDS.NOTE_EDITOR);
-      return;
-    }
-
-    const dateFormatted = new Intl.DateTimeFormat("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(classDateObj);
-    
-    const dateLabel = new Intl.DateTimeFormat("pt-BR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    }).format(classDateObj);
-
-    const noteTitle = `Anotações de ${subject.name} - ${dateFormatted}`;
-    const newNoteId = `note-${Date.now()}`;
-
-    addNote({
-      id: newNoteId,
-      title: noteTitle,
-      content: `<h1>${noteTitle}</h1><p><strong>Disciplina:</strong> ${subject.name}<br><strong>Data:</strong> ${dateLabel}<br><strong>Presença:</strong> Registrada ✓</p><h2>Conteúdo da Aula</h2><ul><li><p></p></li></ul>`,
-      academicSubjectId: subject.id,
-      category: "Nota de aula",
-      date: dateKeyToUse,
-      updatedAt: classDateObj.getTime(),
-      createdAt: classDateObj.getTime(),
-    });
-
-    setActiveNote(newNoteId);
-    setActiveAcademicSubject(subject.id);
-    onNavigate?.(SCREEN_IDS.NOTE_EDITOR);
-  };
+  const waterPercent = Math.min(
+    100,
+    Math.round((waterConsumed / waterTarget) * 100),
+  );
 
   const handleCreateSubjectNote = (subject, customDateKey = null) => {
     if (!subject) return;
@@ -557,7 +698,8 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
     const classDateObj = new Date(`${dateKeyToUse}T12:00:00`);
 
     const existingNote = (notesList || []).find(
-      (item) => item.academicSubjectId === subject.id && item.date === dateKeyToUse,
+      (item) =>
+        item.academicSubjectId === subject.id && item.date === dateKeyToUse,
     );
 
     if (existingNote) {
@@ -572,14 +714,14 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
       month: "2-digit",
       year: "numeric",
     }).format(classDateObj);
-    
+
     const dateLabel = new Intl.DateTimeFormat("pt-BR", {
       weekday: "long",
       day: "numeric",
       month: "long",
     }).format(classDateObj);
 
-    const noteTitle = `Anotações de ${subject.name} - ${dateFormatted}`;
+    const noteTitle = `Nota da aula — ${dateFormatted} · ${subject.name}`;
     const newNoteId = `note-${Date.now()}`;
 
     addNote({
@@ -603,10 +745,12 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
     const existing = (academic.attendance || []).find(
       (entry) => entry.subjectId === subjectId && entry.date === dateKeyToUse,
     );
-    
+
     let nextAttendanceStatus = null;
     if (existing) {
-      if (existing.status === status) {
+      // Legacy attendance uses "attended" for the same present state.
+      const currentStatus = existing.status === "attended" ? "present" : existing.status;
+      if (currentStatus === status) {
         deleteAcademicEntity("attendance", existing.id);
         nextAttendanceStatus = null;
       } else {
@@ -632,7 +776,12 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
     const dateLogForSubject = existingLogs.find(
       (log) => log.subjectId === subjectId && log.date === dateKeyToUse,
     );
-    const mappedLogStatus = nextAttendanceStatus === "present" ? "attended" : nextAttendanceStatus === "absent" ? "absent" : "pending";
+    const mappedLogStatus =
+      nextAttendanceStatus === "present"
+        ? "attended"
+        : nextAttendanceStatus === "absent"
+          ? "absent"
+          : "pending";
 
     if (dateLogForSubject) {
       updateAcademicEntity("classLogs", dateLogForSubject.id, {
@@ -655,33 +804,58 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
       });
     }
   };
-  const nextClass = useMemo(() => {
-    const today = new Date(currentDate);
-    today.setHours(0, 0, 0, 0);
-    const end = new Date(today);
-    end.setDate(end.getDate() + 21);
-
-    return buildAcademicCalendarEvents(state, {
-      semesterId: academic.activeSemesterId,
-      startDate: getLocalDateKey(today),
-      endDate: getLocalDateKey(end),
-    })
-      .filter((event) => event.type === "class")
-      .sort((a, b) => {
-        const dateCompare = String(a.date || "").localeCompare(String(b.date || ""));
-        if (dateCompare !== 0) return dateCompare;
-        return String(a.startTime || "99:99").localeCompare(String(b.startTime || "99:99"));
-      })[0] || null;
-  }, [academic.activeSemesterId, state, currentDate]);
-  const weekStart = new Date(currentDate);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  weekStart.setHours(0, 0, 0, 0);
   const studiedMinutes = Math.round(
     focusSessions
-      .filter((session) => new Date(session.completedAt || session.date || 0) >= weekStart)
-      .reduce((total, session) => total + Number(session.durationMinutes || session.minutes || 0), 0),
+      .filter((session) => {
+        const date = new Date(
+          session.endedAt ||
+            session.completedAt ||
+            session.date ||
+            session.startedAt ||
+            0,
+        );
+        return (
+          Number.isFinite(date.getTime()) && getLocalDateKey(date) === todayKey
+        );
+      })
+      .reduce(
+        (total, session) =>
+          total +
+          Number(
+            session.actualSeconds != null
+              ? session.actualSeconds / 60
+              : session.durationMinutes || session.minutes || 0,
+          ),
+        0,
+      ),
   );
-  const dueCards = useMemo(() => dueFlashcards(flashcardDecks), [flashcardDecks]);
+  const todayTasks = selectTodayTasks(tasks, todayKey);
+  const completedTasks = todayTasks.filter(
+    (task) => task.status === "completed",
+  ).length;
+  const completedHabits = habits.filter((habit) =>
+    (habit.completedDates || []).includes(todayKey),
+  ).length;
+  const selectedClasses =
+    weekClasses.find((day) => day.dayIndex === selectedWeekday)?.classes || [];
+  const selectedDate = new Date(currentDate);
+  selectedDate.setDate(
+    currentDate.getDate() - ((todayWeekday + 6) % 7) + selectedWeekday - 1,
+  );
+  const selectedDateKey = getLocalDateKey(selectedDate);
+  const habitWeek = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(currentDate);
+    date.setDate(currentDate.getDate() - ((todayWeekday + 6) % 7) + index);
+    return {
+      key: getLocalDateKey(date),
+      label: ["S", "T", "Q", "Q", "S", "S", "D"][index],
+    };
+  });
+
+  const dueCards = useMemo(
+    () => dueFlashcards(flashcardDecks),
+    [flashcardDecks],
+  );
   const reviewDeck = useMemo(() => {
     if (!dueCards.length) return null;
     const dueCountByDeck = dueCards.reduce((acc, card) => {
@@ -689,13 +863,21 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
       return acc;
     }, new Map());
 
-    return flashcardDecks
-      .map((deck) => ({
-        deck,
-        dueCount: dueCountByDeck.get(deck.id) || 0,
-      }))
-      .filter((item) => item.dueCount > 0)
-      .sort((a, b) => b.dueCount - a.dueCount || String(a.deck.title || a.deck.deckTitle || "").localeCompare(String(b.deck.title || b.deck.deckTitle || "")))[0] || null;
+    return (
+      flashcardDecks
+        .map((deck) => ({
+          deck,
+          dueCount: dueCountByDeck.get(deck.id) || 0,
+        }))
+        .filter((item) => item.dueCount > 0)
+        .sort(
+          (a, b) =>
+            b.dueCount - a.dueCount ||
+            String(a.deck.title || a.deck.deckTitle || "").localeCompare(
+              String(b.deck.title || b.deck.deckTitle || ""),
+            ),
+        )[0] || null
+    );
   }, [dueCards, flashcardDecks]);
 
   const openTask = (task) => {
@@ -707,19 +889,6 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
   const openSubject = (subject) => {
     setActiveAcademicSubject(subject.id);
     onNavigate?.(SCREEN_IDS.ACADEMIC_SUBJECT);
-  };
-
-  const openOrCreateHub = (subject) => {
-    const linkedCourse = courses.find(
-      (course) =>
-        (subject.linkedCourseIds || []).includes(course.id) ||
-        subject.courseId === course.id,
-    );
-    const courseId =
-      linkedCourse?.id || createCourseForAcademicSubject(subject.id);
-    if (!courseId) return;
-    setActiveCourse(courseId);
-    onNavigate?.(SCREEN_IDS.MODULES);
   };
 
   const openReviewDeck = () => {
@@ -753,20 +922,6 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
     });
   };
 
-  const widgetProps = (id) => ({
-    config: widgetById.get(id),
-    gridRef: dashboardGridRef,
-    editing: editingWidgets,
-    draggedId: draggedWidgetId,
-    onDragStart: setDraggedWidgetId,
-    onPreview: setDragPreview,
-    onPosition: positionDashboardWidget,
-    onDragEnd: () => { setDraggedWidgetId(""); setDragPreview(null); },
-    onResize: setDashboardWidgetSize,
-    onResizeHeight: setDashboardWidgetHeight,
-    onToggle: toggleDashboardWidget,
-  });
-
   const startQuickFocus = (minutes = 25) => {
     const pomodoro = usePomodoroStore.getState();
     pomodoro.updateSettings?.({ focusTime: minutes });
@@ -775,814 +930,777 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
     onNavigate?.(SCREEN_IDS.POMODORO);
   };
 
+  const widgetContent = {
+    summary: (
+      <>
+        <WidgetPanel className="today-overview">
+          <header className="today-panel-header">
+            <h2>
+              <Icon name="dashboard" /> Panorama do dia
+            </h2>
+            <span className="today-caption">Seu progresso</span>
+          </header>
+          <div className="today-metrics">
+            <div>
+              <strong>
+                {completedTasks}
+                {todayTasks.length ? <small>/{todayTasks.length}</small> : null}
+              </strong>
+              <span>Tarefas concluídas</span>
+            </div>
+            <div>
+              <strong>
+                {studiedMinutes}
+                <small> min</small>
+              </strong>
+              <span>Foco hoje</span>
+            </div>
+            <div>
+              <strong>
+                {completedHabits}
+                {habits.length ? <small>/{habits.length}</small> : null}
+              </strong>
+              <span>Hábitos feitos</span>
+            </div>
+          </div>
+        </WidgetPanel>
+      </>
+    ),
+    focus: (
+      <>
+        <WidgetPanel className="today-focus">
+          <div>
+            <span className="today-caption">
+              <Icon name="timer" /> Hora de focar
+            </span>
+            <strong>25 minutos, uma coisa.</strong>
+          </div>
+          <button
+            type="button"
+            className="today-start"
+            aria-label="Iniciar foco de 25 minutos"
+            onClick={() => startQuickFocus(25)}
+          >
+            <Icon name="play_arrow" />
+          </button>
+        </WidgetPanel>
+      </>
+    ),
+    schedule: (
+      <>
+        <WidgetPanel>
+          <header className="today-panel-header">
+            <h2>
+              <Icon name="calendar_today" /> Agenda da semana
+            </h2>
+            <button
+              type="button"
+              className="today-link"
+              onClick={() => onNavigate?.(SCREEN_IDS.ACADEMIC)}
+            >
+              Abrir agenda <Icon name="arrow_outward" />
+            </button>
+          </header>
+          <div
+            className="today-weekdays"
+            role="group"
+            aria-label="Dia da agenda"
+          >
+            {weekClasses.map(({ dayIndex, classes }) => (
+              <button
+                key={dayIndex}
+                type="button"
+                aria-pressed={selectedWeekday === dayIndex}
+                onClick={() => setSelectedWeekday(dayIndex)}
+              >
+                <span>{["", "Seg", "Ter", "Qua", "Qui", "Sex"][dayIndex]}</span>
+                <small>
+                  {classes.length
+                    ? `${classes.length} aula${classes.length > 1 ? "s" : ""}`
+                    : "Livre"}
+                </small>
+              </button>
+            ))}
+          </div>
+          <div className="today-list">
+            {selectedClasses.length ? (
+              selectedClasses.map((subject) => (
+                <div key={subject.id} className="today-row today-class-row">
+                  <time>
+                    {subject.schedule?.startTime || "—"}
+                    <small>{subject.schedule?.endTime || ""}</small>
+                  </time>
+                  <button
+                    type="button"
+                    className="today-row-title"
+                    onClick={() => openSubject(subject)}
+                  >
+                    <strong>{subject.name || subject.title}</strong>
+                    <small>
+                      {subject.schedule?.room || subject.room || "Disciplina"}
+                    </small>
+                  </button>
+                  <button
+                    type="button"
+                    className="today-icon-button"
+                    title={`Registrar presença em ${subject.name || subject.title}`}
+                    aria-label={`Registrar presença em ${subject.name || subject.title}`}
+                    aria-pressed={academic.attendance.some(
+                      (entry) => entry.subjectId === subject.id && entry.date === selectedDateKey &&
+                        (entry.status === "present" || entry.status === "attended"),
+                    )}
+                    onClick={() => toggleAttendance(subject.id, "present", selectedDateKey)}
+                  >
+                    <Icon name="how_to_reg" />
+                  </button>
+                  <button
+                    type="button"
+                    className="today-icon-button"
+                    title={`Marcar falta em ${subject.name || subject.title}`}
+                    aria-pressed={academic.attendance.some(
+                      (entry) =>
+                        entry.subjectId === subject.id &&
+                        entry.date === selectedDateKey &&
+                        entry.status === "absent",
+                    )}
+                    onClick={() =>
+                      toggleAttendance(subject.id, "absent", selectedDateKey)
+                    }
+                  >
+                    <Icon name="person_off" />
+                  </button>
+                  <button
+                    type="button"
+                    className="today-icon-button"
+                    title={`Anotar aula de ${subject.name || subject.title}`}
+                    onClick={() =>
+                      handleCreateSubjectNote(subject, selectedDateKey)
+                    }
+                  >
+                    <Icon name="edit_note" />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="today-empty">
+                <Icon name="event_available" />
+                <div>
+                  <strong>Sem aulas neste dia</strong>
+                  <span>Um espaço para estudar no seu ritmo.</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </WidgetPanel>
+      </>
+    ),
+    deadlines: (
+      <>
+        <WidgetPanel className="today-mini-panel">
+          <header className="today-panel-header">
+            <h2>
+              <Icon name="flag" /> Próximo prazo
+            </h2>
+          </header>
+          {urgentTask ? (
+            <button
+              type="button"
+              className="today-row-title"
+              onClick={() => openTask(urgentTask)}
+            >
+              <strong>{urgentTask.title}</strong>
+              <small>
+                {formatDate(urgentTask.dueDate)}
+                {urgentTaskSubject ? ` · ${urgentTaskSubject.name}` : ""}
+              </small>
+            </button>
+          ) : (
+            <p className="today-quiet">
+              <strong>Tudo tranquilo por aqui</strong>
+              <span>Nenhum prazo pendente.</span>
+            </p>
+          )}
+        </WidgetPanel>
+      </>
+    ),
+    flashcards: (
+      <>
+        <WidgetPanel className="today-mini-panel">
+          <header className="today-panel-header">
+            <h2>
+              <Icon name="style" /> Revisão
+            </h2>
+            <span className="today-badge">{dueCards.length}</span>
+          </header>
+          {reviewDeck ? (
+            <button
+              type="button"
+              className="today-row-title"
+              onClick={openReviewDeck}
+            >
+              <strong>
+                {reviewDeck.deck.title ||
+                  reviewDeck.deck.deckTitle ||
+                  "Seu deck"}
+              </strong>
+              <small>{reviewDeck.dueCount} cartões para revisar →</small>
+            </button>
+          ) : (
+            <p className="today-quiet">
+              <strong>Flashcards em dia</strong>
+              <span>Nenhuma revisão pendente.</span>
+            </p>
+          )}
+        </WidgetPanel>
+      </>
+    ),
+    tasks: (
+      <>
+        <WidgetPanel className="">
+          <header className="today-panel-header">
+            <h2>
+              <Icon name="checklist" /> Tarefas de hoje{" "}
+              <span className="today-badge">
+                {todayTasks.length
+                  ? `${completedTasks}/${todayTasks.length}`
+                  : "Hoje"}
+              </span>
+            </h2>
+            <button
+              type="button"
+              className="today-link"
+              onClick={() => onNavigate?.(SCREEN_IDS.TASKS)}
+            >
+              Ver todas <Icon name="arrow_outward" />
+            </button>
+          </header>
+          <div className="today-list">
+            {todayTasks.length ? (
+              todayTasks.map((task) => {
+                const done = task.status === "completed";
+                return (
+                  <div
+                    key={task.id}
+                    className={`today-row ${done ? "is-done" : ""}`}
+                  >
+                    <button
+                      type="button"
+                      className="today-check"
+                      aria-label={`${done ? "Reabrir" : "Concluir"} tarefa ${task.title}`}
+                      aria-pressed={done}
+                      onClick={() =>
+                        updateTask(task.id, {
+                          status: done ? "pending" : "completed",
+                          completedDate: done ? null : todayKey,
+                        })
+                      }
+                    >
+                      {done ? <Icon name="check" /> : null}
+                    </button>
+                    <button
+                      type="button"
+                      className="today-row-title"
+                      onClick={() => openTask(task)}
+                    >
+                      <strong>{task.title}</strong>
+                      {task.dueTime ? <small className="today-task-time"><Icon name="schedule" />{task.dueTime}</small> : null}
+                      {!done && task.dueDate < todayKey ? (
+                        <small className="today-overdue">
+                          Prazo vencido · {formatDate(task.dueDate)}
+                        </small>
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      className="today-icon-button"
+                      aria-label={`Excluir tarefa ${task.title}`}
+                      onClick={() => deleteTask(task.id)}
+                    >
+                      <Icon name="close" />
+                    </button>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="today-empty">
+                <Icon name="task_alt" />
+                <div>
+                  <strong>O que merece sua atenção hoje?</strong>
+                  <span>Adicione sua primeira tarefa abaixo.</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <form
+            className="today-add-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!newTaskTitle.trim()) return;
+              addTask({
+                title: newTaskTitle.trim(),
+                status: "pending",
+                dueDate: newTaskDate || todayKey,
+                dueTime: newTaskTime || null,
+                isTodayTask: (newTaskDate || todayKey) <= todayKey,
+              });
+              setNewTaskTitle("");
+              setNewTaskDate(todayKey);
+              setNewTaskTime("");
+              setShowTaskSchedule(false);
+            }}
+          >
+            <Icon name="add" />
+            <input
+              aria-label="Nova tarefa para hoje"
+              placeholder="Adicionar tarefa para hoje..."
+              value={newTaskTitle}
+              onChange={(event) => setNewTaskTitle(event.target.value)}
+            />
+            <button
+              type="button"
+              className={`today-schedule-button ${showTaskSchedule ? "is-active" : ""}`}
+              aria-label="Definir data e horário da tarefa"
+              title="Definir data e horário"
+              onClick={() => setShowTaskSchedule((visible) => !visible)}
+            ><Icon name="schedule" /></button>
+            {showTaskSchedule ? <span className="today-schedule-popover">
+              <label>Data <input type="date" value={newTaskDate} onChange={(event) => setNewTaskDate(event.target.value)} /></label>
+              <label>Horário <input type="time" value={newTaskTime} onChange={(event) => setNewTaskTime(event.target.value)} /></label>
+            </span> : null}
+            <button type="submit" disabled={!newTaskTitle.trim()}>
+              Adicionar
+            </button>
+          </form>
+        </WidgetPanel>
+      </>
+    ),
+    habits: (
+      <>
+        <HabitsPanel size={habitsPanelSize} onResize={size => updateAppSettings({ habitsPanelSize: size })}>
+          <header className="today-panel-header">
+            <h2>
+              <Icon name="routine" /> Hábitos
+            </h2>
+            <span className="today-badge">
+              {habits.length ? `${completedHabits}/${habits.length}` : "Hoje"}
+            </span>
+          </header>
+          <div className="today-list">
+            {habits.length ? (
+              habits.map((habit) => {
+                const done = (habit.completedDates || []).includes(todayKey);
+                return (
+                  <div key={habit.id} className="today-habit">
+                    <div className={`today-row ${done ? "is-done" : ""}`}>
+                      <button
+                        type="button"
+                        className="today-check"
+                        aria-label={`${done ? "Desmarcar" : "Concluir"} hábito ${habit.title}`}
+                        aria-pressed={done}
+                        onClick={() => toggleHabit(habit.id, todayKey)}
+                      >
+                        {done ? <Icon name="check" /> : null}
+                      </button>
+                      <strong className="today-habit-title">
+                        {habit.title}
+                      </strong>
+                      <button
+                        type="button"
+                        className="today-icon-button"
+                        aria-label={`Excluir hábito ${habit.title}`}
+                        onClick={() => deleteHabit(habit.id)}
+                      >
+                        <Icon name="close" />
+                      </button>
+                    </div>
+                    <div
+                      className="today-habit-history"
+                      role="group"
+                      aria-label={`Histórico de ${habit.title}`}
+                    >
+                      {habitWeek.map((day) => (
+                        <button
+                          key={day.key}
+                          type="button"
+                          title={`${habit.title} · ${day.key}`}
+                          aria-label={`${habit.title} em ${day.key}`}
+                          aria-pressed={(habit.completedDates || []).includes(
+                            day.key,
+                          )}
+                          aria-current={
+                            day.key === todayKey ? "date" : undefined
+                          }
+                          onClick={() => toggleHabit(habit.id, day.key)}
+                        >
+                          {day.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="today-empty">
+                <div>
+                  <strong>Pequenos passos, todo dia.</strong>
+                  <span>Comece com um hábito simples.</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <form
+            className="today-add-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!newHabitTitle.trim()) return;
+              addHabit(newHabitTitle.trim(), "#f4b873");
+              setNewHabitTitle("");
+            }}
+          >
+            <input
+              aria-label="Novo hábito"
+              placeholder="Novo hábito..."
+              value={newHabitTitle}
+              onChange={(event) => setNewHabitTitle(event.target.value)}
+            />
+            <button
+              type="submit"
+              aria-label="Adicionar hábito"
+              disabled={!newHabitTitle.trim()}
+            >
+              <Icon name="add" />
+            </button>
+          </form>
+        </HabitsPanel>
+      </>
+    ),
+    water: (
+      <>
+        <WidgetPanel className="today-water">
+          <div className="today-water-label">
+            <Icon name="water_drop" />
+            <div>
+              <h2>Hidratação</h2>
+              <span className="today-caption">
+                {waterConsumed} de {waterTarget} ml
+              </span>
+            </div>
+          </div>
+          <div className="today-water-progress">
+            <div
+              className="today-progress"
+              role="progressbar"
+              aria-label="Meta de hidratação"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={waterPercent}
+            >
+              <span style={{ width: `${waterPercent}%` }} />
+            </div>
+            <span className="today-caption">
+              {waterPercent}% da meta diária
+            </span>
+          </div>
+          <div className="today-water-actions">
+            <button
+              type="button"
+              className="campus-secondary-button"
+              onClick={() => addWaterIntake(cupSizeMl)}
+            >
+              + {cupSizeMl} ml
+            </button>
+            <button
+              type="button"
+              className="campus-secondary-button"
+              onClick={() => addWaterIntake(bottleSizeMl)}
+            >
+              + {bottleSizeMl} ml
+            </button>
+            <button
+              type="button"
+              className="today-icon-button"
+              aria-label="Configurações de Hidratação"
+              onClick={() => setShowWaterSettingsModal(true)}
+            >
+              <Icon name="tune" />
+            </button>
+          </div>
+        </WidgetPanel>
+      </>
+    ),
+  };
+  for (const note of pinnedStickyNotes)
+    widgetContent[`sticky-note:${note.id}`] = (
+      <QuickNoteWidgetCard
+        note={note}
+        onChange={updateDashboardStickyNote}
+        onUnpin={unpinDashboardStickyNote}
+        onOpenStickyNotes={openStickyNotes}
+        onOpenDesktop={openDesktopStickyNote}
+      />
+    );
+  const renderWidget = (config) => (
+    <DashboardWidgetShell
+      key={config.id}
+      config={config}
+      label={
+        pinnedStickyNotes.find((note) => `sticky-note:${note.id}` === config.id)
+          ?.title
+      }
+      editing={editingWidgets}
+      draggedId={dragState?.id}
+      dropTarget={dropTarget}
+      onDragStart={setDragState}
+      onPreview={(preview) => {
+        setDropTarget(preview.target);
+        setDragState((state) =>
+          state ? { ...state, x: preview.x, y: preview.y } : null,
+        );
+      }}
+      onDragEnd={() => {
+        setDragState(null);
+        setDropTarget(null);
+      }}
+      onDrop={reorderDashboardWidgetFlow}
+      onStep={stepDashboardWidgetFlow}
+      onToggle={toggleDashboardWidget}
+    >
+      {widgetContent[config.id]}
+    </DashboardWidgetShell>
+  );
   return (
     <main className="campus-page campus-dashboard">
       <div className="campus-page-inner">
         <div className="campus-dashboard-shell">
           <div className="campus-dashboard-customize-bar">
             <div>
-              <h1 className="text-2xl font-black text-[color:var(--on-surface)]">Hoje</h1>
-              <p className="text-xs text-[color:var(--on-surface-variant)]">Seu painel acadêmico pessoal</p>
+              <h1 className="text-2xl font-black text-[color:var(--on-surface)]">
+                Hoje
+              </h1>
+              <p className="today-date">
+                {currentDate.toLocaleDateString("pt-BR", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                })}{" "}
+                · Um passo de cada vez.
+              </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className="campus-secondary-button" onClick={() => setShowWidgetCatalog(true)}>
-                <Icon name="widgets" /> Widgets
-              </button>
+            <div className="flex items-center gap-2">
+              {editingWidgets ? (
+                <button
+                  type="button"
+                  className="campus-primary-button"
+                  onClick={() => {
+                    setEditingWidgets(false);
+                    setDragState(null);
+                    setDropTarget(null);
+                  }}
+                >
+                  <Icon name="done" /> Concluir organização
+                </button>
+              ) : null}
               <button
                 type="button"
-                className={editingWidgets ? "campus-primary-button" : "campus-secondary-button"}
-                onClick={() => setEditingWidgets((value) => !value)}
+                className="today-personalize"
+                onClick={() => setShowWidgetCatalog(true)}
               >
-                <Icon name={editingWidgets ? "done" : "dashboard_customize"} />
-                {editingWidgets ? "Concluir" : "Editar layout"}
+                <Icon name="tune" /> Personalizar
               </button>
             </div>
           </div>
-          <div ref={dashboardGridRef} className="campus-dashboard-widget-grid">
-            {dragPreview ? (
-              <div
-                className="campus-dashboard-widget-drop-preview"
-                style={{
-                  gridColumn: `${dragPreview.x + 1} / span ${dragPreview.size || 12}`,
-                  gridRow: `${dragPreview.y + 1} / span ${dragPreview.rowSpan || 3}`,
-                }}
-              />
-            ) : null}
-          <section className="contents">
-            <DashboardWidgetShell {...widgetProps("schedule")}>
-            <section className="campus-weekly-schedule">
-              <div className="flex items-end justify-between mb-4">
-                <div>
-                  <h2 className="text-xl font-black tracking-tight text-[color:var(--on-surface)] flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-[color:var(--primary)]/10 flex items-center justify-center text-[color:var(--primary)]">
-                      <Icon name="calendar_today" className="text-[16px]" />
-                    </div>
-                    Agenda da Semana
-                  </h2>
-                  <p className="text-xs text-[color:var(--on-surface-variant)] mt-1 font-medium pl-9">
-                    Suas aulas organizadas de segunda a sexta
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate?.(SCREEN_IDS.ACADEMIC)}
-                  className="group flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[color:var(--surface)] border border-[color:var(--outline-variant)]/30 text-[12px] font-bold text-[color:var(--on-surface)] hover:border-[color:var(--primary)]/50 hover:text-[color:var(--primary)] transition-all shadow-sm"
-                >
-                  <span>Ver completa</span>
-                  <Icon name="arrow_forward" className="text-[14px] group-hover:translate-x-0.5 transition-transform" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pb-0">
-                {weekClasses.map((day) => {
-                  const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-                  const isToday = todayWeekday === day.dayIndex;
-
-                  const now = currentDate;
-                  const currentDay = now.getDay();
-                  const diff = day.dayIndex - currentDay;
-                  const dateForDay = new Date(now);
-                  dateForDay.setDate(now.getDate() + diff);
-                  const dayNum = dateForDay.getDate();
-
-                  return (
-                    <div
-                      key={day.dayIndex}
-                      className={`flex flex-col gap-2.5 p-3 rounded-[20px] transition-all border ${
-                        isToday
-                          ? "bg-[color:var(--primary)]/5 border-[color:var(--primary)]/30 ring-4 ring-[color:var(--primary)]/5"
-                          : "bg-[color:var(--surface)] border-[color:var(--outline-variant)]/20 hover:border-[color:var(--outline-variant)]/40"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between pb-2.5 border-b border-[color:var(--outline-variant)]/10">
-                        <div className="flex items-center gap-2">
-                          <div className={`flex flex-col items-center justify-center w-9 h-9 rounded-xl ${
-                            isToday ? 'bg-[color:var(--primary)] text-white shadow-md shadow-[color:var(--primary)]/20' : 'bg-[color:var(--surface-container-high)] text-[color:var(--on-surface)]'
-                          }`}>
-                            <span className="text-[9px] font-black uppercase opacity-80 -mb-0.5">{dayNames[day.dayIndex]}</span>
-                            <span className="text-sm font-black">{dayNum}</span>
-                          </div>
-                          {isToday && (
-                            <span className="text-[10px] font-bold text-[color:var(--primary)] bg-[color:var(--primary)]/10 px-2 py-0.5 rounded-md">
-                              Hoje
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[300px] custom-scrollbar pr-1 -mr-1">
-                        {day.classes.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center gap-1.5 py-6 text-[color:var(--on-surface-variant)]/50">
-                            <Icon name="event_busy" className="text-[28px] opacity-20" />
-                            <span className="text-[13px] font-semibold">Dia livre</span>
-                          </div>
-                        ) : (
-                          day.classes.map((subject) => {
-                            const targetDayKey = getLocalDateKey(dateForDay);
-                            const attendanceRecord = (academic.attendance || []).find(
-                              (a) => a.subjectId === subject.id && a.date === targetDayKey,
-                            );
-                            const isPresent = attendanceRecord?.status === "present" || attendanceRecord?.status === "attended";
-                            const isAbsent = attendanceRecord?.status === "absent";
-                            const isPastDay = day.dayIndex < todayWeekday;
-                            const isPastOrToday = day.dayIndex <= todayWeekday;
-
-                            const classNote = (notesList || []).find(
-                              (item) => item.academicSubjectId === subject.id && item.date === targetDayKey,
-                            );
-                            const hasNote = Boolean(classNote);
-
-                            return (
-                              <article
-                                key={subject.id}
-                                className={`group/card relative p-2.5 rounded-2xl transition-all ${
-                                  isAbsent
-                                    ? "bg-rose-500/10 border-2 border-rose-500/60 shadow-lg shadow-rose-500/10 ring-2 ring-rose-500/20"
-                                    : isPresent
-                                      ? "bg-emerald-500/10 border-2 border-emerald-500/60 shadow-lg shadow-emerald-500/10 ring-2 ring-emerald-500/20"
-                                      : "bg-[color:var(--surface-container)] hover:bg-[color:var(--surface-container-high)] border border-[color:var(--outline-variant)]/10 hover:shadow-sm"
-                                }`}
-                              >
-                                <div
-                                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-3/4 rounded-r-full transition-colors"
-                                  style={{ backgroundColor: subject.color || "var(--primary)" }}
-                                />
-                                
-                                <button
-                                  type="button"
-                                  onClick={() => openSubject(subject)}
-                                  className="w-full text-left pl-2.5 outline-none"
-                                >
-                                  <div className="flex items-center justify-between gap-1 mb-1 flex-wrap">
-                                    <span className="text-[10px] font-black text-[color:var(--on-surface-variant)] flex items-center gap-1 bg-[color:var(--surface-container-highest)] px-1.5 py-0.5 rounded">
-                                      <Icon name="schedule" className="text-[11px]" />
-                                      {subject.schedule?.startTime || "—"} {subject.schedule?.endTime ? `às ${subject.schedule.endTime}` : ""}
-                                    </span>
-
-                                    {isPresent && (
-                                      <span className="text-[10px] font-black text-white bg-emerald-600 px-2 py-0.5 rounded flex items-center gap-1 shadow-sm" title="Presença registrada">
-                                        <Icon name="check_circle" className="text-[11px]" /> Presença ✓
-                                      </span>
-                                    )}
-                                    {isAbsent && (
-                                      <span className="text-[10px] font-black text-white bg-rose-600 px-2 py-0.5 rounded flex items-center gap-1 shadow-sm" title="Falta registrada">
-                                        <Icon name="cancel" className="text-[11px]" /> Falta ✗
-                                      </span>
-                                    )}
-                                    {isPastDay && !isPresent && !isAbsent && (
-                                      <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded flex items-center gap-0.5" title="Sem registro de presença">
-                                        <Icon name="help_outline" className="text-[11px]" /> S/ registro
-                                      </span>
-                                    )}
-                                  </div>
-                                  
-                                  <h4 className="text-[13px] font-bold text-[color:var(--on-surface)] leading-tight mb-1 group-hover/card:text-[color:var(--primary)] transition-colors line-clamp-2">
-                                    {subject.name}
-                                  </h4>
-                                  
-                                  <div className="flex items-center gap-2 text-[11px] text-[color:var(--on-surface-variant)] font-medium">
-                                    <div className="flex items-center gap-0.5 truncate">
-                                      <Icon name="room" className="text-[12px] opacity-70" />
-                                      <span className="truncate">{subject.schedule?.room || subject.room || "S/ sala"}</span>
-                                    </div>
-                                    {subject.code && (
-                                      <div className="flex items-center gap-0.5 shrink-0">
-                                        <Icon name="tag" className="text-[12px] opacity-70" />
-                                        <span>{subject.code}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </button>
-
-                                {isPastOrToday && (
-                                  <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-[color:var(--outline-variant)]/10 pl-2.5">
-                                    <div className="flex gap-1.5">
-                                      <button
-                                        type="button"
-                                        title="Marcar presença nesta aula"
-                                        onClick={() => toggleAttendance(subject.id, "present", targetDayKey)}
-                                        className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-black transition-all ${
-                                          isPresent
-                                            ? "bg-emerald-600 text-white shadow-md ring-2 ring-emerald-600/20"
-                                            : "bg-[color:var(--surface)] text-[color:var(--on-surface-variant)] hover:text-emerald-600 hover:bg-emerald-500/10 border border-[color:var(--outline-variant)]/20"
-                                        }`}
-                                      >
-                                        <Icon name="check_circle" className="text-[14px]" />
-                                        Presença
-                                      </button>
-                                      <button
-                                        type="button"
-                                        title="Marcar falta nesta aula"
-                                        onClick={() => toggleAttendance(subject.id, "absent", targetDayKey)}
-                                        className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-black transition-all ${
-                                          isAbsent
-                                            ? "bg-rose-600 text-white shadow-md ring-2 ring-rose-600/20"
-                                            : "bg-[color:var(--surface)] text-[color:var(--on-surface-variant)] hover:text-rose-600 hover:bg-rose-500/10 border border-[color:var(--outline-variant)]/20"
-                                        }`}
-                                      >
-                                        <Icon name="cancel" className="text-[14px]" />
-                                        Falta
-                                      </button>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      title={hasNote ? "Abrir nota da aula" : "Criar nota da aula"}
-                                      onClick={() => handleCreateSubjectNote(subject, targetDayKey)}
-                                      className={`w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                                        hasNote
-                                          ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/20 ring-offset-1 ring-offset-[color:var(--surface-container)]"
-                                          : "bg-[color:var(--surface)] text-[color:var(--on-surface-variant)] hover:text-[color:var(--primary)] hover:bg-[color:var(--primary)]/10 border border-[color:var(--outline-variant)]/20"
-                                      }`}
-                                    >
-                                      <Icon name={hasNote ? "description" : "edit_note"} className="text-[14px]" />
-                                      {hasNote ? "Ver Nota da Aula" : "Nota da Aula"}
-                                    </button>
-                                  </div>
-                                )}
-                              </article>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+          <div
+            className={`today-flow ${editingWidgets ? "is-organizing" : ""}`}
+          >
+            <section
+              className={`today-flow-lane ${dropTarget?.lane === "main" && !dropTarget.id ? "is-drop-empty" : ""}`}
+              data-dashboard-lane="main"
+              aria-label="Planejamento do dia"
+            >
+              {flowLanes.main.map(renderWidget)}
+              {!flowLanes.main.length ? (
+                <p className="today-flow-empty">
+                  Sua coluna principal está livre.
+                </p>
+              ) : null}
             </section>
-            </DashboardWidgetShell>
-          </section>
-
-          <DashboardWidgetShell {...widgetProps("summary")}>
-            <article className="h-full rounded-3xl border border-[color:var(--outline-variant)]/15 bg-[color:var(--surface)] p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600"><Icon name="insights" /></span>
-                <span className="text-[10px] font-black uppercase tracking-wider text-[color:var(--on-surface-variant)]">Resumo do dia</span>
-              </div>
-              <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-                <div><strong className="block text-2xl font-black">{pending.length}</strong><span className="text-[10px] text-[color:var(--on-surface-variant)]">Pendentes</span></div>
-                <div><strong className="block text-2xl font-black">{dueCards.length}</strong><span className="text-[10px] text-[color:var(--on-surface-variant)]">Revisões</span></div>
-                <div><strong className="block text-2xl font-black">{studiedMinutes}</strong><span className="text-[10px] text-[color:var(--on-surface-variant)]">Min foco</span></div>
-              </div>
-            </article>
-          </DashboardWidgetShell>
-
-          <DashboardWidgetShell {...widgetProps("focus")}>
-            <article className="h-full rounded-3xl bg-[color:var(--primary)] p-5 text-white shadow-lg">
-              <div className="flex items-center gap-3"><Icon name="timer" className="text-3xl" /><div><p className="text-[10px] font-black uppercase tracking-wider opacity-70">Foco rápido</p><h3 className="font-black">Começar agora</h3></div></div>
-              <div className="mt-5 grid grid-cols-3 gap-2">
-                {[25, 50, 90].map((minutes) => <button key={minutes} type="button" onClick={() => startQuickFocus(minutes)} className="rounded-xl bg-white/10 px-2 py-2 text-xs font-black hover:bg-white/20">{minutes} min</button>)}
-              </div>
-            </article>
-          </DashboardWidgetShell>
-
-          <DashboardWidgetShell {...widgetProps("deadlines")}>
-            <article className="h-full rounded-3xl border border-rose-500/20 bg-rose-500/[0.05] p-5 shadow-sm">
-              <div className="flex items-center gap-3 text-rose-600"><Icon name="event_upcoming" className="text-2xl" /><h3 className="text-sm font-black uppercase tracking-wide">Próximo prazo</h3></div>
-              {urgentTask ? <button type="button" onClick={() => openTask(urgentTask)} className="mt-4 w-full text-left"><strong className="block line-clamp-2 text-base">{urgentTask.title}</strong><span className="mt-1 block text-xs text-[color:var(--on-surface-variant)]">{urgentTaskSubject?.name || "Sem disciplina"} · {urgentTask.dueDate || "Sem data"}</span></button> : <p className="mt-4 text-sm text-[color:var(--on-surface-variant)]">Nenhum prazo urgente.</p>}
-            </article>
-          </DashboardWidgetShell>
-
-          {pinnedStickyNotes.map((note) => (
-            <DashboardWidgetShell key={note.id} {...widgetProps(`sticky-note:${note.id}`)} label={note.title}>
-              <QuickNoteWidgetCard
-                note={note}
-                onChange={updateDashboardStickyNote}
-                onUnpin={unpinDashboardStickyNote}
-                onOpenStickyNotes={openStickyNotes}
-                onOpenDesktop={openDesktopStickyNote}
-              />
-            </DashboardWidgetShell>
-          ))}
-
-          <div className="contents">
-            <section className="contents">
-              <DashboardWidgetShell {...widgetProps("habits")}>
-              <section className="campus-habits-tracker">
-              <div className="campus-section-heading mb-4">
-                <h2>Rastreador de Hábitos</h2>
-              </div>
-              
-
-
-              {/* Add Habit Form */}
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!newHabitTitle.trim()) return;
-                  const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
-                  const randomColor = colors[Math.floor(Math.random() * colors.length)];
-                  addHabit(newHabitTitle.trim(), randomColor);
-                  setNewHabitTitle("");
-                }}
-                className="flex items-center gap-2 mb-6"
-              >
-                <input
-                  type="text"
-                  value={newHabitTitle}
-                  onChange={(e) => setNewHabitTitle(e.target.value)}
-                  placeholder="Criar um novo hábito incrível..."
-                  className="flex-1 bg-[color:var(--surface)] border border-[color:var(--outline-variant)]/30 rounded-2xl text-[13px] px-4 py-3 outline-none focus:border-[color:var(--primary)] transition-colors shadow-sm"
-                />
-                <button
-                  type="submit"
-                  disabled={!newHabitTitle.trim()}
-                  className="h-11 px-4 rounded-2xl bg-[color:var(--primary)] text-white font-bold text-xs flex items-center gap-2 hover:bg-[color:var(--primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-sm"
-                >
-                  <Icon name="add" className="text-[18px]" />
-                  Adicionar
-                </button>
-              </form>
-
-              {/* Habits List */}
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                {habits.length === 0 ? (
-                  <div className="col-span-full py-8 text-center text-[color:var(--on-surface-variant)]/60 text-sm border-2 border-dashed border-[color:var(--outline-variant)]/20 rounded-3xl">
-                    Sua jornada começa com o primeiro hábito. Adicione um acima!
-                  </div>
-                ) : (
-                  habits.map(habit => {
-                    const isDoneToday = (habit.completedDates || []).includes(todayKey);
-                    
-                    const todayDate = new Date();
-                    const currentDayOfWeek = todayDate.getDay(); // 0 = Dom, 1 = Seg, 2 = Ter...
-                    const distanceToMonday = (currentDayOfWeek + 6) % 7;
-                    
-                    const mondayDate = new Date(todayDate);
-                    mondayDate.setDate(todayDate.getDate() - distanceToMonday);
-
-                    const historyDays = [];
-                    const DAY_NAMES = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-
-                    for (let i = 0; i < 7; i++) {
-                      const d = new Date(mondayDate);
-                      d.setDate(mondayDate.getDate() + i);
-                      const key = getLocalDateKey(d);
-                      const done = (habit.completedDates || []).includes(key);
-                      const isToday = key === todayKey;
-                      const dayNum = d.getDate();
-                      historyDays.push({ key, done, isToday, dayInitial: DAY_NAMES[i], dayNum });
-                    }
-                    
-                    let currentStreak = 0;
-                    let streakActive = true;
-                    let checkDate = new Date(todayDate);
-                    while (streakActive && currentStreak < 365) {
-                      const key = getLocalDateKey(checkDate);
-                      if ((habit.completedDates || []).includes(key)) {
-                        currentStreak++;
-                        checkDate.setDate(checkDate.getDate() - 1);
-                      } else if (currentStreak === 0 && key === todayKey) {
-                        checkDate.setDate(checkDate.getDate() - 1);
-                      } else {
-                        streakActive = false;
-                      }
-                    }
-
-                    return (
-                      <article key={habit.id} className="bg-[color:var(--surface)] p-5 rounded-3xl border border-[color:var(--outline-variant)]/20 shadow-sm relative group flex flex-col gap-4 transition-transform hover:-translate-y-1">
-                        <button
-                          type="button"
-                          onClick={() => deleteHabit(habit.id)}
-                          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-[color:var(--on-surface-variant)] hover:text-red-500 transition-opacity"
-                          title="Excluir hábito"
-                        >
-                          <Icon name="delete" className="text-[18px]" />
-                        </button>
-                        
-                        <div className="flex items-center justify-between gap-3 pr-6">
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={() => toggleHabit(habit.id, todayKey)}
-                              style={{ borderColor: isDoneToday ? habit.color : 'var(--outline-variant)', backgroundColor: isDoneToday ? habit.color : 'transparent' }}
-                              className={`w-7 h-7 rounded-full border-[3px] flex items-center justify-center shrink-0 transition-all ${!isDoneToday ? 'hover:scale-110' : ''}`}
-                            >
-                              {isDoneToday && <Icon name="check" className="text-[16px] text-white" />}
-                            </button>
-                            <div>
-                              <strong className={`block text-[15px] leading-tight ${isDoneToday ? 'text-[color:var(--on-surface-variant)] line-through opacity-70' : 'text-[color:var(--on-surface)]'}`}>
-                                {habit.title}
-                              </strong>
-                              {currentStreak > 0 && (
-                                <span className="text-[11px] font-bold text-orange-500 flex items-center gap-1 mt-1">
-                                  <Icon name="local_fire_department" className="text-[12px]" />
-                                  {currentStreak} {currentStreak === 1 ? 'dia seguido' : 'dias seguidos'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-1 pt-3 border-t border-[color:var(--outline-variant)]/10">
-                          {historyDays.map((day) => (
-                            <button
-                              key={day.key}
-                              type="button"
-                              onClick={() => toggleHabit(habit.id, day.key)}
-                              className="flex flex-col items-center gap-1 flex-1 group/day cursor-pointer focus:outline-none"
-                              title={`${day.key}${day.isToday ? ' (Hoje)' : ''}: ${day.done ? 'Concluído' : 'Clique para marcar/desmarcar'}`}
-                            >
-                              <span
-                                className={`text-[9px] font-extrabold uppercase tracking-wider transition-all px-1 py-0.5 rounded-md ${
-                                  day.isToday
-                                    ? "text-emerald-500 bg-emerald-500/15 font-black ring-1 ring-emerald-500/30"
-                                    : "text-[color:var(--on-surface-variant)] opacity-70 group-hover/day:opacity-100"
-                                }`}
-                              >
-                                {day.dayInitial}
-                              </span>
-                              <span
-                                className={`text-[10px] font-bold ${
-                                  day.isToday ? "text-emerald-500" : "text-[color:var(--on-surface-variant)] opacity-80"
-                                }`}
-                              >
-                                {day.dayNum}
-                              </span>
-                              <div 
-                                className={`w-4 h-4 rounded-[4px] transition-all group-hover/day:scale-110 ${day.isToday ? "ring-2 ring-emerald-500/40" : ""}`}
-                                style={{ backgroundColor: day.done ? habit.color : 'var(--surface-container-high)' }}
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      </article>
-                    );
-                  })
-                )}
-              </div>
-            </section>
-            </DashboardWidgetShell>
-          </section>
-
-          <aside className="contents">
-            <DashboardWidgetShell {...widgetProps("flashcards")}>
-            {reviewDeck ? (
-              <button
-                className="campus-review-card"
-                type="button"
-                onClick={openReviewDeck}
-              >
-                <span className="campus-review-card-icon">
-                  <Icon name="style" />
-                </span>
-                <span className="campus-review-card-copy">
-                  <small>Flashcards para revisar</small>
-                  <strong>{reviewDeck.deck.title || reviewDeck.deck.deckTitle || "Deck sem título"}</strong>
-                  <span>{reviewDeck.dueCount} {reviewDeck.dueCount === 1 ? "cartão pendente" : "cartões pendentes"}</span>
-                </span>
-                <Icon name="arrow_forward" />
-              </button>
-            ) : (
-              <article className="rounded-3xl border border-[color:var(--outline-variant)]/15 bg-[color:var(--surface)] p-5 text-center shadow-sm">
-                <Icon name="style" className="text-3xl text-[color:var(--primary)]/50" />
-                <h3 className="mt-2 text-sm font-black">Flashcards em dia</h3>
-                <p className="mt-1 text-xs text-[color:var(--on-surface-variant)]">Nenhuma revisão pendente.</p>
-              </article>
-            )}
-            </DashboardWidgetShell>
-
-            <DashboardWidgetShell {...widgetProps("water")}>
-            {/* Water Tracker Widget */}
-            <article className="neo-raised flex flex-col rounded-3xl p-5 relative overflow-hidden bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent border border-cyan-500/20 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-500 flex items-center justify-center shadow-inner">
-                    <Icon name="water_drop" className="text-[18px]" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-black uppercase tracking-wider text-[color:var(--on-surface)]">Hidratação do Dia</h3>
-                    <span className="text-[11px] font-bold text-cyan-600 dark:text-cyan-400">Meta: {waterTarget} ml</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowWaterSettingsModal(true)}
-                    className="p-1.5 rounded-lg text-[color:var(--on-surface-variant)] hover:bg-cyan-500/10 hover:text-cyan-500 transition-colors"
-                    title="Configurações de Hidratação"
-                  >
-                    <Icon name="settings" className="text-[15px]" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetWaterIntake}
-                    className="p-1.5 rounded-lg text-[color:var(--on-surface-variant)] hover:bg-red-500/10 hover:text-red-500 transition-colors"
-                    title="Reiniciar dia"
-                  >
-                    <Icon name="refresh" className="text-[15px]" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Progress & Wave Bar */}
-              <div className="mb-4">
-                <div className="flex justify-between items-baseline mb-1.5">
-                  <span className="text-2xl font-black text-[color:var(--on-surface)] tracking-tight">
-                    {(waterConsumed / 1000).toFixed(2)} <span className="text-xs font-bold text-[color:var(--on-surface-variant)] uppercase">L</span>
-                  </span>
-                  <span className="text-xs font-extrabold text-cyan-600 dark:text-cyan-400">
-                    {waterPercent}% {waterPercent >= 100 && "🎉 Meta atingida!"}
-                  </span>
-                </div>
-                <div className="h-3 w-full bg-cyan-500/10 rounded-full overflow-hidden p-0.5 border border-cyan-500/20">
-                  <div
-                    className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-500 shadow-sm"
-                    style={{ width: `${waterPercent}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Visualizer Grid Mode Switcher */}
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-[color:var(--on-surface-variant)] uppercase tracking-wider">
-                  {gridDisplayMode === "cup" ? `Copos (${cupSizeMl}ml)` : `Garrafas (${bottleSizeMl >= 1000 ? `${bottleSizeMl / 1000}L` : `${bottleSizeMl}ml`})`}
-                </span>
-                <div className="flex bg-[color:var(--surface-container-high)] p-0.5 rounded-lg text-[10px] font-bold border border-[color:var(--outline-variant)]/20">
-                  <button
-                    type="button"
-                    onClick={() => setGridDisplayMode("bottle")}
-                    className={`px-2 py-0.5 rounded-md transition-all flex items-center gap-1 ${
-                      gridDisplayMode === "bottle"
-                        ? "bg-cyan-500 text-white shadow-sm"
-                        : "text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)]"
-                    }`}
-                  >
-                    <Icon name="water_drop" className="text-[12px]" />
-                    Garrafas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setGridDisplayMode("cup")}
-                    className={`px-2 py-0.5 rounded-md transition-all flex items-center gap-1 ${
-                      gridDisplayMode === "cup"
-                        ? "bg-cyan-500 text-white shadow-sm"
-                        : "text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)]"
-                    }`}
-                  >
-                    <Icon name="local_drink" className="text-[12px]" />
-                    Copos
-                  </button>
-                </div>
-              </div>
-
-              {/* Water Visualizer Grid */}
-              {(() => {
-                const currentStepMl = gridDisplayMode === "cup" ? cupSizeMl : bottleSizeMl;
-                const totalUnits = Math.max(4, Math.ceil(waterTarget / currentStepMl));
-                const iconName = gridDisplayMode === "cup" ? "local_drink" : "water_drop";
-
-                return (
-                  <div className="grid grid-cols-4 gap-1.5 mb-4">
-                    {Array.from({ length: totalUnits }).map((_, idx) => {
-                      const isFilled = waterConsumed >= (idx + 1) * currentStepMl;
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => {
-                            if (isFilled) {
-                              addWaterIntake(-currentStepMl);
-                            } else {
-                              addWaterIntake(currentStepMl);
-                            }
-                          }}
-                          className={`h-9 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
-                            isFilled
-                              ? "bg-gradient-to-t from-blue-500 to-cyan-400 text-white shadow-md shadow-cyan-500/20 scale-[1.02]"
-                              : "bg-[color:var(--surface-container-high)] text-[color:var(--on-surface-variant)]/40 hover:bg-cyan-500/10 hover:text-cyan-500"
-                          }`}
-                          title={
-                            isFilled
-                              ? `${gridDisplayMode === "cup" ? "Copo" : "Garrafa"} ${idx + 1} (${currentStepMl}ml) - Clique para remover`
-                              : `Adicionar ${currentStepMl}ml`
-                          }
-                        >
-                          <Icon name={iconName} className="text-[15px]" />
-                          <span className="text-[9px] font-black leading-none">{idx + 1}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-
-              {/* Quick Actions */}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => addWaterIntake(bottleSizeMl)}
-                  className="flex-1 py-2 px-2 rounded-xl bg-cyan-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-md shadow-cyan-500/25 hover:bg-cyan-600 transition-colors"
-                  title={`Adicionar 1 Garrafa (${bottleSizeMl}ml)`}
-                >
-                  <Icon name="add" className="text-[14px]" />
-                  <span>Garrafa +{bottleSizeMl >= 1000 ? `${bottleSizeMl / 1000}L` : `${bottleSizeMl}ml`}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => addWaterIntake(cupSizeMl)}
-                  className="flex-1 py-2 px-2 rounded-xl bg-[color:var(--surface-container-high)] text-[color:var(--on-surface)] text-xs font-bold flex items-center justify-center gap-1 border border-[color:var(--outline-variant)]/20 hover:bg-cyan-500/10 hover:text-cyan-500 transition-colors"
-                  title={`Adicionar 1 Copo (${cupSizeMl}ml)`}
-                >
-                  <Icon name="add" className="text-[14px]" />
-                  <span>Copo +{cupSizeMl}ml</span>
-                </button>
-              </div>
-            </article>
-            </DashboardWidgetShell>
-
-            <DashboardWidgetShell {...widgetProps("tasks")}>
-            <article className="neo-raised flex flex-col rounded-3xl p-6 relative overflow-hidden bg-[color:var(--surface)] border border-[color:var(--outline-variant)]/10 min-h-[300px]">
-              <div className="flex items-center justify-between mb-4 text-[color:var(--primary)]">
-                <h3 className="text-sm font-bold tracking-wide uppercase flex items-center gap-2">
-                  <span>Tarefas de Hoje</span>
-                  {tasks.filter(t => (t.isTodayTask || !t.dueDate || t.dueDate <= todayKey || t.completedDate === todayKey)).length > 0 && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[color:var(--primary)]/10 text-[color:var(--primary)] font-black">
-                      {tasks.filter(t => t.status === "completed" && (t.isTodayTask || !t.dueDate || t.dueDate <= todayKey || t.completedDate === todayKey)).length}/
-                      {tasks.filter(t => (t.isTodayTask || !t.dueDate || t.dueDate <= todayKey || t.completedDate === todayKey)).length}
-                    </span>
-                  )}
-                </h3>
-                <Icon name="check_circle" />
-              </div>
-              
-              <div className="flex flex-col gap-2 mb-4 max-h-[220px] overflow-y-auto custom-scrollbar pr-2">
-                {(() => {
-                  const todayTasks = tasks.filter(t => t.isTodayTask || !t.dueDate || t.dueDate <= todayKey || t.completedDate === todayKey)
-                    .sort((a, b) => {
-                      if (a.status === "completed" && b.status !== "completed") return 1;
-                      if (a.status !== "completed" && b.status === "completed") return -1;
-                      return (b.createdAt || 0) - (a.createdAt || 0);
-                    });
-
-                  if (todayTasks.length === 0) {
-                    return (
-                      <p className="text-[13px] text-[color:var(--on-surface-variant)]/60 italic text-center py-4">Nenhuma tarefa pendente!</p>
-                    );
-                  }
-
-                  return todayTasks.map((task) => {
-                    const isCompleted = task.status === "completed";
-                    const isOverdue = !task.isTodayTask && task.dueDate && task.dueDate < todayKey && !isCompleted;
-
-                    return (
-                      <div key={task.id} className={`flex items-center justify-between gap-2 group p-1.5 rounded-xl transition-colors ${isCompleted ? "bg-[color:var(--surface-container-low)]/40" : "hover:bg-[color:var(--surface-container-low)]"}`}>
-                        <div className="flex items-start gap-3 min-w-0 flex-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const nextStatus = isCompleted ? "pending" : "completed";
-                              updateTask(task.id, {
-                                status: nextStatus,
-                                completedDate: nextStatus === "completed" ? todayKey : null,
-                              });
-                            }}
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-                              isCompleted
-                                ? "bg-emerald-500 border-emerald-500 text-white shadow-sm"
-                                : "border-[color:var(--outline-variant)] group-hover:border-[color:var(--primary)]"
-                            }`}
-                            title={isCompleted ? "Reabrir tarefa (desmarcar)" : "Marcar como concluída"}
-                          >
-                            {isCompleted ? (
-                              <Icon name="check" className="text-[12px] stroke-[3]" />
-                            ) : (
-                              <div className="w-2.5 h-2.5 rounded-full bg-[color:var(--primary)] opacity-0 group-hover:opacity-20 transition-opacity" />
-                            )}
-                          </button>
-                          <div className="flex flex-col min-w-0 flex-1">
-                            {editingTaskId === task.id ? (
-                              <input
-                                type="text"
-                                autoFocus
-                                value={editingTaskTitle}
-                                onChange={(e) => setEditingTaskTitle(e.target.value)}
-                                onBlur={() => {
-                                  if (editingTaskTitle.trim()) {
-                                    updateTask(task.id, { title: editingTaskTitle.trim() });
-                                  }
-                                  setEditingTaskId(null);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    if (editingTaskTitle.trim()) {
-                                      updateTask(task.id, { title: editingTaskTitle.trim() });
-                                    }
-                                    setEditingTaskId(null);
-                                  } else if (e.key === "Escape") {
-                                    setEditingTaskId(null);
-                                  }
-                                }}
-                                className="w-full bg-[color:var(--surface-container-low)] border border-[color:var(--primary)] rounded-lg px-2 py-0.5 text-xs font-semibold text-[color:var(--on-surface)] outline-none"
-                              />
-                            ) : (
-                              <span
-                                onClick={() => {
-                                  setEditingTaskId(task.id);
-                                  setEditingTaskTitle(task.title);
-                                }}
-                                title="Clique para editar o texto da tarefa"
-                                className={`text-sm leading-tight pt-0.5 line-clamp-2 cursor-pointer transition-colors ${
-                                  isCompleted
-                                    ? "line-through text-[color:var(--on-surface-variant)]/60"
-                                    : "text-[color:var(--on-surface)] hover:text-[color:var(--primary)] hover:underline"
-                                }`}
-                              >
-                                {task.title}
-                              </span>
-                            )}
-                            {isOverdue && (
-                              <span className="text-[10px] font-bold text-amber-500 flex items-center gap-0.5 mt-0.5">
-                                <Icon name="warning" className="text-[11px]" /> Atrasada ({task.dueDate.split('-').reverse().slice(0, 2).join('/')})
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => deleteTask(task.id)}
-                          className="opacity-0 group-hover:opacity-100 text-[color:var(--on-surface-variant)] hover:text-red-500 transition-all p-1 rounded-md hover:bg-red-500/10 shrink-0"
-                          title="Excluir tarefa"
-                        >
-                          <Icon name="close" className="text-[14px]" />
-                        </button>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-              
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!newTaskTitle.trim()) return;
-                  addTask({ title: newTaskTitle.trim(), status: 'pending', dueDate: todayKey, isTodayTask: true });
-                  setNewTaskTitle("");
-                }}
-                className="flex items-center bg-[color:var(--surface-container-low)] rounded-xl p-1 pr-2 border border-[color:var(--outline-variant)]/20 focus-within:border-[color:var(--primary)]/50 transition-colors"
-              >
-                <input
-                  type="text"
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="Adicionar tarefa para hoje..."
-                  className="flex-1 bg-transparent border-none text-[13px] px-3 py-2 outline-none"
-                />
-                <button
-                  type="submit"
-                  disabled={!newTaskTitle.trim()}
-                  className="w-8 h-8 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] flex items-center justify-center hover:bg-[color:var(--primary)]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
-                >
-                  <Icon name="add" className="text-[18px]" />
-                </button>
-              </form>
-            </article>
-            </DashboardWidgetShell>
-          </aside>
-        </div>
-        </div>
+            <aside
+              className={`today-flow-lane ${dropTarget?.lane === "side" && !dropTarget.id ? "is-drop-empty" : ""}`}
+              data-dashboard-lane="side"
+              aria-label="Rotina e acompanhamento"
+            >
+              {flowLanes.side.map(renderWidget)}
+              {!flowLanes.side.length ? (
+                <p className="today-flow-empty">
+                  Sua coluna de apoio está livre.
+                </p>
+              ) : null}
+            </aside>
+          </div>
         </div>
       </div>
+      {dragState ? (
+        <div
+          className="today-drag-ghost"
+          style={{ left: dragState.x + 12, top: dragState.y + 12 }}
+        >
+          <Icon name="drag_indicator" />
+          {dragState.label}
+        </div>
+      ) : null}
 
       {showWidgetCatalog ? (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowWidgetCatalog(false); }}>
-          <section className="w-full max-w-2xl rounded-3xl bg-[color:var(--surface)] p-6 shadow-2xl">
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget)
+              setShowWidgetCatalog(false);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label="Widgets da tela Hoje"
+            className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-[color:var(--surface)] p-6 shadow-2xl"
+          >
             <header className="flex items-start justify-between gap-4">
-              <div><span className="campus-eyebrow">Personalização</span><h2 className="mt-1 text-xl font-black">Widgets da tela Hoje</h2><p className="mt-1 text-sm text-[color:var(--on-surface-variant)]">Escolha o que aparece no painel. No modo de edição, arraste para reorganizar.</p></div>
-              <button type="button" onClick={() => setShowWidgetCatalog(false)} className="rounded-xl p-2 hover:bg-[color:var(--surface-container-high)]"><Icon name="close" /></button>
+              <div>
+                <span className="campus-eyebrow">Personalização</span>
+                <h2 className="mt-1 text-xl font-black">
+                  Widgets da tela Hoje
+                </h2>
+                <p className="mt-1 text-sm text-[color:var(--on-surface-variant)]">
+                  Escolha o que aparece no painel. No modo de edição, arraste
+                  para reorganizar.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Fechar catálogo de widgets"
+                onClick={() => setShowWidgetCatalog(false)}
+                className="rounded-xl p-2 hover:bg-[color:var(--surface-container-high)]"
+              >
+                <Icon name="close" />
+              </button>
             </header>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button type="button" onClick={openStickyNotes} className="flex items-center gap-3 rounded-2xl border border-dashed border-amber-500/50 bg-amber-500/[0.06] p-4 text-left text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15"><Icon name="sticky_note_2" /></span><span><strong className="block text-sm">Gerenciar Sticky Notes</strong><small>Fixe uma nota para mostrar no Hoje</small></span></button>
+              <button
+                type="button"
+                onClick={openStickyNotes}
+                className="flex items-center gap-3 rounded-2xl border border-dashed border-amber-500/50 bg-amber-500/[0.06] p-4 text-left text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15">
+                  <Icon name="sticky_note_2" />
+                </span>
+                <span>
+                  <strong className="block text-sm">
+                    Gerenciar Sticky Notes
+                  </strong>
+                  <small>Fixe uma nota para mostrar no Hoje</small>
+                </span>
+              </button>
               {dashboardWidgets.map((widget) => {
                 const quickNote = widget.id.startsWith("sticky-note:")
-                  ? pinnedStickyNotes.find((note) => `sticky-note:${note.id}` === widget.id)
+                  ? pinnedStickyNotes.find(
+                      (note) => `sticky-note:${note.id}` === widget.id,
+                    )
                   : null;
-                const meta = DASHBOARD_WIDGET_META[widget.id] || (quickNote
-                  ? { label: quickNote.title || "Anotação rápida", icon: "sticky_note_2" }
-                  : { label: widget.id, icon: "widgets" });
-                return <button key={widget.id} type="button" onClick={() => toggleDashboardWidget(widget.id)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${widget.visible === false ? "border-[color:var(--outline-variant)]/25 opacity-60" : "border-[color:var(--primary)]/30 bg-[color:var(--primary)]/5"}`}><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--surface-container-high)] text-[color:var(--primary)]"><Icon name={meta.icon} /></span><span className="min-w-0 flex-1"><strong className="block text-sm">{meta.label}</strong><small className="text-[color:var(--on-surface-variant)]">{widget.visible === false ? "Oculto" : `Visível · ${widget.size}/12 colunas`}</small></span><Icon name={widget.visible === false ? "visibility_off" : "visibility"} /></button>;
+                const meta =
+                  DASHBOARD_WIDGET_META[widget.id] ||
+                  (quickNote
+                    ? {
+                        label: quickNote.title || "Anotação rápida",
+                        icon: "sticky_note_2",
+                      }
+                    : { label: widget.id, icon: "widgets" });
+                return (
+                  <button
+                    key={widget.id}
+                    type="button"
+                    onClick={() => toggleDashboardWidget(widget.id)}
+                    className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${widget.visible === false ? "border-[color:var(--outline-variant)]/25 opacity-60" : "border-[color:var(--primary)]/30 bg-[color:var(--primary)]/5"}`}
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--surface-container-high)] text-[color:var(--primary)]">
+                      <Icon name={meta.icon} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <strong className="block text-sm">{meta.label}</strong>
+                      <small className="text-[color:var(--on-surface-variant)]">
+                        {widget.visible === false ? "Oculto" : "Visível"}
+                      </small>
+                    </span>
+                    <Icon
+                      name={
+                        widget.visible === false
+                          ? "visibility_off"
+                          : "visibility"
+                      }
+                    />
+                  </button>
+                );
               })}
             </div>
             {pinnedStickyNotes.length ? (
               <section className="mt-6 border-t border-[color:var(--outline-variant)]/20 pt-5">
                 <div className="mb-3 flex items-center justify-between">
-                  <div><span className="campus-eyebrow">Sticky Notes fixadas</span><p className="mt-1 text-xs text-[color:var(--on-surface-variant)]">Remover daqui não apaga a nota.</p></div>
-                  <span className="rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-black text-amber-700 dark:text-amber-300">{pinnedStickyNotes.length}</span>
+                  <div>
+                    <span className="campus-eyebrow">Sticky Notes fixadas</span>
+                    <p className="mt-1 text-xs text-[color:var(--on-surface-variant)]">
+                      Remover daqui não apaga a nota.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-black text-amber-700 dark:text-amber-300">
+                    {pinnedStickyNotes.length}
+                  </span>
                 </div>
                 <div className="space-y-2">
                   {pinnedStickyNotes.map((note) => (
-                    <div key={note.id} className="flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300"><Icon name="sticky_note_2" /></span>
-                      <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{note.title || "Anotação sem título"}</strong><small className="block truncate text-[color:var(--on-surface-variant)]">{note.content || "Sem conteúdo"}</small></span>
-                      <button type="button" className="rounded-xl p-2 text-[color:var(--on-surface-variant)] hover:bg-amber-500/10 hover:text-amber-700" title={`Remover ${note.title || "anotação"} do Hoje`} onClick={() => unpinDashboardStickyNote(note)}><Icon name="keep_off" className="text-[18px]" /></button>
+                    <div
+                      key={note.id}
+                      className="flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-3"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                        <Icon name="sticky_note_2" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <strong className="block truncate text-sm">
+                          {note.title || "Anotação sem título"}
+                        </strong>
+                        <small className="block truncate text-[color:var(--on-surface-variant)]">
+                          {note.content || "Sem conteúdo"}
+                        </small>
+                      </span>
+                      <button
+                        type="button"
+                        className="rounded-xl p-2 text-[color:var(--on-surface-variant)] hover:bg-amber-500/10 hover:text-amber-700"
+                        title={`Remover ${note.title || "anotação"} do Hoje`}
+                        onClick={() => unpinDashboardStickyNote(note)}
+                      >
+                        <Icon name="keep_off" className="text-[18px]" />
+                      </button>
                     </div>
                   ))}
                 </div>
               </section>
             ) : null}
             <footer className="mt-6 flex justify-between gap-3 border-t border-[color:var(--outline-variant)]/20 pt-4">
-              <button type="button" className="campus-secondary-button" onClick={resetDashboardWidgets}><Icon name="restart_alt" /> Restaurar padrão</button>
-              <button type="button" className="campus-primary-button" onClick={() => { setShowWidgetCatalog(false); setEditingWidgets(true); }}><Icon name="dashboard_customize" /> Organizar agora</button>
+              <button
+                type="button"
+                className="campus-secondary-button"
+                onClick={resetDashboardWidgets}
+              >
+                <Icon name="restart_alt" /> Restaurar padrão
+              </button>
+              <button
+                type="button"
+                className="campus-primary-button"
+                onClick={() => {
+                  setShowWidgetCatalog(false);
+                  setEditingWidgets(true);
+                }}
+              >
+                <Icon name="swap_vert" /> Organizar widgets
+              </button>
             </footer>
           </section>
         </div>
@@ -1603,7 +1721,9 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
 function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
   const [targetMl, setTargetMl] = useState(waterTracker.targetMl || 2000);
   const [cupSizeMl, setCupSizeMl] = useState(waterTracker.cupSizeMl || 250);
-  const [bottleSizeMl, setBottleSizeMl] = useState(waterTracker.bottleSizeMl || 500);
+  const [bottleSizeMl, setBottleSizeMl] = useState(
+    waterTracker.bottleSizeMl || 500,
+  );
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1621,9 +1741,12 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
   };
 
   const parsedTargetNum = parseFloat(String(targetMl).replace(/[^\d.]/g, ""));
-  const displayLiters = Number.isFinite(parsedTargetNum) && parsedTargetNum > 0
-    ? (parsedTargetNum <= 15 ? parsedTargetNum : parsedTargetNum / 1000)
-    : 2;
+  const displayLiters =
+    Number.isFinite(parsedTargetNum) && parsedTargetNum > 0
+      ? parsedTargetNum <= 15
+        ? parsedTargetNum
+        : parsedTargetNum / 1000
+      : 2;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
@@ -1634,11 +1757,19 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
               <Icon name="water_drop" className="text-[22px]" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-[color:var(--on-surface)]">Configurações de Hidratação</h2>
-              <p className="text-xs text-[color:var(--on-surface-variant)]">Personalize sua meta e atalhos diários</p>
+              <h2 className="text-lg font-black text-[color:var(--on-surface)]">
+                Configurações de Hidratação
+              </h2>
+              <p className="text-xs text-[color:var(--on-surface-variant)]">
+                Personalize sua meta e atalhos diários
+              </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-high)]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-high)]"
+          >
             <Icon name="close" />
           </button>
         </div>
@@ -1651,17 +1782,19 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
                 Meta Diária de Água
               </label>
               <span className="text-xs font-black text-cyan-500">
-                {displayLiters.toFixed(1).replace('.0', '')} L ({displayLiters * 1000} ml)
+                {displayLiters.toFixed(1).replace(".0", "")} L (
+                {displayLiters * 1000} ml)
               </span>
             </div>
             <div className="grid grid-cols-5 gap-1.5 mb-3">
-              {[2000, 3000, 4000, 5000, 6000].map(amt => (
+              {[2000, 3000, 4000, 5000, 6000].map((amt) => (
                 <button
                   key={amt}
                   type="button"
                   onClick={() => setTargetMl(amt)}
                   className={`py-2 text-[11px] font-extrabold rounded-xl border transition-all ${
-                    Number(targetMl) === amt || (parsedTargetNum <= 15 && parsedTargetNum * 1000 === amt)
+                    Number(targetMl) === amt ||
+                    (parsedTargetNum <= 15 && parsedTargetNum * 1000 === amt)
                       ? "bg-cyan-500 text-white border-cyan-500 shadow-md shadow-cyan-500/20"
                       : "bg-[color:var(--surface-container-low)] text-[color:var(--on-surface)] border-[color:var(--outline-variant)]/30 hover:border-cyan-500/50"
                   }`}
@@ -1677,11 +1810,13 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
                 max="15"
                 step="0.1"
                 value={targetMl}
-                onChange={e => setTargetMl(e.target.value)}
+                onChange={(e) => setTargetMl(e.target.value)}
                 placeholder="Ex: 5 ou 5000"
                 className="w-full bg-[color:var(--surface-container-low)] border border-[color:var(--outline-variant)]/30 rounded-xl px-4 py-3 text-sm font-bold text-[color:var(--on-surface)] outline-none focus:border-cyan-500"
               />
-              <span className="absolute right-4 text-xs font-bold text-[color:var(--on-surface-variant)] opacity-70">Litros (L) ou ml</span>
+              <span className="absolute right-4 text-xs font-bold text-[color:var(--on-surface-variant)] opacity-70">
+                Litros (L) ou ml
+              </span>
             </div>
           </div>
 
@@ -1691,7 +1826,7 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
               Tamanho da Garrafa (Atalho 1 - Garrafa)
             </label>
             <div className="grid grid-cols-3 gap-2 mb-2">
-              {[500, 750, 1000].map(sz => (
+              {[500, 750, 1000].map((sz) => (
                 <button
                   key={sz}
                   type="button"
@@ -1713,11 +1848,13 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
                 max="5000"
                 step="50"
                 value={bottleSizeMl}
-                onChange={e => setBottleSizeMl(e.target.value)}
+                onChange={(e) => setBottleSizeMl(e.target.value)}
                 placeholder="Personalizado (ml)"
                 className="w-full bg-[color:var(--surface-container-low)] border border-[color:var(--outline-variant)]/30 rounded-xl px-4 py-2 text-xs font-bold text-[color:var(--on-surface)] outline-none focus:border-cyan-500"
               />
-              <span className="absolute right-4 text-[11px] font-bold text-[color:var(--on-surface-variant)] opacity-70">ml customizado</span>
+              <span className="absolute right-4 text-[11px] font-bold text-[color:var(--on-surface-variant)] opacity-70">
+                ml customizado
+              </span>
             </div>
           </div>
 
@@ -1727,7 +1864,7 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
               Tamanho do Copo (Atalho 2 - Copo)
             </label>
             <div className="grid grid-cols-3 gap-2 mb-2">
-              {[200, 250, 300].map(sz => (
+              {[200, 250, 300].map((sz) => (
                 <button
                   key={sz}
                   type="button"
@@ -1749,11 +1886,13 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
                 max="2000"
                 step="10"
                 value={cupSizeMl}
-                onChange={e => setCupSizeMl(e.target.value)}
+                onChange={(e) => setCupSizeMl(e.target.value)}
                 placeholder="Personalizado (ml)"
                 className="w-full bg-[color:var(--surface-container-low)] border border-[color:var(--outline-variant)]/30 rounded-xl px-4 py-2 text-xs font-bold text-[color:var(--on-surface)] outline-none focus:border-cyan-500"
               />
-              <span className="absolute right-4 text-[11px] font-bold text-[color:var(--on-surface-variant)] opacity-70">ml customizado</span>
+              <span className="absolute right-4 text-[11px] font-bold text-[color:var(--on-surface-variant)] opacity-70">
+                ml customizado
+              </span>
             </div>
           </div>
 

@@ -2980,7 +2980,7 @@ export function AcademicSubjectScreen({ onNavigate }) {
                 type="button"
                 onClick={saveGeneratedPreview}
               >
-                Salvar no StudyHub
+                Salvar no masterStudy
               </button>
             </div>
           </Modal>

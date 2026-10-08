@@ -4,6 +4,7 @@ import { SCREEN_IDS } from "../app/screenIds";
 import { useStudyStore } from "../store/useStore";
 import { SettingsModal, ALL_SIDEBAR_ITEMS } from "../components/settings/SettingsModal";
 import { isPrimaryShortcut, shortcutLabel } from "../utils/keyboardShortcuts";
+import { DEFAULT_SIDEBAR_ORDER } from "../domain/sidebarNavigation";
 
 export function StandardSidebar({
   activeScreen,
@@ -11,16 +12,7 @@ export function StandardSidebar({
   isCompact = false,
   onToggleCompact,
 }) {
-  const sidebarOrder = useStudyStore((state) => state.sidebarOrder || [
-    "dashboard",
-    "courses",
-    "projects",
-    "books",
-    "materials",
-    "journal",
-    "knowledge",
-    "reviews",
-  ]);
+  const sidebarOrder = useStudyStore((state) => state.sidebarOrder || DEFAULT_SIDEBAR_ORDER);
   const sidebarHiddenItems = useStudyStore((state) => state.sidebarHiddenItems || []);
   const isSettingsModalOpen = useStudyStore((state) => state.isSettingsModalOpen);
   const openSettingsModal = useStudyStore((state) => state.openSettingsModal);
@@ -37,6 +29,12 @@ export function StandardSidebar({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [openSettingsModal]);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("auth") === "recovery") {
+      openSettingsModal("account");
+    }
   }, [openSettingsModal]);
 
   const flashcardDecks = useStudyStore((state) => state.flashcardDecks || []);
@@ -75,39 +73,37 @@ export function StandardSidebar({
   return (
     <>
       <aside
-        className={`campus-sidebar relative z-20 hidden h-full shrink-0 flex-col border-r border-[color:var(--outline-variant)] bg-[color:var(--surface-container-low)] py-6 transition-[width] duration-300 md:flex ${
-          isCompact ? "w-[76px]" : "w-64"
+        className={`campus-sidebar campus-sidebar-refined relative z-20 hidden h-full shrink-0 flex-col border-r border-[color:var(--outline-variant)] bg-[color:var(--surface-container-low)] transition-[width] duration-300 md:flex ${
+          isCompact ? "w-[64px]" : "w-[232px]"
         }`}
       >
         <button
           aria-label={isCompact ? "Expandir menu" : "Recolher menu"}
-          className="absolute -right-3 top-7 z-30 flex h-7 w-7 items-center justify-center rounded border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] text-[color:var(--on-surface-variant)] hover:text-[color:var(--primary)]"
+          className="sidebar-collapse-control absolute right-3 top-5 z-30 flex h-6 w-6 items-center justify-center rounded text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-high)] hover:text-[color:var(--primary)]"
           type="button"
           onClick={onToggleCompact}
         >
           <Icon className="text-[18px]" name={isCompact ? "chevron_right" : "chevron_left"} />
         </button>
 
-        <div className={`${isCompact ? "px-3" : "px-6"}`}>
+        <div className={`sidebar-brand ${isCompact ? "px-3" : "px-4"}`}>
           <div className={`flex items-center ${isCompact ? "justify-center" : "gap-3"}`}>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[color:var(--primary)] text-white">
-              <Icon className="text-[23px]" name="school" filled />
+            <div className="sidebar-brand-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[color:var(--primary)] text-[color:var(--on-primary)]">
+              <img src={`${import.meta.env.BASE_URL}assets/masterstudy-logo.svg`} alt="" className="h-8 w-8 rounded-lg" />
             </div>
             {!isCompact ? (
               <div className="min-w-0">
-                <h1 className="truncate text-[17px] font-bold tracking-tight text-[color:var(--primary)]">CampusFlow</h1>
-                <p className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-[color:var(--on-surface-variant)]">
-                  Academic Management
-                </p>
+                <h1 className="truncate text-[15px] font-semibold tracking-tight text-[color:var(--on-surface)]">masterStudy</h1>
               </div>
             ) : null}
           </div>
         </div>
 
-        <nav className={`${isCompact ? "mt-12 px-2" : "mt-16 px-4"} flex flex-1 flex-col overflow-y-auto`}>
+        <nav aria-label="Navegação principal" className="sidebar-main-nav mt-5 px-2 flex flex-1 flex-col overflow-y-auto">
           {displayedNavItems.map((item) => {
             const active =
               item.id === activeScreen ||
+              (item.id === SCREEN_IDS.TASKS && activeScreen === SCREEN_IDS.TASK_DETAILS) ||
               (item.id === SCREEN_IDS.DASHBOARD &&
                 [
                   SCREEN_IDS.DASHBOARD,
@@ -127,6 +123,8 @@ export function StandardSidebar({
             return (
               <button
                 key={item.key}
+                aria-label={item.label}
+                aria-current={active ? "page" : undefined}
                 className={`campus-nav-item mb-1 flex w-full items-center rounded py-3 text-sm transition-colors ${
                   isCompact ? "justify-center" : "gap-3 px-4 text-left"
                 } ${
@@ -155,32 +153,21 @@ export function StandardSidebar({
           })}
         </nav>
 
-        <div className={`${isCompact ? "px-2" : "px-4"} border-t border-[color:var(--outline-variant)] pt-4`}>
-          <div className={`flex mb-4 ${isCompact ? "flex-col items-center gap-2" : "justify-center gap-4"}`}>
+        <div className="sidebar-footer px-2 border-t border-[color:var(--outline-variant)] pt-2">
+          <div>
             <button
-               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--surface-container-high)] text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-highest)] hover:text-[color:var(--primary)] transition-colors ${activeScreen === SCREEN_IDS.ACADEMIC ? 'ring-2 ring-[color:var(--primary)] text-[color:var(--primary)]' : ''}`}
+               aria-label="Calendário"
+               className={`sidebar-footer-action flex w-full items-center gap-3 text-[color:var(--on-surface-variant)] ${activeScreen === SCREEN_IDS.ACADEMIC ? 'text-[color:var(--primary)]' : ''}`}
                title="Calendário"
                onClick={() => onNavigate(SCREEN_IDS.ACADEMIC)}
             >
               <Icon name="calendar_today" className="text-[20px]" filled={activeScreen === SCREEN_IDS.ACADEMIC} />
-            </button>
-            <button
-               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--surface-container-high)] text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-highest)] hover:text-[color:var(--primary)] transition-colors ${activeScreen === SCREEN_IDS.TASKS ? 'ring-2 ring-[color:var(--primary)] text-[color:var(--primary)]' : ''}`}
-               title="Tarefas"
-               onClick={() => onNavigate(SCREEN_IDS.TASKS)}
-            >
-              <Icon name="checklist" className="text-[20px]" filled={activeScreen === SCREEN_IDS.TASKS} />
-            </button>
-            <button
-               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary)]/90 transition-colors shadow-sm"
-               title="Sessão de foco"
-               onClick={() => onNavigate(SCREEN_IDS.POMODORO)}
-            >
-              <Icon name="timer" className="text-[20px]" />
+              {!isCompact && <span>Agenda</span>}
             </button>
           </div>
 
           {/* Botão Único de Configurações no Rodapé da Sidebar */}
+          <button type="button" title="Resumo dos atalhos" aria-label="Resumo dos atalhos" className="flex items-center gap-2 px-3 py-2 text-xs text-[color:var(--on-surface-variant)]" onClick={() => openSettingsModal("shortcuts")}><Icon name="keyboard" />{!isCompact && "Atalhos"}</button>
           <button
             type="button"
             title={`Configurações (${shortcutLabel("Mod+,")})`}
@@ -209,9 +196,6 @@ export function StandardSidebar({
             {!isCompact ? (
               <span className="min-w-0 flex-1">
                 <span className="block font-bold text-xs truncate">Configurações</span>
-                <span className="block text-[10px] font-medium opacity-70 truncate">
-                  Aparência, sidebar e conta
-                </span>
               </span>
             ) : null}
           </button>

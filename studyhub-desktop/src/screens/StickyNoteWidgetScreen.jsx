@@ -1,3 +1,4 @@
+import { StickyMarkdown } from "../components/StickyMarkdown";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../ui/Icon";
 import { useStudyStore } from "../store/useStore";
@@ -76,7 +77,7 @@ export function StickyNoteWidgetScreen({ noteId }) {
       style={{ WebkitAppRegion: "drag" }}
     >
       <article
-        className="flex h-full w-full flex-col overflow-hidden rounded-2xl border shadow-2xl"
+        className="relative flex h-full w-full flex-col overflow-hidden rounded-2xl border shadow-sm"
         style={{
           backgroundColor: theme.background,
           borderColor: theme.border,
@@ -86,9 +87,9 @@ export function StickyNoteWidgetScreen({ noteId }) {
         <header className="flex h-11 shrink-0 items-center justify-between border-b border-black/10 px-3">
           <div className="flex min-w-0 items-center gap-2 text-xs font-black uppercase tracking-[0.13em] opacity-65">
             <Icon className="text-[17px]" filled name="sticky_note_2" />
-            <span className="truncate">StudyHub</span>
+            <span className="truncate">masterStudy</span>
           </div>
-          <div
+          {<div
             className="flex items-center gap-0.5"
             style={{ WebkitAppRegion: "no-drag" }}
           >
@@ -103,10 +104,10 @@ export function StickyNoteWidgetScreen({ noteId }) {
               <Icon className="text-[16px]" filled={note.alwaysOnTop} name="keep" />
             </button>
             <button
-              aria-label="Abrir o StudyHub"
+              aria-label="Abrir o masterStudy"
               className="flex h-7 w-7 items-center justify-center rounded-full opacity-55 transition hover:bg-black/10 hover:opacity-100"
               onClick={() => window.studyhubDesktop?.openMainWindow?.()}
-              title="Abrir o StudyHub"
+              title="Abrir o masterStudy"
               type="button"
             >
               <Icon className="text-[16px]" name="launch" />
@@ -129,7 +130,7 @@ export function StickyNoteWidgetScreen({ noteId }) {
             >
               <Icon className="text-[16px]" name="close" />
             </button>
-          </div>
+          </div>}
         </header>
 
         <div
@@ -145,17 +146,7 @@ export function StickyNoteWidgetScreen({ noteId }) {
             placeholder="Título"
             value={note.title}
           />
-          <textarea
-            aria-label="Conteúdo da nota"
-            className="mt-2 min-h-0 w-full flex-1 resize-none border-0 bg-transparent p-0 text-sm leading-6 placeholder:text-current placeholder:opacity-35 focus:ring-0"
-            maxLength={10000}
-            disabled={!storageReady}
-            onChange={(event) => commitUpdate({ content: event.target.value })}
-            placeholder="Escreva alguma coisa…"
-            ref={contentRef}
-            spellCheck
-            value={note.content}
-          />
+          <StickyMarkdown content={note.content} onChange={content => commitUpdate({ content })} textareaProps={{ 'aria-label': 'Conteúdo da nota', className: 'mt-2 min-h-0 w-full flex-1 resize-none border-0 bg-transparent p-0 text-sm leading-6 focus:ring-0', maxLength: 10000, disabled: !storageReady, placeholder: 'Escreva alguma coisa…', ref: contentRef, spellCheck: true }} />
           <div className="mt-2 flex items-center gap-1 border-t border-black/10 pt-2 text-[10px] font-bold opacity-45">
             <Icon className="text-[13px]" name={storageReady ? "cloud_done" : "sync"} />
             {storageReady ? "Salvo automaticamente" : "Sincronizando…"}

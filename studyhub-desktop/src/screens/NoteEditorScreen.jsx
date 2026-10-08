@@ -1,3 +1,4 @@
+import { nestedNoteContext } from "../domain/nestedNotes";
 import { useCallback, useState, useEffect, useRef } from "react";
 import { Icon } from "../ui/Icon";
 import { SCREEN_IDS } from "../app/screenIds";
@@ -380,9 +381,10 @@ export function NoteEditorScreen({ onNavigate }) {
     const childId = `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     addNote({
       id: childId,
-      title: "Nova nota interna",
+      // O título herdado mantém a origem da aula/nota visível na árvore do vault.
+      title: `Nota interna — ${data.title || "Sem título"}`,
       content: "",
-      parentNoteId: data.id,
+      ...nestedNoteContext(data),
       sourceKind: "nested-note",
       itemType: "note",
       category: "Nota interna",
@@ -398,9 +400,9 @@ export function NoteEditorScreen({ onNavigate }) {
     const childId = `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     addNote({
       id: childId,
-      title,
+      title: title === "Nova nota interna" ? `Nota interna — ${data.title || "Sem título"}` : title,
       content: "",
-      parentNoteId: data.id,
+      ...nestedNoteContext(data),
       sourceKind: "nested-note",
       itemType: "note",
       category: "Nota interna",
@@ -408,7 +410,6 @@ export function NoteEditorScreen({ onNavigate }) {
       sourceCourseId: data.sourceCourseId || null,
       sourceLessonId: data.sourceLessonId || null,
     });
-    window.setTimeout(() => setActiveNote(childId), 0);
     return childId;
   };
 
@@ -1035,7 +1036,7 @@ export function NoteEditorScreen({ onNavigate }) {
             <span className="campus-flashcard-brand-mark">
               <Icon name="school" />
             </span>
-            <span>CampusFlow</span>
+            <span>masterStudy</span>
           </button>
 
           <nav aria-label="Navegação da revisão">
@@ -1331,7 +1332,7 @@ export function NoteEditorScreen({ onNavigate }) {
           <div className="campus-note-document-header">
             <div>
               <span className="campus-note-eyebrow">
-                {selectedAcademicSubject?.code || "MATERIAL DE ESTUDO"}
+                {data.category === "Nota de aula" || data.classLogId ? `NOTA DE AULA · ${selectedAcademicSubject?.name || "Disciplina"}${data.date ? ` · ${new Date(`${data.date}T12:00:00`).toLocaleDateString("pt-BR")}` : ""}` : selectedAcademicSubject?.code || "MATERIAL DE ESTUDO"}
               </span>
               <input
                 className="campus-note-title-input"
@@ -1476,6 +1477,7 @@ export function NoteEditorScreen({ onNavigate }) {
               onSelectionChange={setSelectedNoteText}
               onNestedNoteClick={(childId) => setActiveNote(childId)}
               onCreateNestedNote={handleCreateEmbeddedChildNote}
+              nestedNoteTitle={`Nota interna — ${data.title || "Sem título"}`}
               onTimeClick={handleTimestampClick}
               onAiChatLinkClick={({ threadId, msgId }) => {
                 setTargetChatThreadId(threadId);

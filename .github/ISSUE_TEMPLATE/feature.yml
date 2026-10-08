@@ -1,0 +1,23 @@
+name: Propor melhoria
+description: Uma necessidade de uso com um resultado verificável.
+title: "[Melhoria]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema de uso
+      description: "Quem precisa disso e em qual situação?"
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Resultado e critérios de conclusão
+      description: "Descreva como verificar que a melhoria resolveu o problema."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas e limites
+      description: "Inclua plataforma, persistência, privacidade e impacto em dados quando relevantes."

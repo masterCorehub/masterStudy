@@ -160,7 +160,7 @@ export function TranslatorPopup() {
     let unsubscribe;
 
     if (!api) {
-      showError(null, "O tradutor não está disponível. Reinicie o StudyHub.");
+      showError(null, "O tradutor não está disponível. Reinicie o masterStudy.");
     } else {
       Promise.resolve(api.getSession?.())
         .then(applySession)
@@ -486,7 +486,7 @@ export function TranslatorPopup() {
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-sm font-black tracking-tight">Tradutor rápido</h1>
           <p className="truncate text-[10px] font-semibold text-[color:var(--on-surface-variant)]">
-            StudyHub
+            masterStudy
           </p>
         </div>
         <button

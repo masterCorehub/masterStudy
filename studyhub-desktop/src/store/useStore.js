@@ -1,4 +1,8 @@
+import { allBookCategories, validateBookCategoryName, removeBookCategory, migrateBookCategories } from "../domain/bookCategories";
+import { repairNestedNotes } from "../domain/nestedNotes";
+import { mergeMigratedStickyNotes } from "../domain/stickyNoteMigration";
 import { create } from "zustand";
+import { reorderDashboardFlow, stepDashboardFlow } from "../domain/dashboardFlow";
 import { persist } from "zustand/middleware";
 import {
   ACADEMIC_COLLECTIONS,
@@ -6,6 +10,10 @@ import {
   normalizeAcademicData,
 } from "../domain/academic";
 import { getLocalDateKey } from "../utils/dateUtils";
+import { DEFAULT_SIDEBAR_ORDER, restoreTasksNavigation } from "../domain/sidebarNavigation";
+import { taskCompletionUpdates } from "../domain/taskDates";
+import { THEME_IDS, getThemeById } from "../theme/themes";
+import { DEFAULT_DASHBOARD_WIDGETS, upgradeDashboardComposition, fitWidgetToContent, resolveWidgetLayout, compactWidgetLayout, moveWidgetInList } from "../domain/dashboardLayout";
 import {
   DEFAULT_JOURNAL_SETTINGS,
   normalizeImportantQuote,
@@ -78,23 +86,18 @@ const normalizeStickyNotes = (notes) =>
     title: String(note?.title || ""),
     content: String(note?.content || ""),
     color: STICKY_NOTE_COLORS.has(note?.color) ? note.color : "yellow",
+    // O tamanho no Hoje é independente da janela flutuante do desktop.
+    dashboardSize: {
+      width: Number.isFinite(note?.dashboardSize?.width) ? Math.max(240, Math.min(1600, note.dashboardSize.width)) : null,
+      height: Number.isFinite(note?.dashboardSize?.height) ? Math.max(180, Math.min(800, note.dashboardSize.height)) : 240,
+    },
     pinned: Boolean(note?.pinned),
-    alwaysOnTop: Boolean(note?.alwaysOnTop),
+    desktopOnly: false, // Migrate retired desktop placement without changing note content.
+    alwaysOnTop: Boolean(note?.alwaysOnTop && !note?.desktopOnly),
     archived: Boolean(note?.archived),
     createdAt: Number(note?.createdAt || Date.now()),
     updatedAt: Number(note?.updatedAt || note?.createdAt || Date.now()),
   }));
-
-const DEFAULT_DASHBOARD_WIDGETS = [
-  { id: "schedule", visible: true, size: 12, rowSpan: 5, x: 0, y: 0 },
-  { id: "summary", visible: true, size: 4, rowSpan: 2, x: 0, y: 5 },
-  { id: "focus", visible: true, size: 4, rowSpan: 2, x: 4, y: 5 },
-  { id: "deadlines", visible: true, size: 4, rowSpan: 2, x: 8, y: 5 },
-  { id: "habits", visible: true, size: 8, rowSpan: 6, x: 0, y: 10 },
-  { id: "water", visible: true, size: 4, rowSpan: 5, x: 8, y: 10 },
-  { id: "flashcards", visible: true, size: 4, rowSpan: 2, x: 8, y: 15 },
-  { id: "tasks", visible: true, size: 8, rowSpan: 5, x: 0, y: 16 },
-];
 
 const normalizeDashboardWidgets = (widgets) => {
   const saved = new Map(
@@ -105,12 +108,12 @@ const normalizeDashboardWidgets = (widgets) => {
     ...(saved.get(fallback.id) || {}),
     id: fallback.id,
   }));
-  return [
+  return resolveWidgetLayout([
     ...normalized,
     ...(Array.isArray(widgets)
       ? widgets.filter((widget) => widget.id !== "quick-notes" && !DEFAULT_DASHBOARD_WIDGETS.some((item) => item.id === widget.id))
       : []),
-  ];
+  ]);
 };
 
 const ensureQuickNoteWidgets = (widgets, quickNotes = []) => {
@@ -152,14 +155,14 @@ const ensureStickyNoteWidgets = (widgets, stickyNotes = []) => {
       y: index < 3 ? 7 : 21 + Math.floor((index - 3) / 3) * 3,
     }))
     .filter((widget) => !existing.has(widget.id));
-  return [
+  return resolveWidgetLayout([
     ...normalized.filter(
       (widget) =>
         !widget.id.startsWith("quick-note:") &&
         (!widget.id.startsWith("sticky-note:") || noteIds.has(widget.id)),
     ),
     ...dynamic,
-  ];
+  ]);
 };
 
 const migrateDashboardNotesToStickyNotes = (state = {}) => {
@@ -193,11 +196,7 @@ const migrateDashboardNotesToStickyNotes = (state = {}) => {
     createdAt: Number(note.createdAt || Date.now()),
     updatedAt: Number(note.updatedAt || note.createdAt || Date.now()),
   }));
-  const existingIds = new Set(currentStickyNotes.map((note) => note.id));
-  const stickyNotes = [
-    ...currentStickyNotes,
-    ...migrated.filter((note) => !existingIds.has(note.id)),
-  ];
+  const stickyNotes = mergeMigratedStickyNotes(currentStickyNotes, migrated, state.universalTrash);
   const legacyIdMap = new Map(
     legacyNotes.map((note, index) => [
       `quick-note:${note.id}`,
@@ -212,78 +211,6 @@ const migrateDashboardNotesToStickyNotes = (state = {}) => {
     stickyNotes,
     dashboardWidgets: ensureStickyNoteWidgets(dashboardWidgets, stickyNotes),
   };
-};
-
-const dashboardWidgetsOverlap = (left, right) =>
-  Number(left.x || 0) < Number(right.x || 0) + Number(right.size || 12) &&
-  Number(left.x || 0) + Number(left.size || 12) > Number(right.x || 0) &&
-  Number(left.y || 0) < Number(right.y || 0) + Number(right.rowSpan || 3) &&
-  Number(left.y || 0) + Number(left.rowSpan || 3) > Number(right.y || 0);
-
-const findFreeDashboardWidgetPosition = (widget, occupied, preferred = null) => {
-  const width = Number(widget.size || 12);
-  const fits = (candidate) =>
-    candidate.x >= 0 &&
-    candidate.x + width <= 12 &&
-    !occupied.some((placed) => dashboardWidgetsOverlap(candidate, placed));
-  if (preferred) {
-    const candidate = {
-      ...widget,
-      x: Math.max(0, Math.min(12 - width, Number(preferred.x || 0))),
-      y: Math.max(0, Number(preferred.y || 0)),
-    };
-    if (fits(candidate)) return candidate;
-  }
-  const searchLimit = Math.max(
-    24,
-    ...occupied.map((placed) => Number(placed.y || 0) + Number(placed.rowSpan || 3) + 12),
-  );
-  for (let y = 0; y <= searchLimit; y += 1) {
-    for (let x = 0; x <= 12 - width; x += 1) {
-      const candidate = { ...widget, x, y };
-      if (fits(candidate)) return candidate;
-    }
-  }
-  return { ...widget, x: 0, y: searchLimit + 1 };
-};
-
-const resolveDashboardWidgetCollisions = (
-  widgets,
-  primaryId,
-  primaryWidget,
-  preferredForCollision = null,
-) => {
-  const placedById = new Map([[primaryId, primaryWidget]]);
-  const occupied = [primaryWidget];
-  let usedPreferred = false;
-  widgets.forEach((widget) => {
-    if (widget.id === primaryId) return;
-    if (widget.visible === false) {
-      placedById.set(widget.id, widget);
-      return;
-    }
-    const normalized = {
-      ...widget,
-      x: Number(widget.x || 0),
-      y: Number(widget.y || 0),
-      size: Number(widget.size || 12),
-      rowSpan: Number(widget.rowSpan || 3),
-    };
-    if (!occupied.some((placed) => dashboardWidgetsOverlap(normalized, placed))) {
-      placedById.set(widget.id, normalized);
-      occupied.push(normalized);
-      return;
-    }
-    const relocated = findFreeDashboardWidgetPosition(
-      normalized,
-      occupied,
-      usedPreferred ? null : preferredForCollision,
-    );
-    usedPreferred = true;
-    placedById.set(widget.id, relocated);
-    occupied.push(relocated);
-  });
-  return widgets.map((widget) => placedById.get(widget.id) || widget);
 };
 
 const recalculateCourse = (course) => {
@@ -640,6 +567,18 @@ const normalizeStudyItem = (item = {}) => {
   const itemType = inferStudyItemType(item);
   const sourceKind =
     item.sourceKind || (itemType === "drawing" ? "drawing-note" : "note");
+  const isLessonNote = Boolean(item.sourceLessonId || item.sourceLessonTitle || item.lessonId);
+  const lessonDate = item.lessonDate || item.createdAt || now;
+  const lessonDateLabel = new Intl.DateTimeFormat("pt-BR").format(new Date(lessonDate));
+  const fallbackTitle = isLessonNote
+    ? `Nota da aula — ${lessonDateLabel}`
+    : itemType === "drawing"
+      ? sourceKind === "quick-draw"
+        ? "Desenho rapido"
+        : "Desenho"
+      : sourceKind === "quick-note"
+        ? "Nota rapida"
+        : "Anotacao";
 
   return {
     id: item.id || `study-item-${now}`,
@@ -652,15 +591,7 @@ const normalizeStudyItem = (item = {}) => {
     isArchived: Boolean(item.isArchived),
     pinned: Boolean(item.pinned),
     accent: item.accent || "primary",
-    title:
-      item.title ??
-      (itemType === "drawing"
-        ? sourceKind === "quick-draw"
-          ? "Desenho rapido"
-          : "Desenho"
-        : sourceKind === "quick-note"
-          ? "Nota rapida"
-          : "Anotacao"),
+    title: item.title || fallbackTitle,
     content: item.content || "",
     drawings: item.drawings || [],
     category:
@@ -678,6 +609,7 @@ const normalizeStudyItem = (item = {}) => {
     sourceModuleId: item.sourceModuleId || null,
     sourceLessonId: item.sourceLessonId || null,
     sourceLessonTitle: item.sourceLessonTitle || "",
+    lessonDate: item.lessonDate || (isLessonNote ? lessonDate : null),
     createdAt: item.createdAt || now,
     updatedAt: item.updatedAt || item.createdAt || now,
     displaySettings: item.displaySettings || {
@@ -690,6 +622,8 @@ const normalizeStudyItem = (item = {}) => {
     path: item.path || "",
     markdownContent: item.markdownContent || "",
     ...item,
+    title: item.title || fallbackTitle,
+    lessonDate: item.lessonDate || (isLessonNote ? lessonDate : null),
     itemType,
     type: itemType,
     noteType: itemType === "drawing" ? "drawing" : item.noteType || "note",
@@ -713,11 +647,11 @@ const deriveLegacyNotes = (studyItems = []) => {
 
 const migrateStudyItems = (state) => {
   if (Array.isArray(state?.studyItems) && state.studyItems.length > 0) {
-    return sortStudyItems(state.studyItems.map(normalizeStudyItem));
+    return sortStudyItems(repairNestedNotes(state.studyItems.map(normalizeStudyItem)));
   }
 
   const legacyNotes = Array.isArray(state?.notes?.list) ? state.notes.list : [];
-  return sortStudyItems(legacyNotes.map(normalizeStudyItem));
+  return sortStudyItems(repairNestedNotes(legacyNotes.map(normalizeStudyItem)));
 };
 
 const migrateAcademicContexts = (state = {}) => {
@@ -786,7 +720,7 @@ export const DEFAULT_KNOWLEDGE_ITEMS = [];
 
 export const useStudyStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       courses: [],
       flashcardDecks: [],
       flashcardReviewHistory: [],
@@ -813,6 +747,7 @@ export const useStudyStore = create(
       tasks: { list: [] },
       habits: { list: [] },
       books: { list: [] },
+      bookCategories: [],
       universalTrash: [],
       universalHistory: [],
       activeBookId: null,
@@ -872,17 +807,8 @@ export const useStudyStore = create(
       immersionSeekTo: null,
       isDarkMode: false,
       themePreference: "system",
-      sidebarOrder: [
-        "dashboard",
-        "courses",
-        "projects",
-        "books",
-        "materials",
-        "journal",
-        "sticky-notes",
-        "knowledge",
-        "reviews",
-      ],
+      sidebarOrder: DEFAULT_SIDEBAR_ORDER,
+      sidebarNavigationVersion: 1,
       sidebarHiddenItems: [],
       sidebarQuickActions: ["calendar", "tasks", "pomodoro"],
       knowledgeItems: DEFAULT_KNOWLEDGE_ITEMS,
@@ -1193,6 +1119,7 @@ export const useStudyStore = create(
           const migrated = migrateDashboardNotesToStickyNotes(state);
           return {
             stickyNotes: migrated.stickyNotes,
+            dashboardQuickNote: "",
             dashboardQuickNotes: [],
             dashboardWidgets: migrated.dashboardWidgets,
           };
@@ -1252,77 +1179,49 @@ export const useStudyStore = create(
           next.splice(targetIndex, 0, moved);
           return { dashboardWidgets: next };
         }),
-      setDashboardWidgetSize: (widgetId, size) =>
-        set((state) => {
-          const widgets = normalizeDashboardWidgets(state.dashboardWidgets);
-          const source = widgets.find((widget) => widget.id === widgetId);
-          if (!source) return state;
-          const nextSize = [4, 6, 8, 12].includes(Number(size)) ? Number(size) : source.size;
-          const candidate = { ...source, size: nextSize, x: Math.min(Number(source.x || 0), 12 - nextSize) };
-          return {
-            dashboardWidgets: resolveDashboardWidgetCollisions(
-              widgets,
-              widgetId,
-              candidate,
-            ),
-          };
+      reorderDashboardWidgetFlow: (sourceId, targetId, placement, lane) =>
+        set(state => {
+          const next = reorderDashboardFlow(state.dashboardWidgets, sourceId, targetId, placement, lane);
+          return next === state.dashboardWidgets ? state : { dashboardWidgets: next };
         }),
+      stepDashboardWidgetFlow: (id, direction) =>
+        set(state => {
+          const next = stepDashboardFlow(state.dashboardWidgets, id, direction);
+          return next === state.dashboardWidgets ? state : { dashboardWidgets: next };
+        }),
+      setDashboardWidgetSize: (widgetId, size) =>
+        set((state) => ({ dashboardWidgets: resolveWidgetLayout(normalizeDashboardWidgets(state.dashboardWidgets), widgetId, { size }) })),
       setDashboardWidgetHeight: (widgetId, rowSpan) =>
         set((state) => {
           const widgets = normalizeDashboardWidgets(state.dashboardWidgets);
-          const source = widgets.find((widget) => widget.id === widgetId);
-          if (!source) return state;
-          const candidate = { ...source, rowSpan: Math.max(2, Math.min(10, Number(rowSpan) || source.rowSpan || 3)) };
-          return {
-            dashboardWidgets: resolveDashboardWidgetCollisions(
-              widgets,
-              widgetId,
-              candidate,
-            ),
-          };
+          const target = widgets.find(widget => widget.id === widgetId);
+          if (!target) return state;
+          const automatic = rowSpan == null;
+          return { dashboardWidgets: resolveWidgetLayout(widgets, widgetId, {
+            heightMode: automatic ? "auto" : "manual",
+            requestedRowSpan: automatic ? undefined : rowSpan,
+            rowSpan: automatic ? target.minContentRows || 2 : rowSpan,
+          }) };
+        }),
+      measureDashboardWidgetContent: (widgetId, rows) =>
+        set(state => {
+          const widgets = normalizeDashboardWidgets(state.dashboardWidgets);
+          const next = fitWidgetToContent(widgets, widgetId, rows);
+          // ResizeObserver can report the same geometry more than once.
+          return next === widgets ? state : { dashboardWidgets: next };
         }),
       positionDashboardWidget: (widgetId, x, y) =>
-        set((state) => {
-          const widgets = normalizeDashboardWidgets(state.dashboardWidgets);
-          const source = widgets.find((widget) => widget.id === widgetId);
-          if (!source) return state;
-          const nextX = Math.max(0, Math.min(12 - Number(source.size || 12), Number(x) || 0));
-          const nextY = Math.max(0, Number(y) || 0);
-          const candidate = { ...source, x: nextX, y: nextY };
-          return {
-            dashboardWidgets: resolveDashboardWidgetCollisions(
-              widgets,
-              widgetId,
-              candidate,
-              { x: Number(source.x || 0), y: Number(source.y || 0) },
-            ),
-          };
-        }),
+        set((state) => ({ dashboardWidgets: resolveWidgetLayout(normalizeDashboardWidgets(state.dashboardWidgets), widgetId, { x, y }) })),
+      moveDashboardWidgetInList: (widgetId, direction) =>
+        set((state) => ({ dashboardWidgets: moveWidgetInList(normalizeDashboardWidgets(state.dashboardWidgets), widgetId, direction) })),
+      compactDashboardWidgets: () =>
+        set((state) => ({ dashboardWidgets: compactWidgetLayout(normalizeDashboardWidgets(state.dashboardWidgets)) })),
       toggleDashboardWidget: (widgetId) =>
         set((state) => {
           const widgets = normalizeDashboardWidgets(state.dashboardWidgets);
           const target = widgets.find((widget) => widget.id === widgetId);
           if (!target) return state;
-          if (target.visible !== false) {
-            return {
-              dashboardWidgets: widgets.map((widget) =>
-                widget.id === widgetId ? { ...widget, visible: false } : widget,
-              ),
-            };
-          }
-          const occupied = widgets.filter(
-            (widget) => widget.id !== widgetId && widget.visible !== false,
-          );
-          const visibleTarget = findFreeDashboardWidgetPosition(
-            { ...target, visible: true },
-            occupied,
-            target,
-          );
-          return {
-            dashboardWidgets: widgets.map((widget) =>
-              widget.id === widgetId ? visibleTarget : widget,
-            ),
-          };
+          return { dashboardWidgets: resolveWidgetLayout(widgets, widgetId, { visible: target.visible === false }) };
         }),
       resetDashboardWidgets: () =>
         set((state) => ({
@@ -1333,35 +1232,12 @@ export const useStudyStore = create(
         })),
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
       setThemePreference: (preference) => set((state) => {
-        const darkThemes = [
-          "dark",
-          "midnight-oled",
-          "dracula",
-          "catppuccin-mocha",
-          "tokyo-night",
-          "nord",
-          "matcha-forest",
-          "rose-pine",
-          "cyber-matrix",
-        ];
-        const lightThemes = [
-          "light",
-          "catppuccin-latte",
-          "rose-pine-dawn",
-          "matcha-latte",
-          "nord-light",
-          "tokyo-day",
-          "ocean-breeze",
-          "solarized-light",
-          "warm-sepia",
-        ];
-        const validThemes = ["system", ...lightThemes, ...darkThemes];
-        const nextPref = validThemes.includes(preference) ? preference : "system";
-        const isDark = darkThemes.includes(nextPref);
-        const isLight = lightThemes.includes(nextPref);
+        const nextPref = THEME_IDS.includes(preference) ? preference : "system";
+        // null means automatic: App resolves the operating-system preference.
+        const { isDark } = getThemeById(nextPref);
         return {
           themePreference: nextPref,
-          isDarkMode: isDark ? true : isLight ? false : state.isDarkMode,
+          isDarkMode: isDark ?? state.isDarkMode,
         };
       }),
       setActiveCourse: (id) => set({ activeCourseId: id }),
@@ -1798,6 +1674,63 @@ export const useStudyStore = create(
               },
             },
           };
+        }),
+      setAcademicAiChats: (subjectId, chats) =>
+        set((state) => {
+          const academic = normalizeAcademicData(state.academic);
+          const normalizedChats = (Array.isArray(chats) ? chats : []).map((chat) => ({
+            ...chat,
+            id: String(chat.id || `chat-${Date.now()}`),
+            title: String(chat.title || "Novo chat"),
+            messages: Array.isArray(chat.messages) ? chat.messages : [],
+            updatedAt: chat.updatedAt || Date.now(),
+          }));
+          return {
+            academic: {
+              ...academic,
+              aiChats: { ...(academic.aiChats || {}), [subjectId]: normalizedChats },
+            },
+          };
+        }),
+      createAcademicAiChat: (subjectId, chat = {}) => {
+        const id = chat.id || `chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        set((state) => {
+          const academic = normalizeAcademicData(state.academic);
+          const now = Date.now();
+          const nextChat = {
+            id,
+            title: String(chat.title || "Novo chat"),
+            messages: Array.isArray(chat.messages) ? chat.messages : [],
+            createdAt: chat.createdAt || now,
+            updatedAt: now,
+          };
+          return {
+            academic: {
+              ...academic,
+              aiChats: {
+                ...(academic.aiChats || {}),
+                [subjectId]: [nextChat, ...(academic.aiChats?.[subjectId] || [])],
+              },
+            },
+          };
+        });
+        return id;
+      },
+      updateAcademicAiChat: (subjectId, chatId, updates = {}) =>
+        set((state) => {
+          const academic = normalizeAcademicData(state.academic);
+          const chats = (academic.aiChats?.[subjectId] || []).map((chat) =>
+            chat.id === chatId
+              ? { ...chat, ...updates, id: chat.id, updatedAt: Date.now() }
+              : chat,
+          );
+          return { academic: { ...academic, aiChats: { ...(academic.aiChats || {}), [subjectId]: chats } } };
+        }),
+      deleteAcademicAiChat: (subjectId, chatId) =>
+        set((state) => {
+          const academic = normalizeAcademicData(state.academic);
+          const chats = (academic.aiChats?.[subjectId] || []).filter((chat) => chat.id !== chatId);
+          return { academic: { ...academic, aiChats: { ...(academic.aiChats || {}), [subjectId]: chats } } };
         }),
       replaceAcademicStudySessions: (examId, sessions) =>
         set((state) => {
@@ -2427,16 +2360,7 @@ export const useStudyStore = create(
         };
       }),
       resetSidebarConfig: () => set({
-        sidebarOrder: [
-          "dashboard",
-          "courses",
-          "projects",
-          "books",
-          "materials",
-          "journal",
-          "knowledge",
-          "reviews",
-        ],
+        sidebarOrder: [...DEFAULT_SIDEBAR_ORDER],
         sidebarHiddenItems: [],
         sidebarQuickActions: ["calendar", "tasks", "pomodoro"],
       }),
@@ -2673,6 +2597,7 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
                     workId: taskData.workId || null,
                   },
                   ...taskData,
+                  ...taskCompletionUpdates({ status: "pending" }, taskData),
                   academicSubjectId:
                     subject?.id || taskData.academicSubjectId || null,
                   academicSemesterId:
@@ -2688,10 +2613,11 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
         set((state) => {
           const current = state.tasks.list.find((task) => task.id === taskId);
           if (isReadOnlySharedItem(current)) return state;
+          const datedUpdates = taskCompletionUpdates(current, updates);
           return {
             tasks: {
               list: state.tasks.list.map((t) =>
-                t.id === taskId ? { ...t, ...updates, updatedAt: Date.now() } : t,
+                t.id === taskId ? { ...t, ...datedUpdates, updatedAt: Date.now() } : t,
               ),
             },
           };
@@ -2756,6 +2682,20 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
           },
         })),
 
+      createBookCategory: (name) => {
+        const custom = get().bookCategories || [];
+        const validName = validateBookCategoryName(allBookCategories(custom), name);
+        const id = `category-custom-${crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+        set({ bookCategories: [...custom, { id, name: validName, custom: true, createdAt: Date.now() }] });
+        return id;
+      },
+      renameBookCategory: (id, name) => set(state => ({ bookCategories: (state.bookCategories || []).map(category => category.id === id ? { ...category, name: validateBookCategoryName(allBookCategories(state.bookCategories || []), name, id) } : category) })),
+      deleteBookCategory: (id) => set(state => removeBookCategory(state.bookCategories || [], state.books?.list || [], id)),
+      categorizeBook: (bookId, categoryId) => {
+        if (categoryId && !allBookCategories(get().bookCategories || []).some(category => category.id === categoryId)) return;
+        get().updateBook(bookId, { categoryId: categoryId || null, categoryAssignmentSource: "manual" });
+      },
+
       addBook: (bookData) =>
         set((state) => {
           const newBook = {
@@ -2807,7 +2747,7 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
         set((state) => ({
           books: {
             list: (state.books?.list || []).map(b =>
-              b.id === bookId ? { ...b, lastPosition: position, updatedAt: Date.now() } : b
+              b.id === bookId ? { ...b, lastPosition: { ...b.lastPosition, ...position }, readPages: /\.epub(?:[?#]|$)/i.test(b.filePath || "") ? b.readPages || 0 : Math.max(b.readPages || 0, position.page || 0), updatedAt: Date.now() } : b
             )
           }
         })),
@@ -3825,18 +3765,23 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
     }),
     {
       name: "studyhub-storage-v2",
-      version: 21,
-      migrate: (persistedState) => {
+      version: 25,
+      migrate: (persistedState, version) => {
         const studyItems = migrateStudyItems(persistedState);
         const contextual = migrateAcademicContexts({
           ...persistedState,
           studyItems,
         });
         const migratedSticky = migrateDashboardNotesToStickyNotes(persistedState);
+        const migratedBooks = migrateBookCategories(persistedState);
 
         return {
           ...persistedState,
           ...contextual,
+          ...migratedBooks,
+          bookFolders: undefined,
+          ...(version < 24 ? restoreTasksNavigation(persistedState) : {}),
+          sidebarNavigationVersion: 1,
           collaboration: {
             ...createEmptyCollaboration(),
             ...(persistedState.collaboration || {}),
@@ -3858,8 +3803,9 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
           importTransactions: persistedState.importTransactions || [],
           universalTrash: persistedState.universalTrash || [],
           universalHistory: persistedState.universalHistory || [],
+          dashboardQuickNote: "",
           dashboardQuickNotes: [],
-          dashboardWidgets: migratedSticky.dashboardWidgets,
+          dashboardWidgets: upgradeDashboardComposition(migratedSticky.dashboardWidgets),
           activeAcademicSubjectId:
             persistedState.activeAcademicSubjectId || null,
           knowledgeItems: Array.isArray(persistedState.knowledgeItems)

@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { getTimedTaskReminders, deliverReminderOnce } from "../domain/notificationReminders";
+import { showSystemNotification } from "../services/system-notifications";
 import { useStudyStore } from "../store/useStore";
 import { Icon } from "../ui/Icon";
 import { SCREEN_IDS } from "../app/screenIds";
 import { calculateAttendance, getAcademicSemesterData } from "../domain/academic";
 
 const DISMISSED_ALERTS_KEY = "studyhub.dismissed-alerts";
-const SYSTEM_ALERTS_KEY = "studyhub.system-alerts-sent";
+const SYSTEM_ALERTS_KEY = "studyhub.system-alerts-confirmed-v2";
 
 function getDismissedAlerts() {
   try {
@@ -26,6 +28,7 @@ export function StudyAlerts({ onNavigate }) {
   );
   const [dismissedAlerts, setDismissedAlerts] = useState(getDismissedAlerts);
   const [referenceTime, setReferenceTime] = useState(Date.now);
+  const pendingNotifications = useRef(new Set());
 
   const now = referenceTime;
   const today = new Date(referenceTime);
@@ -136,53 +139,39 @@ export function StudyAlerts({ onNavigate }) {
   const visibleAlerts = alerts.filter((alert) => !dismissedAlerts.includes(alert.id));
 
   useEffect(() => {
-    const notifications = window.studyhubDesktop?.notifications;
-    if (!notifications?.show || appSettings.notificationsEnabled === false) return;
+    if (appSettings.notificationsEnabled === false) return;
 
     const todayKey = new Date().toLocaleDateString("en-CA");
-    let sent = {};
-    try {
-      sent = JSON.parse(window.localStorage.getItem(SYSTEM_ALERTS_KEY) || "{}");
-    } catch {
-      sent = {};
-    }
-
-    visibleAlerts.forEach((alert) => {
+    // Dispensar o cartão visual não desativa o lembrete do sistema.
+    [...alerts, ...getTimedTaskReminders(tasks, referenceTime)].forEach((alert) => {
       if (alert.id === "flashcards-review" && appSettings.flashcardReviewReminders === false) return;
-      if (["overdue-tasks", "upcoming-tasks", "academic-exams"].includes(alert.id) && appSettings.taskDueReminders === false) return;
+      if ((alert.id.startsWith("task-time:") || ["overdue-tasks", "upcoming-tasks", "academic-exams"].includes(alert.id)) && appSettings.taskDueReminders === false) return;
       const deliveryKey = `${todayKey}:${alert.id}`;
-      if (sent[deliveryKey]) return;
-      sent[deliveryKey] = Date.now();
-      void notifications.show({
+      void deliverReminderOnce({ key: deliveryKey, storage: window.localStorage, storageKey: SYSTEM_ALERTS_KEY, inFlight: pendingNotifications.current, send: showSystemNotification, payload: {
         title: alert.title,
-        subtitle: alert.id === "flashcards-review" ? "CampusFlow • Revisão inteligente" : "CampusFlow • Planejamento acadêmico",
+        subtitle: alert.id === "flashcards-review" ? "masterStudy • Revisão inteligente" : "masterStudy • Planejamento acadêmico",
         body: alert.message,
-        screen: alert.screen,
+        screen: alert.screen === SCREEN_IDS.TASKS ? SCREEN_IDS.TODAY : alert.screen,
         actionLabel: alert.id === "flashcards-review" ? "Revisar agora" : "Ver agora",
         persistent: alert.tone === "error",
         sound: appSettings.soundEnabled !== false,
-      }).catch(() => {
-        delete sent[deliveryKey];
-        window.localStorage.setItem(SYSTEM_ALERTS_KEY, JSON.stringify(sent));
-      });
+      } }).catch(error => console.warn("Falha ao entregar lembrete:", error.message));
     });
 
-    const recentEntries = Object.fromEntries(
-      Object.entries(sent).filter(([, timestamp]) => Date.now() - Number(timestamp) < 8 * 24 * 60 * 60 * 1000),
-    );
-    window.localStorage.setItem(SYSTEM_ALERTS_KEY, JSON.stringify(recentEntries));
   }, [
     appSettings.flashcardReviewReminders,
     appSettings.notificationsEnabled,
     appSettings.soundEnabled,
     appSettings.taskDueReminders,
-    visibleAlerts.map((alert) => alert.id).join("|"),
+    referenceTime,
+    tasks,
+    alerts.map((alert) => `${alert.id}:${alert.title}`).join("|"),
   ]);
 
   if (visibleAlerts.length === 0) return null;
 
   return (
-    <aside className="pointer-events-none fixed right-4 top-4 z-[200] flex w-[min(360px,calc(100vw-2rem))] flex-col gap-3">
+    <aside className="pointer-events-none fixed right-4 bottom-24 md:bottom-4 z-[200] flex max-h-[45vh] w-[min(360px,calc(100vw-2rem))] flex-col gap-3 overflow-y-auto">
       {visibleAlerts.map((alert) => {
         const toneClasses = {
           error: "border-[color:var(--error)]/30 text-[color:var(--error)]",

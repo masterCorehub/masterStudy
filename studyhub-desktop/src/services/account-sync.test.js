@@ -112,3 +112,27 @@ test("preserva uma edição concorrente quando o outro dispositivo exclui", () =
   assert.equal(merged.state.tasks.list[0].title, "Editada");
   assert.ok(merged.conflicts.some((path) => path.includes("task-1")));
 });
+
+test("snapshot mais recente da nuvem preserva capa e EPUB locais", () => {
+  const local = { books: { list: [{ id: "book-1", title: "Livro", updatedAt: 100, filePath: "book-file://local/livro.epub", coverUrl: "data:image/jpeg;base64,AAAA", coverSource: "file", lastPosition: { page: 2 } }] } };
+  const remote = prepareStudyStateForCloud(local);
+  remote.books.list[0].updatedAt = 200;
+  remote.books.list[0].lastPosition = { page: 12 };
+  const result = mergeStudyStates(local, local, remote).state.books.list[0];
+  assert.equal(result.coverUrl, local.books.list[0].coverUrl);
+  assert.equal(result.filePath, local.books.list[0].filePath);
+  assert.equal(result.lastPosition.page, 12);
+  // Local assets stay local: this fix does not upload book bytes to the cloud.
+  assert.equal(prepareStudyStateForCloud({ books: { list: [result] } }).books.list[0].coverUrl, undefined);
+});
+
+test("mescla inicial e concorrente mantêm capas locais sem recriar livros excluídos", () => {
+  const local = { books: { list: [{ id: "book-1", title: "Local", updatedAt: 100, coverUrl: "data:image/jpeg;base64,AAAA", coverSource: "manual" }] } };
+  const remote = { books: { list: [{ id: "book-1", title: "Remoto", updatedAt: 200 }] } };
+  assert.equal(mergeStudyStates({}, local, remote).state.books.list[0].coverUrl, local.books.list[0].coverUrl);
+  assert.equal(mergeStudyStates({}, local, remote).state.books.list[0].title, "Remoto");
+  assert.equal(mergeStudyStates(local, local, { books: { list: [] } }).state.books.list.length, 0);
+  remote.books.list[0].coverUrl = "";
+  remote.books.list[0].coverSource = "manual";
+  assert.equal(mergeStudyStates(local, local, remote).state.books.list[0].coverUrl, "");
+});

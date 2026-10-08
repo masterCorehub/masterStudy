@@ -2,9 +2,9 @@
   "name": "studyhub-desktop",
   "version": "1.1.2",
   "private": true,
-  "description": "Desktop learning workspace for StudyHub / Silk Learning",
+  "description": "masterStudy — espaço de estudos e organização acadêmica",
   "desktopName": "com.studyhub.desktop",
-  "author": "OpenAI Codex",
+  "author": "Alexandre Wayss",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -15,14 +15,14 @@
     "dev:clean": "node scripts/dev.mjs --force",
     "dev:electron": "wait-on tcp:127.0.0.1:5173 && electron .",
     "build": "vite build",
-    "test": "node --test",
+    "test": "node --test \"src/**/*.test.js\" \"electron/**/*.test.cjs\"",
     "test:e2e": "playwright test",
     "test:packaged": "node scripts/smoke-packaged.mjs",
     "check": "npm test && npm run build",
     "audit:prod": "npm audit --omit=dev --audit-level=high",
     "dist:win": "npm run build && electron-builder --win portable",
     "build:mac-widgets": "bash scripts/build-macos-widgets.sh",
-    "dist:mac:local": "npm run build && npm run build:mac-widgets && electron-builder --mac dir --arm64",
+    "dist:mac:local": "npm run build && npm run build:mac-widgets && node scripts/package-macos-local.mjs",
     "dist:linux": "npm run build && electron-builder --linux AppImage",
     "dist:linux:bundle": "bash packaging/linux/build-bundle.sh"
   },
@@ -100,7 +100,7 @@
   },
   "build": {
     "appId": "com.studyhub.desktop",
-    "productName": "StudyHub",
+    "productName": "masterStudy",
     "icon": "electron/assets/studyhub-icon.ico",
     "directories": {
       "output": "release"
@@ -108,7 +108,8 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "!**/* [0-9]*.*"
     ],
     "extraResources": [
       {
@@ -123,8 +124,10 @@
     "afterPack": "scripts/embed-macos-widgets.cjs",
     "protocols": [
       {
-        "name": "CampusFlow",
-        "schemes": ["campusflow"]
+        "name": "masterStudy",
+        "schemes": [
+          "campusflow"
+        ]
       }
     ],
     "asarUnpack": [
@@ -135,7 +138,8 @@
       "node_modules/bmp-js/**/*",
       "node_modules/is-url/**/*",
       "node_modules/regenerator-runtime/**/*",
-      "node_modules/wasm-feature-detect/**/*"
+      "node_modules/wasm-feature-detect/**/*",
+      "electron/native/*.node"
     ],
     "win": {
       "target": [
@@ -143,8 +147,11 @@
       ]
     },
     "mac": {
+      "identity": "-",
       "icon": "electron/assets/studyhub-icon.svg",
-      "target": ["dir"],
+      "target": [
+        "dir"
+      ],
       "category": "public.app-category.education",
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
@@ -160,7 +167,18 @@
         "AppImage"
       ],
       "category": "Education",
-      "artifactName": "StudyHub-${version}-${arch}.${ext}"
+      "artifactName": "masterStudy-${version}-${arch}.${ext}"
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexandre-wayss/masterStudy.git"
+  },
+  "homepage": "https://studyhub-desktop.vercel.app/",
+  "bugs": {
+    "url": "https://github.com/alexandre-wayss/masterStudy/issues"
+  },
+  "engines": {
+    "node": ">=24 <25"
   }
 }

@@ -263,7 +263,7 @@ export function LanguageLabModal({
             available: false,
             whisperAvailable: false,
             apiUnavailable: true,
-            message: "Reinicie o StudyHub para ativar o módulo local de idiomas.",
+            message: "Reinicie o masterStudy para ativar o módulo local de idiomas.",
           });
         }
         return;
@@ -624,7 +624,7 @@ export function LanguageLabModal({
   const installWhisper = async () => {
     if (!getApi()?.installWhisper) {
       setFeedbackMessage(
-        "Reinicie o StudyHub para carregar o instalador local do Whisper.",
+        "Reinicie o masterStudy para carregar o instalador local do Whisper.",
         "error",
       );
       return;
@@ -1223,7 +1223,7 @@ export function LanguageLabModal({
           <StatusPill tone={environment?.apiUnavailable ? "error" : environment?.whisperAvailable ? "success" : "warning"}>
             <Icon name={environment?.apiUnavailable ? "restart_alt" : environment?.whisperAvailable ? "check_circle" : "download"} />
             {environment?.apiUnavailable
-              ? "Reinicie o StudyHub"
+              ? "Reinicie o masterStudy"
               : environment?.whisperAvailable
                 ? "Whisper pronto"
                 : "Whisper não preparado"}
@@ -1324,7 +1324,7 @@ export function LanguageLabModal({
             {environment?.apiUnavailable ? (
               <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs leading-5 text-[color:var(--on-surface-variant)]">
                 <p className="font-bold text-red-600">O módulo local ainda não foi carregado nesta sessão.</p>
-                <p className="mt-1">Feche completamente o StudyHub e abra a versão atualizada.</p>
+                <p className="mt-1">Feche completamente o masterStudy e abra a versão atualizada.</p>
               </div>
             ) : environment?.python?.available === false ? (
               <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-5 text-[color:var(--on-surface-variant)]">

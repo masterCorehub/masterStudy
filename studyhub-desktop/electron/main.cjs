@@ -19,6 +19,7 @@ const {
   Menu,
   Notification,
   nativeImage,
+  nativeTheme,
   screen,
   Tray,
   globalShortcut,
@@ -90,7 +91,7 @@ app.enableSandbox();
 
 const isDev = !app.isPackaged;
 
-// Keep development isolated from the installed StudyHub application. Electron's
+// Keep development isolated from the installed masterStudy application. Electron's
 // single-instance lock is tied to the user-data directory; sharing it caused
 // `npm run dev` to exit silently whenever the packaged app was still in the
 // menu bar. A separate profile also prevents development settings from
@@ -101,6 +102,18 @@ if (isDev) {
     path.join(app.getPath("appData"), "StudyHub-development"),
   );
 }
+
+// Preserva o diretório do perfil existente antes de mudar o nome visível.
+// Renomear o processo não deve mudar a localização das notas e configurações.
+const legacyProfileCandidates = ["studyhub-desktop", "StudyHub"].map(
+  name => path.join(app.getPath("appData"), name),
+);
+// Perfis explícitos permitem testes isolados sem abrir os dados da instalação.
+const explicitUserDataPath = app.commandLine.getSwitchValue("user-data-dir");
+const legacyUserDataPath = explicitUserDataPath && path.isAbsolute(explicitUserDataPath) ? explicitUserDataPath : isDev ? app.getPath("userData")
+  : legacyProfileCandidates.find(profile => fs.existsSync(profile)) || legacyProfileCandidates[0];
+app.setName("masterStudy");
+app.setPath("userData", legacyUserDataPath);
 
 const execFileAsync = promisify(execFile);
 const APP_ICON_PATH = path.join(__dirname, "assets", "studyhub-icon.png");
@@ -253,7 +266,7 @@ function assertGrantedLocalPath(value, { forBinaryRead = false } = {}) {
   const stats = fs.statSync(resolved);
   if (stats.isFile()) {
     if (!LOCAL_FILE_EXTENSIONS.has(path.extname(resolved).toLowerCase())) {
-      throw new Error("Este tipo de arquivo não pode ser aberto pelo StudyHub.");
+      throw new Error("Este tipo de arquivo não pode ser aberto pelo masterStudy.");
     }
     if (forBinaryRead && stats.size > MAX_RENDERER_FILE_READ_BYTES) {
       throw new Error("O arquivo excede o limite de leitura de 100 MB.");
@@ -283,7 +296,7 @@ ipcMain.handle("app:openExternal", async (event, url) => {
     minWidth: 640,
     minHeight: 480,
     parent: parent && !parent.isDestroyed() ? parent : undefined,
-    title: "StudyHub — Navegador interno",
+    title: "masterStudy — Navegador interno",
     backgroundColor: "#f8fafc",
     webPreferences: {
       contextIsolation: true,
@@ -307,6 +320,18 @@ ipcMain.handle("app:openExternal", async (event, url) => {
 });
 
 let nativeSpeechProcess = null;
+let speechGeneration = 0;
+let nativeSpeechPaused = false;
+
+function stopNativeSpeech() {
+  if (nativeSpeechProcess) {
+    // A suspended process must resume before it can handle termination.
+    if (nativeSpeechPaused && process.platform !== "win32") nativeSpeechProcess.kill("SIGCONT");
+    nativeSpeechProcess.kill();
+  }
+  nativeSpeechProcess = null;
+  nativeSpeechPaused = false;
+}
 let kokoroModelPromise = null;
 
 async function generateKokoroSpeech(text, language) {
@@ -332,14 +357,17 @@ ipcMain.handle("translator:speak", async (event, payload = {}) => {
   assertTrustedRenderer(event);
   const text = String(payload.text || "").trim();
   if (!text) return { ok: false, error: "Texto vazio." };
-  if (nativeSpeechProcess) nativeSpeechProcess.kill();
+  const requestGeneration = ++speechGeneration;
+  stopNativeSpeech();
   const language = String(payload.language || "").toLowerCase();
   try {
     const audioBase64 = await generateKokoroSpeech(text, language);
+    if (requestGeneration !== speechGeneration) return { ok: false, cancelled: true };
     if (audioBase64) return { ok: true, engine: "kokoro", audioBase64, mimeType: "audio/wav" };
   } catch (error) {
     console.warn("Kokoro TTS indisponível; usando voz do sistema:", error?.message || error);
   }
+  if (requestGeneration !== speechGeneration) return { ok: false, cancelled: true };
   const linuxCandidates = process.platform === "linux"
     ? [["spd-say", ["-l", language || "en", text]], ["espeak-ng", ["-v", language || "en", text]], ["espeak", ["-v", language || "en", text]]]
     : [];
@@ -349,14 +377,18 @@ ipcMain.handle("translator:speak", async (event, payload = {}) => {
   return new Promise((resolve) => {
     const start = (index = 0) => {
       const selected = process.platform === "linux" ? linuxCandidates[index] : [command, args];
-      nativeSpeechProcess = spawn(selected[0], selected[1], { stdio: "ignore" });
-      nativeSpeechProcess.once("error", () => {
-        nativeSpeechProcess = null;
+      const child = spawn(selected[0], selected[1], { stdio: "ignore" });
+      nativeSpeechProcess = child;
+      child.once("spawn", () => {
+        if (nativeSpeechPaused && process.platform !== "win32") child.kill("SIGSTOP");
+      });
+      child.once("error", () => {
+        if (nativeSpeechProcess === child) nativeSpeechProcess = null;
         if (process.platform === "linux" && index + 1 < linuxCandidates.length) start(index + 1);
         else resolve({ ok: false, error: "Nenhum mecanismo de voz instalado. Instale espeak-ng ou speech-dispatcher." });
       });
-      nativeSpeechProcess.once("close", (code) => {
-        nativeSpeechProcess = null;
+      child.once("close", (code) => {
+        if (nativeSpeechProcess === child) nativeSpeechProcess = null;
         resolve({ ok: code === 0, finished: code === 0 });
       });
     };
@@ -365,14 +397,25 @@ ipcMain.handle("translator:speak", async (event, payload = {}) => {
 });
 ipcMain.handle("translator:stop-speech", (event) => {
   assertTrustedRenderer(event);
-  if (nativeSpeechProcess) nativeSpeechProcess.kill();
-  nativeSpeechProcess = null;
+  speechGeneration += 1;
+  stopNativeSpeech();
   if (process.platform === "linux") {
     const cancelSpeech = spawn("spd-say", ["-C"], { stdio: "ignore" });
     cancelSpeech.unref();
   }
   return { ok: true };
 });
+
+// macOS `say` runs as a child process; Unix signals preserve its position.
+for (const [action, signal, paused] of [["pause", "SIGSTOP", true], ["resume", "SIGCONT", false]]) {
+  ipcMain.handle(`translator:${action}-speech`, (event) => {
+    assertTrustedRenderer(event);
+    if (process.platform === "win32") return { ok: false, unsupported: true };
+    nativeSpeechPaused = paused;
+    if (nativeSpeechProcess) nativeSpeechProcess.kill(signal);
+    return { ok: true };
+  });
+}
 
 ipcMain.handle("spotify:status", () => spotify.status());
 ipcMain.handle("spotify:login", () => spotify.login());
@@ -475,13 +518,13 @@ ipcMain.handle("study-db:export", async (event) => {
   const snapshot = loadState(app);
   if (!snapshot?.state) return { canceled: true };
   const result = await dialog.showSaveDialog({
-    title: "Exportar biblioteca StudyHub",
+    title: "Exportar biblioteca masterStudy",
     defaultPath: path.join(
       app.getPath("documents"),
       `studyhub-backup-${new Date().toISOString().slice(0, 10)}.studyhub`,
     ),
     filters: [
-      { name: "Biblioteca StudyHub", extensions: ["studyhub", "json"] },
+      { name: "Biblioteca masterStudy", extensions: ["studyhub", "json"] },
     ],
   });
   if (result.canceled || !result.filePath) return { canceled: true };
@@ -497,10 +540,10 @@ ipcMain.handle("study-db:export", async (event) => {
 ipcMain.handle("study-db:import", async (event) => {
   assertTrustedRenderer(event);
   const result = await dialog.showOpenDialog({
-    title: "Importar biblioteca StudyHub",
+    title: "Importar biblioteca masterStudy",
     properties: ["openFile"],
     filters: [
-      { name: "Biblioteca StudyHub", extensions: ["studyhub", "json"] },
+      { name: "Biblioteca masterStudy", extensions: ["studyhub", "json"] },
     ],
   });
   if (result.canceled || !result.filePaths?.[0]) return { canceled: true };
@@ -508,7 +551,7 @@ ipcMain.handle("study-db:import", async (event) => {
     await fs.promises.readFile(result.filePaths[0], "utf8"),
   );
   if (payload?.format !== "studyhub" || !payload.state)
-    throw new Error("Backup StudyHub inválido.");
+    throw new Error("Backup masterStudy inválido.");
   saveState(app, payload.state);
   return { canceled: false, state: payload.state };
 });
@@ -531,6 +574,7 @@ ipcMain.handle("pomodoro:completed", (event, completion) => {
 });
 
 const SYSTEM_NOTIFICATION_SCREENS = new Set([
+  "today",
   "tasks",
   "flashcards",
   "academic",
@@ -541,7 +585,7 @@ ipcMain.handle("notifications:show", (event, payload = {}) => {
   assertTrustedRenderer(event);
   if (!Notification.isSupported()) return { shown: false, reason: "unsupported" };
 
-  const title = String(payload.title || "CampusFlow").trim().slice(0, 120);
+  const title = String(payload.title || "masterStudy").trim().slice(0, 120);
   const body = String(payload.body || "").trim().slice(0, 500);
   const subtitle = String(payload.subtitle || "Seu assistente de estudos").trim().slice(0, 120);
   const screenId = SYSTEM_NOTIFICATION_SCREENS.has(payload.screen) ? payload.screen : null;
@@ -566,13 +610,19 @@ ipcMain.handle("notifications:show", (event, payload = {}) => {
   };
   notification.on("click", openDestination);
   notification.on("action", openDestination);
-  notification.show();
-  return { shown: true };
+  return require("./notification-delivery.cjs").deliverNotification(notification);
 });
 
 ipcMain.handle("tray-popover:action", (event, action) => {
   assertTrustedRenderer(event);
   trayPopoverWindow?.hide();
+  if (action === "close") return true;
+  if (action === "quick-note") {
+    const noteWindow = createNoteSearchWindow();
+    noteWindow.show();
+    noteWindow.focus();
+    return true;
+  }
   if (action === "quit") {
     requestAppQuit();
     return true;
@@ -590,7 +640,11 @@ ipcMain.handle("tray-popover:action", (event, action) => {
     return true;
   }
   const win = showMainWindow();
-  if (action === "settings") {
+  if (action === "search") {
+    win?.webContents.send("command-palette:open");
+  } else if (action === "tasks") {
+    win?.webContents.send("mac-widgets:navigate", "tasks");
+  } else if (action === "settings") {
     win?.webContents.send("tray-popover:open-settings");
   } else if (action === "open-app") {
     win?.focus();
@@ -696,7 +750,7 @@ function refreshTrayMenu() {
   }
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: "Abrir StudyHub", click: showMainWindow },
+      { label: "Abrir masterStudy", click: showMainWindow },
       { type: "separator" },
       {
         label: `Traduzir texto (${formatShortcutLabel(translatorTextShortcut)})`,
@@ -733,8 +787,8 @@ function createTrayPopover() {
   if (process.platform !== "darwin") return null;
   if (trayPopoverWindow && !trayPopoverWindow.isDestroyed()) return trayPopoverWindow;
   trayPopoverWindow = new BrowserWindow({
-    width: 430,
-    height: 650,
+    width: 360,
+    height: 470,
     show: false,
     frame: false,
     transparent: true,
@@ -781,14 +835,14 @@ function createTray() {
   }
 
   // Use the packaged PNG on macOS. The SVG template renders as a blank
-  // square on some macOS versions, while the PNG keeps the StudyHub mark.
+  // square on some macOS versions, while the PNG keeps the masterStudy mark.
   let icon = nativeImage.createFromPath(APP_ICON_PATH);
   if (process.platform === "darwin") {
     icon = icon.resize({ width: 18, height: 18, quality: "best" });
   }
 
   tray = new Tray(icon);
-  tray.setToolTip("CampusFlow");
+  tray.setToolTip("masterStudy");
   refreshTrayMenu();
   if (process.platform === "darwin") {
     tray.on("click", toggleTrayPopover);
@@ -1228,7 +1282,7 @@ function createTranslatorWindow() {
     autoHideMenuBar: true,
     backgroundColor: "#f3f1f8",
     icon: APP_ICON_PATH,
-    title: "Tradutor rapido - StudyHub",
+    title: "Tradutor rapido - masterStudy",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -1379,8 +1433,8 @@ async function captureDisplayImage(display) {
       : null;
     const error = new Error(
       permission === "denied"
-        ? "O macOS bloqueou a Gravação de Tela para o StudyHub. Desative e ative novamente a permissão e reinicie o app."
-        : "O macOS não forneceu uma imagem da tela. Feche completamente o StudyHub e tente novamente."
+        ? "O macOS bloqueou a Gravação de Tela para o masterStudy. Desative e ative novamente a permissão e reinicie o app."
+        : "O macOS não forneceu uma imagem da tela. Feche completamente o masterStudy e tente novamente."
     );
     error.code = "CAPTURE_EMPTY";
     throw error;
@@ -1471,7 +1525,7 @@ async function startTranslatorCapture(options = {}) {
       autoHideMenuBar: true,
       backgroundColor: liveCapture ? "#00000000" : "#09070f",
       icon: APP_ICON_PATH,
-      title: "Selecionar texto da tela - StudyHub",
+      title: "Selecionar texto da tela - masterStudy",
       webPreferences: {
         preload: path.join(__dirname, "preload.cjs"),
         contextIsolation: true,
@@ -1935,7 +1989,7 @@ ipcMain.handle("window:openMainWindow", (event) => {
 
 ipcMain.handle("journal:send-to-apple", async (event, payload = {}) => {
   assertTrustedRenderer(event);
-  const title = String(payload.title || "Entrada do StudyHub").trim();
+  const title = String(payload.title || "Entrada do masterStudy").trim();
   const body = String(payload.body || payload.text || "").trim();
   if (!body) throw new Error("A entrada do diário está vazia.");
   if (process.platform !== "darwin") {
@@ -1978,6 +2032,15 @@ ipcMain.handle("window:isMaximized", (event) => {
   return getSenderWindow(event)?.isMaximized() ?? false;
 });
 
+ipcMain.handle("books:drive-list", async (event, link) => {
+  assertTrustedRenderer(event);
+  return require("./public-drive.cjs").listPublicDrive(link);
+});
+ipcMain.handle("books:drive-download", async (event, file) => {
+  assertTrustedRenderer(event);
+  return require("./public-drive.cjs").downloadPublicDrive(file);
+});
+
 ipcMain.handle("dialog:openDirectory", async (event) => {
   assertTrustedRenderer(event);
   const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -2005,7 +2068,7 @@ ipcMain.handle("dialog:openDirectory", async (event) => {
       const stat = fs.lstatSync(filePath);
       if (stat.isSymbolicLink()) return;
       if (stat.isFile()) {
-        filesList.push({ name: name, path: filePath });
+        filesList.push({ name: name, path: filePath, size: stat.size, lastModified: stat.mtimeMs });
       } else if (stat.isDirectory()) {
         walkSync(filePath);
       }
@@ -2038,7 +2101,7 @@ ipcMain.handle("dialog:scanDirectory", async (event, directoryPath) => {
       const filePath = path.join(currentDirPath, name);
       const fileStat = fs.lstatSync(filePath);
       if (fileStat.isSymbolicLink()) return;
-      if (fileStat.isFile()) filesList.push({ name, path: filePath });
+      if (fileStat.isFile()) filesList.push({ name, path: filePath, size: fileStat.size, lastModified: fileStat.mtimeMs });
       else if (fileStat.isDirectory()) walkSync(filePath);
     });
   };
@@ -2100,7 +2163,7 @@ ipcMain.handle("window:openWhiteboard", async (event, lesson = {}) => {
     frame: false,
     backgroundColor: "#ffffff",
     icon: APP_ICON_PATH,
-    title: "Lousa de Desenho - StudyHub",
+    title: "Lousa de Desenho - masterStudy",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -2137,7 +2200,7 @@ ipcMain.handle("window:openNoteEditor", async (event, noteId) => {
     frame: false,
     backgroundColor: "#e8eaf0",
     icon: APP_ICON_PATH,
-    title: "Anotação - StudyHub",
+    title: "Anotação - masterStudy",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -2174,7 +2237,7 @@ ipcMain.handle("window:openBookReader", async (event, bookId) => {
     frame: false, // Frameless standalone reader window
     backgroundColor: "#1e1e2e",
     icon: APP_ICON_PATH,
-    title: "Leitor de Livro - StudyHub",
+    title: "Leitor de Livro - masterStudy",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -2274,7 +2337,7 @@ function normalizeStickyNoteId(value) {
 }
 
 function setStickyNoteAlwaysOnTop(win, enabled) {
-  if (!win || win.isDestroyed()) return false;
+  if (!win || win.isDestroyed() || win.studyhubDesktopOnly) return false;
   const alwaysOnTop = Boolean(enabled);
   win.setAlwaysOnTop(alwaysOnTop, alwaysOnTop ? "floating" : "normal");
   if (process.platform === "darwin") {
@@ -2286,15 +2349,13 @@ function setStickyNoteAlwaysOnTop(win, enabled) {
   return alwaysOnTop;
 }
 
-ipcMain.handle("sticky-notes:open", (event, noteIdValue, options = {}) => {
-  assertTrustedRenderer(event);
+function openStickyNoteWindow(noteIdValue, options = {}) {
   const noteId = normalizeStickyNoteId(noteIdValue);
-  const existingWindow = stickyNoteWindows.get(noteId);
+  let existingWindow = stickyNoteWindows.get(noteId);
   if (existingWindow && !existingWindow.isDestroyed()) {
     setStickyNoteAlwaysOnTop(existingWindow, options.alwaysOnTop);
     if (existingWindow.isMinimized()) existingWindow.restore();
-    existingWindow.show();
-    existingWindow.focus();
+    existingWindow.show(); existingWindow.focus();
     return { opened: true, reused: true };
   }
 
@@ -2317,10 +2378,14 @@ ipcMain.handle("sticky-notes:open", (event, noteIdValue, options = {}) => {
     resizable: true,
     maximizable: false,
     fullscreenable: false,
-    hasShadow: true,
+    // Uma única sombra no cartão evita o contorno irregular da janela transparente.
+    hasShadow: false,
     alwaysOnTop: Boolean(options.alwaysOnTop),
+    focusable: true,
+    hiddenInMissionControl: false,
+    skipTaskbar: false,
     icon: APP_ICON_PATH,
-    title: "Sticky Note - StudyHub",
+    title: "Sticky Note - masterStudy",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -2338,8 +2403,7 @@ ipcMain.handle("sticky-notes:open", (event, noteIdValue, options = {}) => {
   stickyNoteWindows.set(noteId, noteWin);
   noteWin.once("ready-to-show", () => {
     if (!noteWin.isDestroyed()) {
-      noteWin.show();
-      noteWin.focus();
+      noteWin.show(); noteWin.focus();
     }
   });
   noteWin.on("closed", () => {
@@ -2352,7 +2416,13 @@ ipcMain.handle("sticky-notes:open", (event, noteIdValue, options = {}) => {
     `screen=sticky_note_widget&standalone=1&noteId=${encodeURIComponent(noteId)}`,
   );
   return { opened: true, reused: false };
+}
+
+ipcMain.handle("sticky-notes:open", (event, noteId, options = {}) => {
+  assertTrustedRenderer(event);
+  return openStickyNoteWindow(noteId, options);
 });
+
 
 ipcMain.handle("sticky-notes:set-always-on-top", (event, enabled) => {
   const win = getSenderWindow(event);
@@ -2375,7 +2445,7 @@ ipcMain.handle("sticky-notes:changed", (event, change = {}) => {
       win.webContents.send("sticky-notes:changed", safeChange);
     }
   }
-  if (safeChange.type === "deleted") {
+  if (safeChange.type === "deleted" || safeChange.updates?.archived === true) {
     const noteWin = stickyNoteWindows.get(noteId);
     if (noteWin && !noteWin.isDestroyed()) noteWin.close();
   }
@@ -2400,7 +2470,7 @@ function createQuickNoteWindow() {
     resizable: true,
     backgroundColor: "#e8eaf0",
     icon: APP_ICON_PATH,
-    title: "Nota Rapida - StudyHub",
+    title: "Nota Rapida - masterStudy",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -2450,7 +2520,7 @@ function createNoteSearchWindow() {
     skipTaskbar: true,
     backgroundColor: "#00000000",
     icon: APP_ICON_PATH,
-    title: "Pesquisar notas - StudyHub",
+    title: "Pesquisar notas - masterStudy",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -2500,7 +2570,7 @@ function createCommandPaletteWindow() {
     skipTaskbar: true,
     backgroundColor: "#00000000",
     icon: APP_ICON_PATH,
-    title: "Buscar no StudyHub",
+    title: "Buscar no masterStudy",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -2547,7 +2617,7 @@ function createQuickDrawWindow() {
     show: false,
     backgroundColor: "#e8eaf0",
     icon: APP_ICON_PATH,
-    title: "Desenho Rapido - StudyHub",
+    title: "Desenho Rapido - masterStudy",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -2594,7 +2664,7 @@ function createAiFlashcardWindow() {
     resizable: true,
     backgroundColor: "#e8eaf0",
     icon: APP_ICON_PATH,
-    title: "Flashcard IA - StudyHub",
+    title: "Flashcard IA - masterStudy",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -2789,6 +2859,10 @@ function performStudyHubAction(action) {
   }
 }
 
+ipcMain.handle("shortcuts:get", (event) => {
+  assertTrustedRenderer(event);
+  return { quickNoteShortcut, quickDrawShortcut, translatorTextShortcut, translatorOcrShortcut, aiFlashcardShortcut, stickyNotesShortcut };
+});
 ipcMain.handle("shortcuts:update", async (event, nextShortcuts = {}) => {
   assertTrustedRenderer(event);
   const previousShortcuts = {
@@ -2866,11 +2940,15 @@ function createWindow() {
     minWidth: 1280,
     minHeight: 860,
     autoHideMenuBar: true,
-    frame: false,
+    // macOS supplies real traffic lights; other platforms use our window controls.
+    frame: process.platform === "darwin",
+    ...(process.platform === "darwin" ? { titleBarStyle: "hiddenInset", trafficLightPosition: { x: 14, y: 17 } } : {}),
     backgroundColor: "#e8eaf0",
     icon: APP_ICON_PATH,
-    title: "StudyHub",
+    title: "masterStudy",
     webPreferences: {
+      // Os lembretes continuam avaliando os horários quando a janela fica oculta.
+      backgroundThrottling: false,
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
@@ -2936,11 +3014,32 @@ function createWindow() {
 
 let localBridgeServer = null;
 
+ipcMain.handle("theme:set-native", (event, appearance) => {
+  assertTrustedRenderer(event);
+  if (!["dark", "light", "system"].includes(appearance)) return false;
+  nativeTheme.themeSource = appearance;
+  return true;
+});
+
 let pendingKnowledgeCaptures = [];
+
+ipcMain.handle("capture:acknowledge", (event, id) => {
+  assertTrustedRenderer(event);
+  // Remove apenas capturas que a interface confirmou ter salvo no armazenamento.
+  const remaining = pendingKnowledgeCaptures.filter(item => item.id !== id);
+  const queuePath = path.join(app.getPath("userData"), "knowledge-capture-queue.json");
+  fs.writeFileSync(`${queuePath}.tmp`, JSON.stringify(remaining));
+  fs.renameSync(`${queuePath}.tmp`, queuePath);
+  pendingKnowledgeCaptures = remaining;
+  return { ok: true };
+});
 
 function startLocalBridgeServer() {
   if (localBridgeServer) return;
   try {
+    const captureQueuePath = path.join(app.getPath("userData"), "knowledge-capture-queue.json");
+    try { pendingKnowledgeCaptures = JSON.parse(fs.readFileSync(captureQueuePath, "utf8")); } catch { pendingKnowledgeCaptures = []; }
+    if (!Array.isArray(pendingKnowledgeCaptures)) pendingKnowledgeCaptures = [];
     const http = require("node:http");
     localBridgeServer = http.createServer((req, res) => {
       res.setHeader("Access-Control-Allow-Origin", "*");
@@ -2955,7 +3054,7 @@ function startLocalBridgeServer() {
 
       if (req.url === "/api/status" && req.method === "GET") {
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: true, app: "StudyHub", version: "1.1.2" }));
+        res.end(JSON.stringify({ ok: true, app: "masterStudy", version: "1.1.2" }));
         return;
       }
 
@@ -2967,20 +3066,23 @@ function startLocalBridgeServer() {
 
       if (req.url === "/api/capture" && req.method === "POST") {
         let body = "";
-        req.on("data", (chunk) => { body += chunk; });
+        req.on("data", (chunk) => { body += chunk; if (Buffer.byteLength(body) > 2 * 1024 * 1024) req.destroy(); });
         req.on("end", () => {
           try {
-            const data = JSON.parse(body || "{}");
+            const data = require("./knowledge-capture.cjs").normalizeCapture(JSON.parse(body || "{}"));
             if (data && data.title) {
-              pendingKnowledgeCaptures.push(data);
-              if (pendingKnowledgeCaptures.length > 100) pendingKnowledgeCaptures.shift();
+              if (!pendingKnowledgeCaptures.some(item => item.id === data.id)) pendingKnowledgeCaptures.push(data);
+              // Salva antes de responder à extensão, inclusive se a interface estiver fechada.
+              fs.mkdirSync(app.getPath("userData"), { recursive: true });
+              fs.writeFileSync(`${captureQueuePath}.tmp`, JSON.stringify(pendingKnowledgeCaptures));
+              fs.renameSync(`${captureQueuePath}.tmp`, captureQueuePath);
             }
             if (mainWindow && !mainWindow.isDestroyed()) {
               mainWindow.webContents.send("studyhub:knowledge-capture", data);
             }
             if (Notification.isSupported()) {
               new Notification({
-                title: "StudyHub — Novo Conteúdo Capturado",
+                title: "masterStudy — Novo Conteúdo Capturado",
                 body: data.title ? `${data.title} (${data.sourceHost || "Web"})` : "Conteúdo recebido da extensão",
                 silent: false,
               }).show();
@@ -3000,11 +3102,11 @@ function startLocalBridgeServer() {
     });
 
     localBridgeServer.on("error", (err) => {
-      console.warn("StudyHub Bridge Server port occupied or unavailable:", err.message);
+      console.warn("masterStudy Bridge Server port occupied or unavailable:", err.message);
     });
 
     localBridgeServer.listen(47820, "127.0.0.1", () => {
-      console.log("StudyHub Bridge Server listening on http://127.0.0.1:47820");
+      console.log("masterStudy Bridge Server listening on http://127.0.0.1:47820");
     });
   } catch (e) {
     console.warn("Could not start local bridge server:", e.message);

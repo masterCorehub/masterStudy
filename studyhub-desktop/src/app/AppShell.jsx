@@ -8,6 +8,7 @@ import { TopBar } from "../layout/TopBar";
 import { CampusFlowDashboardScreen } from "../screens/CampusFlowDashboardScreen";
 import { AccountScreen } from "../screens/AccountScreen";
 import { StudyAlerts } from "../components/StudyAlerts";
+import { BookImportProgress } from "../components/books/BookImportProgress";
 import { PomodoroCompletionCelebration } from "../components/PomodoroCompletionCelebration";
 import { QuickNoteModal } from "../components/QuickNoteModal";
 import { CommandPalette } from "../components/CommandPalette";
@@ -202,6 +203,7 @@ export function AppShell() {
       useStudyStore.getState().openSettingsModal?.("notifications");
     });
   }, []);
+
 
   useEffect(() => {
     return window.studyhubDesktop?.stickyNotes?.onChanged?.((change) => {
@@ -430,7 +432,8 @@ export function AppShell() {
 
     const handleDomCapture = (event) => {
       if (event.detail && event.detail.title) {
-        useStudyStore.getState().addKnowledgeItem?.(event.detail);
+        const state = useStudyStore.getState();
+        if (!(state.knowledgeItems || []).some(item => item.id === event.detail.id)) state.addKnowledgeItem?.(event.detail);
         setCapturedNotification(event.detail);
         setTimeout(() => {
           setCapturedNotification((curr) => (curr?.id === event.detail.id ? null : curr));
@@ -444,7 +447,8 @@ export function AppShell() {
     if (window.studyhubDesktop?.onKnowledgeCapture) {
       cleanupCapture = window.studyhubDesktop.onKnowledgeCapture((payload) => {
         if (payload && payload.title) {
-          useStudyStore.getState().addKnowledgeItem?.(payload);
+          const state = useStudyStore.getState();
+          if (!(state.knowledgeItems || []).some(item => item.id === payload.id)) state.addKnowledgeItem?.(payload);
           setCapturedNotification(payload);
           setTimeout(() => {
             setCapturedNotification((curr) => (curr?.id === payload.id ? null : curr));
@@ -464,7 +468,6 @@ export function AppShell() {
             const store = useStudyStore.getState();
             data.captures.forEach((item) => {
               if (item && item.id && !processedBridgeIds.has(item.id)) {
-                processedBridgeIds.add(item.id);
                 const exists = (store.knowledgeItems || []).some((k) => k.id === item.id);
                 if (!exists) {
                   store.addKnowledgeItem?.(item);
@@ -472,6 +475,12 @@ export function AppShell() {
                   setTimeout(() => {
                     setCapturedNotification((curr) => (curr?.id === item.id ? null : curr));
                   }, 6000);
+                }
+                // A confirmação só ocorre após a gravação síncrona do store persistido.
+                const persisted = JSON.parse(localStorage.getItem("studyhub-storage-v2") || "{}");
+                if (persisted.state?.knowledgeItems?.some(capture => capture.id === item.id)) {
+                  processedBridgeIds.add(item.id);
+                  window.studyhubDesktop?.acknowledgeKnowledgeCapture?.(item.id).catch(() => processedBridgeIds.delete(item.id));
                 }
               }
             });
@@ -574,7 +583,7 @@ export function AppShell() {
       } catch (error) {
         databaseHydratedRef.current = true;
         notify("error", error);
-        console.error("StudyHub database hydration failed:", error);
+        console.error("masterStudy database hydration failed:", error);
       }
     };
 
@@ -589,7 +598,7 @@ export function AppShell() {
           notify("saved");
         } catch (error) {
           notify("error", error);
-          console.error("StudyHub database save failed:", error);
+          console.error("masterStudy database save failed:", error);
         }
       }, 300);
     });
@@ -630,7 +639,7 @@ export function AppShell() {
         if (state) window.localStorage.setItem(cloudQueueKey, JSON.stringify(state));
         else window.localStorage.removeItem(cloudQueueKey);
       } catch (error) {
-        console.warn("StudyHub could not persist the cloud sync queue:", error);
+        console.warn("masterStudy could not persist the cloud sync queue:", error);
       }
     };
 
@@ -707,7 +716,7 @@ export function AppShell() {
       } catch (error) {
         writeQueuedCloudState(queuedState);
         notifyCloud("error", { error: error?.message || String(error) });
-        console.error("StudyHub account save failed:", error);
+        console.error("masterStudy account save failed:", error);
       } finally {
         saving = false;
         if (mounted && queuedState) persistQueuedState(queuedState);
@@ -756,7 +765,7 @@ export function AppShell() {
         if (pending) await persistQueuedState(pending);
       } catch (error) {
         notifyCloud("error", { error: error?.message || String(error) });
-        console.error("StudyHub account synchronization failed:", error);
+        console.error("masterStudy account synchronization failed:", error);
       } finally {
         if (mounted && generation === syncGeneration) {
           cloudHydratedRef.current = true;
@@ -977,8 +986,6 @@ export function AppShell() {
           <Suspense fallback={null}>
             <BookReaderScreen onNavigate={handleNavigate} />
           </Suspense>
-        ) : activeScreen === SCREEN_IDS.NOTE_EDITOR ? (
-          <NotesScreen onNavigate={handleNavigate} />
         ) : activeScreen === SCREEN_IDS.WHITEBOARD ? (
           <Suspense fallback={null}>
             <WhiteboardScreen onNavigate={handleNavigate} />
@@ -1016,7 +1023,8 @@ export function AppShell() {
                   {activeScreen === SCREEN_IDS.FLASHCARDS ? (
                     <FlashcardsScreen onNavigate={handleNavigate} />
                   ) : null}
-                  {activeScreen === SCREEN_IDS.NOTES ? (
+                  {/* Both Vault entry points keep the app navigation available. */}
+                  {activeScreen === SCREEN_IDS.NOTES || activeScreen === SCREEN_IDS.NOTE_EDITOR ? (
                     <NotesScreen onNavigate={handleNavigate} />
                   ) : null}
                   {activeScreen === SCREEN_IDS.JOURNAL ? (
@@ -1133,10 +1141,13 @@ export function AppShell() {
           )}
         </AnimatePresence>
       </div>
-      {activeScreen !== "pomodoro_widget" ? (
-        <StudyAlerts onNavigate={handleNavigate} />
+        {activeScreen !== "pomodoro_widget" ? (
+          <>
+          <StudyAlerts onNavigate={handleNavigate} />
+          <BookImportProgress />
+          </>
       ) : null}
-      <PomodoroCompletionCelebration />
+      {/* Pomodoro permanece implementado para reativação, mas fica fora da interface atual. */}
       <CommandPalette onNavigate={handleNavigate} />
       </div>
     );

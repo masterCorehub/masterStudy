@@ -5,17 +5,18 @@ import { usePomodoroStore } from "../store/usePomodoroStore";
 import { useStudyStore } from "../store/useStore";
 import { Icon } from "../ui/Icon";
 import { ShareModal } from "../components/ShareModal";
+import "./TasksWorkspace.css";
 
 const STATUS_LABELS = {
   pending: "Para fazer",
   in_progress: "Em andamento",
-  awaiting_review: "Em revisao",
-  completed: "Concluida",
+  review: "Em revisão",
+  completed: "Concluída",
 };
 
 const PRIORITY_LABELS = {
   low: "Baixa prioridade",
-  medium: "Media prioridade",
+  medium: "Média prioridade",
   high: "Alta prioridade",
 };
 
@@ -23,7 +24,7 @@ const TYPE_LABELS = {
   task: "Tarefa",
   assignment: "Trabalho",
   exam: "Prova",
-  presentation: "Apresentacao",
+  presentation: "Apresentação",
 };
 
 const fileName = (path = "") => path.split(/[\\/]/).pop() || path;
@@ -102,7 +103,7 @@ export function TaskDetailsScreen({ onNavigate }) {
       <main className="campus-task-detail-empty-state">
         <div>
           <Icon name="assignment_late" />
-          <h1>Tarefa nao encontrada</h1>
+          <h1>Tarefa não encontrada</h1>
           <button
             type="button"
             onClick={() => onNavigate?.("BACK")}
@@ -115,6 +116,8 @@ export function TaskDetailsScreen({ onNavigate }) {
   }
 
   const current = editing ? draft : task;
+  const doneSubtasks = (current.subtasks || []).filter(item => item.completed).length;
+  const totalSubtasks = current.subtasks?.length || 0;
   const canEdit =
     !task.sharedWithMe ||
     task.sharingPermission === "editor" ||
@@ -224,7 +227,7 @@ export function TaskDetailsScreen({ onNavigate }) {
   };
 
   return (
-    <main className="campus-task-detail-page">
+    <main className="campus-task-detail-page tasks-detail-workspace">
       <div className="campus-task-detail-shell">
         <header className="campus-task-detail-topbar">
           <button
@@ -241,7 +244,7 @@ export function TaskDetailsScreen({ onNavigate }) {
             <Icon name="chevron_right" />
             <strong>{subject?.name || current.category || "Detalhes"}</strong>
             {task.sharedWithMe ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-1 text-[10px] font-black text-blue-600">
+              <span className="campus-task-detail-shared">
                 <Icon name="group" className="text-[13px]" /> Compartilhada
               </span>
             ) : null}
@@ -269,6 +272,7 @@ export function TaskDetailsScreen({ onNavigate }) {
               </button>
             )}
 
+            <details className="task-more-actions"><summary aria-label="Mais ações da tarefa"><Icon name="more_horiz" /></summary><div>
             {!task.sharedWithMe ? (
               <button type="button" onClick={() => setShowShareModal(true)}>
                 <Icon name="group" />
@@ -284,24 +288,27 @@ export function TaskDetailsScreen({ onNavigate }) {
               <Icon name="delete" />
               Excluir
             </button> : null}
+            </div></details>
 
-            <button
+            {false && <button
               className="campus-task-detail-dark-action"
               type="button"
               onClick={startPomodoro}
             >
               <Icon name="timer" />
               Iniciar Pomodoro
-            </button>
+            </button>}
           </div>
         </header>
 
         <section className="campus-task-detail-card">
+          <div className="task-detail-eyebrow"><Icon name="assignment" />{TYPE_LABELS[current.type] || "Tarefa"}</div>
           <div className="campus-task-detail-meta">
             {editing ? (
               <>
                 <select
-                  value={current.status || "pending"}
+                  aria-label="Situação da tarefa"
+                  value={current.status === "awaiting_review" ? "review" : current.status || "pending"}
                   onChange={(event) => patchTask({ status: event.target.value })}
                 >
                   {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -325,7 +332,7 @@ export function TaskDetailsScreen({ onNavigate }) {
             ) : (
               <>
                 <span className={`campus-task-detail-pill status-${current.status || "pending"}`}>
-                  {STATUS_LABELS[current.status] || "Para fazer"}
+                  {STATUS_LABELS[current.status === "awaiting_review" ? "review" : current.status] || "Para fazer"}
                 </span>
                 <span className={`campus-task-detail-inline priority-${current.priority || "medium"}`}>
                   <Icon name="priority_high" />
@@ -400,7 +407,7 @@ export function TaskDetailsScreen({ onNavigate }) {
               />
               {current.status === "completed"
                 ? "Tarefa concluída"
-                : "Marcar tarefa como concluída"}
+                : "Concluir tarefa"}
             </button>
           </div>
 
@@ -465,20 +472,22 @@ export function TaskDetailsScreen({ onNavigate }) {
                 patchTask({ description: event.target.value })
               }
             />
-          ) : (
+          ) : current.description ? (
             <p className="campus-task-detail-description">
-              {current.description || "Nenhuma descricao adicionada."}
+              {current.description}
             </p>
-          )}
+          ) : canEdit ? <button type="button" className="task-add-description" onClick={beginEditing}><Icon name="notes" /> Adicionar descrição</button> : null}
 
           <div className="campus-task-detail-grid">
             <section className="campus-task-detail-panel">
               <header>
                 <h2>
                   <Icon name="checklist" />
-                  Sub-tarefas
+                  Subtarefas
                 </h2>
+                {totalSubtasks ? <span className="task-subtask-count">{doneSubtasks}/{totalSubtasks}</span> : null}
               </header>
+              {totalSubtasks ? <progress className="task-subtask-progress" aria-label="Progresso das subtarefas" value={doneSubtasks} max={totalSubtasks} /> : null}
 
               <div className="campus-task-detail-subtasks">
                 {(current.subtasks || []).map((subtask, index) => (
@@ -527,18 +536,18 @@ export function TaskDetailsScreen({ onNavigate }) {
 
                 {!current.subtasks?.length ? (
                   <p className="campus-task-detail-empty-copy">
-                    Nenhuma subtarefa adicionada.
+                    Divida a tarefa em pequenos passos.
                   </p>
                 ) : null}
               </div>
 
               {canEdit ? <div className="campus-task-detail-subtask-create">
-                <button type="button" onClick={addSubtask}>
+                <button type="button" aria-label="Adicionar subtarefa" disabled={!subtaskTitle.trim()} onClick={addSubtask}>
                   <Icon name="add" />
                 </button>
                 <input
                   value={subtaskTitle}
-                  placeholder="Adicionar sub-tarefa"
+                  placeholder="Adicionar subtarefa"
                   onChange={(event) => setSubtaskTitle(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") addSubtask();
@@ -578,6 +587,7 @@ export function TaskDetailsScreen({ onNavigate }) {
                         type="button"
                         className="campus-task-detail-icon-button"
                         onClick={() => removeAttachment(path)}
+                        disabled={!canEdit}
                         aria-label="Remover anexo"
                       >
                         <Icon name="close" />
@@ -596,6 +606,7 @@ export function TaskDetailsScreen({ onNavigate }) {
                   className="campus-task-detail-upload"
                   type="button"
                   onClick={pickAttachments}
+                  disabled={!canEdit}
                 >
                   <Icon name="upload" />
                   Adicionar arquivo
@@ -607,7 +618,7 @@ export function TaskDetailsScreen({ onNavigate }) {
                 type="button"
                 disabled={!subject}
                 onClick={openSubject}
-                style={{ "--subject-accent": subject?.color || "#2563eb" }}
+                style={{ "--subject-accent": subject?.color || "var(--primary)" }}
               >
                 <span className="label">Disciplina</span>
                 <strong>
@@ -620,8 +631,8 @@ export function TaskDetailsScreen({ onNavigate }) {
                     <Icon name="school" />
                   </span>
                   <span>
-                    <b>{subject?.professor || "Professor nao informado"}</b>
-                    <small>{semester?.name || "Semestre nao informado"}</small>
+                    <b>{subject?.professor || (subject ? "Abrir disciplina" : "Vincule uma disciplina em Editar")}</b>
+                    {semester ? <small>{semester.name}</small> : null}
                   </span>
                 </span>
               </button>

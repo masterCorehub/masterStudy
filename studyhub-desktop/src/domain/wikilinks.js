@@ -1,3 +1,5 @@
+import { getNoteTags } from "./frontmatter.js";
+import { getVaultForNote } from "./vaults.js";
 /**
  * Módulo para lidar com wikilinks estilo Obsidian
  */
@@ -77,36 +79,55 @@ export function findBacklinks(targetNoteTitle, allNotes) {
   return backlinks;
 }
 
+// Relações por ID sobrevivem a renomeações; wikilinks continuam resolvidos por título.
+export function referencedNotes(note, allNotes) {
+  const content = note.markdownContent || note.content || "";
+  const targets = new Map();
+  const candidates = allNotes.filter(other => getVaultForNote(other) === getVaultForNote(note));
+  for (const link of extractWikilinks(content)) {
+    const target = resolveWikilink(link.target, candidates);
+    if (target && target.id !== note.id) targets.set(target.id, target);
+  }
+  for (const match of content.matchAll(/(?:#nested-note=|data-nested-note-id=["'])([^"'\s<>]+)/g)) {
+    let id;
+    try { id = decodeURIComponent(match[1]); } catch { continue; }
+    const target = candidates.find(other => other.id === id);
+    if (target && target.id !== note.id) targets.set(target.id, target);
+  }
+  return [...targets.values()];
+}
+
 /**
  * Constrói o grafo completo de links entre todas as notas.
  * @param {Array<Object>} allNotes - Lista de todas as notas
  * @returns {{nodes: Array<{id: string, title: string, path: string, tags: Array<string>}>, edges: Array<{source: string, target: string}>}} Grafo de links
  */
 export function buildLinkGraph(allNotes) {
-  const nodes = [];
-  const edges = [];
-
-  allNotes.forEach(note => {
-    nodes.push({
-      id: note.id,
-      title: note.title || '',
-      path: note.path || '',
-      tags: note.tags || []
-    });
-
-    const links = extractWikilinks(note.markdownContent || note.content || '');
-    links.forEach(link => {
-      const targetNote = resolveWikilink(link.target, allNotes);
-      if (targetNote) {
-        edges.push({
-          source: note.id,
-          target: targetNote.id
-        });
-      }
-    });
-  });
-
-  return { nodes, edges };
+  const nodes = allNotes.map(note => ({ ...note, tags: getNoteTags(note) }));
+  const edges = new Map();
+  const addEdge = (source, target, kind) => {
+    if (source === target) return;
+    const key = [String(source), String(target)].sort().join('::');
+    const previous = edges.get(key);
+    if (!previous || previous.kind === 'tag') edges.set(key, { source, target, kind });
+  };
+  const tagGroups = new Map();
+  for (const note of nodes) {
+    const sameVault = nodes.filter(other => getVaultForNote(other) === getVaultForNote(note));
+    for (const link of extractWikilinks(note.markdownContent || note.content || '')) {
+      const target = resolveWikilink(link.target, sameVault);
+      if (target) addEdge(note.id, target.id, 'link');
+    }
+    if (note.parentNoteId && sameVault.some(parent => parent.id === note.parentNoteId)) addEdge(note.id, note.parentNoteId, 'nested');
+    for (const tag of note.tags) {
+      const key = `${getVaultForNote(note)}::${tag}`;
+      const group = tagGroups.get(key) || [];
+      for (const otherId of group) addEdge(note.id, otherId, 'tag');
+      group.push(note.id);
+      tagGroups.set(key, group);
+    }
+  }
+  return { nodes, edges: [...edges.values()] };
 }
 
 /**

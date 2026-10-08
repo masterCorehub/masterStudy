@@ -2016,7 +2016,7 @@ export function AcademicScreen({ onNavigate }) {
       <SectionHeader
         eyebrow="Presença"
         title="Controle de frequência"
-        description="Registre presença, atraso e falta; o StudyHub avisa quando houver risco."
+        description="Registre presença, atraso e falta; o masterStudy avisa quando houver risco."
         action={() => openForm("attendance")}
         actionLabel="Registrar aula"
       />

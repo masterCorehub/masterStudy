@@ -12,7 +12,7 @@ const entries = Object.fromEntries(
     }),
 );
 
-for (const key of ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY"]) {
+for (const key of ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY", "VITE_PUBLIC_APP_URL"]) {
   const value = entries[key]?.trim();
   if (!value) throw new Error(`Variável ausente: ${key}`);
   const result = spawnSync(

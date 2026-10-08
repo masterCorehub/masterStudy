@@ -957,6 +957,9 @@ async function generate(app, payload = {}) {
     throw new Error("Indexe pelo menos uma fonte antes de gerar conteúdo.");
   }
   const instructions = {
+    guide: "Gere um guia de estudo em Markdown com conceitos principais, exemplos, glossário e dicas de exame. Cite as fontes [n].",
+    quiz: 'Retorne somente JSON: {"questions":[{"question":"pergunta","options":["A","B","C","D"],"correctIndex":0,"explanation":"explicação com citação [n]"}]}. Gere 5 questões; correctIndex começa em zero.',
+    mindmap: 'Retorne somente JSON de um mapa mental: {"label":"tema central","children":[{"label":"conceito","children":[{"label":"detalhe"}]}]}. Use rótulos curtos, até 4 níveis e conceitos específicos das fontes.',
     summary:
       "Produza um resumo estruturado, fiel às fontes, com conceitos principais, relações e pontos para revisão. Inclua citações [n].",
     questions:
@@ -967,11 +970,12 @@ async function generate(app, payload = {}) {
       "Sugira um plano de estudo em sessões, priorizando conceitos difíceis, revisão ativa e um simulado. Baseie cada sessão nas fontes e cite [n].",
   };
   if (!instructions[kind]) throw new Error("Tipo de geração inválido.");
+  const structured = ["flashcards", "quiz", "mindmap"].includes(kind);
   const requestId = payload.requestId || `academic-generate-${Date.now()}`;
   const response = await chatUntilComplete(app, {
     model: payload.model,
     requestId,
-    format: kind === "flashcards" ? "json" : undefined,
+    format: structured ? "json" : undefined,
     messages: [
       {
         role: "system",
@@ -988,16 +992,19 @@ async function generate(app, payload = {}) {
     ],
     timeout: 240_000,
     options: {
-      temperature: kind === "flashcards" ? 0.1 : 0.3,
+      temperature: structured ? 0.1 : 0.3,
       num_ctx: 8_192,
-      num_predict: kind === "flashcards" ? 3_000 : 2_048,
+      num_predict: structured ? 3_000 : 2_048,
     },
   }, {
     // Respostas JSON precisam ser produzidas como um documento único.
     // O limite maior acima é suficiente para os 10 cartões solicitados.
-    maxContinuations: kind === "flashcards" ? 0 : 3,
+    maxContinuations: structured ? 0 : 3,
   });
   const titles = {
+    guide: "Guia de estudo gerado pela IA",
+    quiz: "Quiz gerado pela IA",
+    mindmap: "Mapa mental gerado pela IA",
     summary: "Resumo gerado pela IA",
     questions: "Questões geradas pela IA",
     flashcards: "Flashcards gerados pela IA",
@@ -1006,7 +1013,7 @@ async function generate(app, payload = {}) {
   return {
     title: titles[kind],
     content: response.message,
-    data: kind === "flashcards" ? parseJsonResponse(response.message) : null,
+    data: structured ? parseJsonResponse(response.message) : null,
     model: response.model,
     continuationCount: response.continuationCount,
     truncated: response.truncated,

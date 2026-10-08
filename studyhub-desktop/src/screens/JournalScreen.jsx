@@ -259,7 +259,7 @@ function ImportantQuotesView({ quotes, onAddQuote, onRemoveQuote, onClose }) {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--journal-line)] pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <Icon name="star" filled className="text-amber-500 text-2xl" />
+              <Icon name="star" filled className="text-primary text-2xl" />
               <h2 className="text-2xl font-black text-[color:var(--journal-ink)]">FRASES IMPORTANTES ⭐</h2>
             </div>
             <p className="mt-1 text-xs text-[color:var(--journal-muted)]">
@@ -293,7 +293,7 @@ function ImportantQuotesView({ quotes, onAddQuote, onRemoveQuote, onClose }) {
 
         {!quotes.length ? (
           <div className="rounded-3xl border border-dashed border-[color:var(--journal-line)] bg-[color:var(--journal-canvas)]/40 p-12 text-center">
-            <Icon name="star" filled className="mx-auto text-4xl text-amber-400 opacity-60" />
+            <Icon name="star" filled className="mx-auto text-4xl text-primary opacity-60" />
             <h3 className="mt-3 text-base font-bold text-[color:var(--journal-ink)]">Nenhuma frase salva na lista</h3>
             <p className="mt-1 text-xs text-[color:var(--journal-muted)] max-w-md mx-auto">
               No seu diário, selecione qualquer trecho com o mouse e clique em "Salvar em Frases Importantes" para copiar para cá!
@@ -304,18 +304,18 @@ function ImportantQuotesView({ quotes, onAddQuote, onRemoveQuote, onClose }) {
             {quotes.map((quote) => (
               <div
                 key={quote.id}
-                className="journal-panel relative flex flex-col justify-between gap-4 p-5 shadow-sm transition-all hover:shadow-md border border-amber-400/35 bg-amber-500/10 rounded-2xl"
+                className="journal-panel relative flex flex-col justify-between gap-4 p-5 shadow-sm transition-all hover:shadow-md border border-primary/35 bg-primary/10 rounded-2xl"
               >
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <Icon name="star" filled className="shrink-0 text-amber-500 text-base mt-0.5" />
+                  <Icon name="star" filled className="shrink-0 text-primary text-base mt-0.5" />
                   <p className="text-sm font-semibold italic leading-relaxed text-[color:var(--journal-ink)] whitespace-pre-wrap break-words">
                     "{quote.text}"
                   </p>
                 </div>
-                <div className="flex items-center justify-between border-t border-amber-500/15 pt-3 text-xs">
+                <div className="flex items-center justify-between border-t border-primary/15 pt-3 text-xs">
                   <button
                     type="button"
-                    className="text-amber-600 dark:text-amber-400 font-bold hover:underline flex items-center gap-1"
+                    className="text-primary font-bold hover:underline flex items-center gap-1"
                     onClick={() => handleCopy(quote.id, quote.text)}
                   >
                     <Icon name={copiedId === quote.id ? "check" : "content_copy"} className="text-xs" />
@@ -651,6 +651,7 @@ export function JournalScreen() {
   const [passwordError, setPasswordError] = useState("");
   const [unlockingJournal, setUnlockingJournal] = useState(false);
   const [showJournalAi, setShowJournalAi] = useState(false);
+  const [showJournalDetails, setShowJournalDetails] = useState(false);
   const [journalAiResponse, setJournalAiResponse] = useState("");
   const [journalAiError, setJournalAiError] = useState("");
   const [journalAiBusy, setJournalAiBusy] = useState(false);
@@ -1231,7 +1232,7 @@ export function JournalScreen() {
       .join("\n");
     const body = [
       String(draft.content || "").trim(),
-      `Data no StudyHub: ${formatDateLong(draft.entryDate)}`,
+      `Data no masterStudy: ${formatDateLong(draft.entryDate)}`,
       `Humor: ${moodById.get(draft.mood)?.label || "Não informado"} · Energia: ${draft.energy}/5 · Sono: ${draft.sleepHours}h`,
       draft.tags?.length ? `Tags: ${draft.tags.map((tag) => `#${tag}`).join(" ")}` : "",
       gratitudeLines ? `Gratidão\n${gratitudeLines}` : "",
@@ -1552,7 +1553,7 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
           <p className="mt-2 text-sm text-[color:var(--journal-muted)]">Use a mesma senha da sua conta para acessar suas memórias.</p>
           <form className="mt-6 space-y-3 text-left" onSubmit={unlockJournal}>
             <input autoFocus type="password" value={passwordInput} onChange={(event) => setPasswordInput(event.target.value)} className="journal-filter-select w-full" placeholder="Senha da conta" aria-label="Senha da conta" autoComplete="current-password" required />
-            {passwordError ? <p className="text-xs font-bold text-red-600">{passwordError}</p> : null}
+            {passwordError ? <p className="text-xs font-bold text-[color:var(--error)]">{passwordError}</p> : null}
             <button type="submit" className="journal-primary-button w-full justify-center" disabled={unlockingJournal || !accountEmail}><Icon name="lock_open" /> {unlockingJournal ? "Verificando..." : "Abrir diário"}</button>
           </form>
           <p className="mt-4 text-xs text-[color:var(--journal-muted)]">Esqueceu a senha? Recupere-a pela tela de acesso do aplicativo.</p>
@@ -1584,7 +1585,7 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
         </div>
         <div className="flex items-center gap-2">
           {dirty ? <span className="hidden text-xs font-semibold text-[color:var(--journal-muted)] sm:inline">Alterações não salvas</span> : null}
-          {saveFeedback ? <span className="hidden items-center gap-1 text-xs font-bold text-emerald-700 sm:flex"><Icon name="cloud_done" className="text-[16px]" /> {saveFeedback}</span> : null}
+          {saveFeedback ? <span className="hidden items-center gap-1 text-xs font-bold text-[color:var(--success)] sm:flex"><Icon name="cloud_done" className="text-[16px]" /> {saveFeedback}</span> : null}
           <button type="button" className="journal-outline-button" onClick={() => startNewEntry(today)}>
             <Icon name="add" />
             <span className="hidden sm:inline">Nova entrada</span>
@@ -1593,6 +1594,8 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
             <Icon name="save" />
             Salvar
           </button>
+          <button type="button" className="journal-icon-button" aria-label="Mostrar detalhes do diário" aria-expanded={showJournalDetails} onClick={() => setShowJournalDetails(value => !value)}><Icon name="insights" /></button>
+          <details className="journal-more-actions"><summary aria-label="Mais ações do diário"><Icon name="more_horiz" /></summary><div className="journal-actions-menu">
           <button type="button" className="journal-outline-button" onClick={sendCurrentEntryToApple} disabled={!draft.content?.trim() || sendingToApple} title="Criar uma entrada no Diário da Apple">
             <Icon name="menu_book" />
             <span className="hidden sm:inline">{sendingToApple ? "Enviando…" : "Enviar ao Diário"}</span>
@@ -1605,18 +1608,19 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
           </button>
           <button
             type="button"
-            className={`journal-outline-button flex items-center gap-1.5 ${showImportantQuotesModal ? "border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold" : ""}`}
+            className={`journal-outline-button flex items-center gap-1.5 ${showImportantQuotesModal ? "border-primary bg-primary/15 text-primary font-bold" : ""}`}
             onClick={() => setShowImportantQuotesModal((v) => !v)}
           >
-            <Icon name="star" filled className="text-amber-500" />
-            <span className="hidden sm:inline">FRASES IMPORTANTES</span> ({allQuotesList.length})
+            <Icon name="star" filled className="text-primary" />
+            <span>Frases importantes</span> ({allQuotesList.length})
           </button>
+          </div></details>
         </div>
       </header>
 
-      <div className="journal-layout">
+      <div className={`journal-layout journal-clean-layout ${showJournalDetails ? "has-details" : ""}`}>
         <aside className="journal-history-column">
-          <MiniCalendar
+          <details className="journal-calendar-options"><summary>Calendário e filtros</summary><MiniCalendar
             month={month}
             entries={entries}
             selectedDate={selectedDate}
@@ -1624,7 +1628,7 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
             onSelectDate={handleSelectDate}
           />
 
-          <div className="journal-search-box">
+          </details><div className="journal-search-box">
             <Icon name="search" />
             <input
               value={query}
@@ -1635,7 +1639,7 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
             {query ? <button type="button" onClick={() => setQuery("")} aria-label="Limpar busca"><Icon name="close" /></button> : null}
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <details className="journal-calendar-options"><summary>Filtrar entradas</summary><div className="grid grid-cols-2 gap-2">
             <select className="journal-filter-select" value={moodFilter} onChange={(event) => setMoodFilter(event.target.value)} aria-label="Filtrar por humor">
               <option value="all">Todos os humores</option>
               {JOURNAL_MOODS.map((mood) => <option key={mood.id} value={mood.id}>{mood.emoji} {mood.label}</option>)}
@@ -1655,7 +1659,7 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
             <span>{entries.filter((entry) => entry.favorite).length}</span>
           </button>
 
-          <div className="flex items-center justify-between px-1 pt-1">
+          </details><div className="flex items-center justify-between px-1 pt-1">
             <span className="journal-eyebrow">Histórico</span>
             <span className="text-[10px] font-semibold text-[color:var(--journal-muted)]">{filteredEntries.length} entrada(s)</span>
           </div>
@@ -1767,11 +1771,11 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
                 </div>
                 <button
                   type="button"
-                  className="journal-outline-button text-xs py-1 px-2.5 flex items-center gap-1.5 hover:text-amber-500 font-bold"
+                  className="journal-outline-button text-xs py-1 px-2.5 flex items-center gap-1.5 hover:text-primary font-bold"
                   title="Selecione um trecho do seu texto e clique para salvar em Frases Importantes"
                   onClick={handleSaveQuoteFromSelection}
                 >
-                  <Icon name="star" filled className="text-amber-500" /> Salvar em Frases Importantes (⭐)
+                  <Icon name="star" filled className="text-primary" /> Salvar em Frases Importantes (⭐)
                 </button>
               </div>
 
@@ -2055,13 +2059,13 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
           </section>
         )}
 
-        <JournalInsights
+        {showJournalDetails && <JournalInsights
           entries={entries}
           stats={stats}
           prompt={prompt}
           onUsePrompt={usePrompt}
           onNextPrompt={() => setPromptOffset((value) => value + 1)}
-        />
+        />}
       </div>
       <JournalPhotoLightbox
         photos={draft.photos || []}

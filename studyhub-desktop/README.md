@@ -1,50 +1,15 @@
-# StudyHub
+# masterStudy — aplicação
 
-Aplicação acadêmica para web e desktop com disciplinas, calendário, tarefas,
-notas, materiais, projetos, flashcards, Pomodoro, IA local e sincronização por
-conta.
+A apresentação, as funcionalidades e os comandos de instalação estão no [README principal](../README.md).
 
-## Desenvolvimento
+Este diretório contém o pacote React/Electron ativo. Use Node.js 24 e execute os comandos npm nesta pasta.
 
-```bash
-npm install
-npm run dev:web
-```
+- `src/`: interface, regras, serviços e estado.
+- `electron/`: integração desktop e recursos do sistema.
+- `native/`: pontes específicas de plataforma.
+- `tests/`: cenários automatizados.
+- `scripts/`: desenvolvimento, verificação e empacotamento.
+- `supabase/`: configuração do serviço de conta e sincronização.
+- `studyhub-extension/`: extensão de captura para navegador.
 
-Para Electron:
-
-```bash
-npm run dev
-```
-
-Copie `.env.example` para `.env` e preencha somente as credenciais públicas do
-Supabase. As instruções do backend estão em `supabase/README.md`.
-
-## Qualidade
-
-```bash
-npm test
-npm run build
-npm run test:e2e
-npm run test:packaged
-npm run audit:prod
-```
-
-O teste E2E usa o build em `dist/` sem publicar dados nem abrir um servidor. O
-teste empacotado abre `release/linux-unpacked/studyhub-desktop` em um perfil
-temporário; também é possível validar o AppImage explicitamente:
-
-```bash
-npm run test:packaged -- release/StudyHub-1.1.2-x86_64.AppImage
-```
-
-## Distribuição
-
-```bash
-npm run dist:linux
-npm run dist:win
-```
-
-O site usa o mesmo frontend e pode ser publicado pela Vercel conforme
-`WEB.md`. Recursos nativos — atalhos globais, widget sempre visível, caminhos
-locais, Ollama e laboratório local — ficam disponíveis apenas no Electron.
+Leia [CONTRIBUTING.md](../CONTRIBUTING.md) antes de contribuir e [SECURITY.md](../SECURITY.md) para assuntos de segurança.

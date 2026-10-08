@@ -20,8 +20,13 @@ async function invokeLanguageLab(channel, payload) {
 
 contextBridge.exposeInMainWorld("studyhubDesktop", {
   platform: process.platform,
+  setNativeTheme: (appearance) => ipcRenderer.invoke("theme:set-native", appearance),
   selectDirectory: () => ipcRenderer.invoke("dialog:openDirectory"),
   scanDirectory: (directoryPath) => ipcRenderer.invoke("dialog:scanDirectory", directoryPath),
+  publicDrive: {
+    list: (link) => ipcRenderer.invoke("books:drive-list", link),
+    download: (file) => ipcRenderer.invoke("books:drive-download", file),
+  },
   selectFile: (options) => ipcRenderer.invoke("dialog:openFile", options),
   openWhiteboardWindow: (lesson) =>
     ipcRenderer.invoke("window:openWhiteboard", lesson),
@@ -30,6 +35,8 @@ contextBridge.exposeInMainWorld("studyhubDesktop", {
   openAiFlashcardWindow: () => ipcRenderer.invoke("window:openAiFlashcard"),
   updateGlobalShortcuts: (shortcuts) =>
     ipcRenderer.invoke("shortcuts:update", shortcuts),
+  getGlobalShortcuts: () => ipcRenderer.invoke("shortcuts:get"),
+  acknowledgeKnowledgeCapture: (id) => ipcRenderer.invoke("capture:acknowledge", id),
   notifications: {
     show: (payload) => ipcRenderer.invoke("notifications:show", payload),
   },
@@ -162,6 +169,8 @@ contextBridge.exposeInMainWorld("studyhubDesktop", {
     close: () => ipcRenderer.invoke("translator:close"),
     speak: (payload) => ipcRenderer.invoke("translator:speak", payload),
     stopSpeech: () => ipcRenderer.invoke("translator:stop-speech"),
+    pauseSpeech: () => ipcRenderer.invoke("translator:pause-speech"),
+    resumeSpeech: () => ipcRenderer.invoke("translator:resume-speech"),
     onSessionChanged: (callback) => {
       const listener = (_event, nextSession) => callback(nextSession);
       ipcRenderer.on("translator:session-changed", listener);

@@ -3,6 +3,7 @@ import { Icon } from "../ui/Icon";
 import { SCREEN_IDS } from "../app/screenIds";
 import { useStudyStore } from "../store/useStore";
 import { AppSelect } from "../components/AppSelect";
+import { createCardNarration } from "../services/card-narration";
 import { VocabTextRenderer } from "../components/VocabTextRenderer";
 
 export function FlashcardsScreen({ onNavigate }) {
@@ -15,29 +16,16 @@ export function FlashcardsScreen({ onNavigate }) {
   const answerKnowledgeQuiz = useStudyStore((state) => state.answerKnowledgeQuiz);
   const setActiveKnowledgeItemId = useStudyStore((state) => state.setActiveKnowledgeItemId);
   const courses = useStudyStore((state) => state.courses || []);
-  const speakCardText = useCallback(async (text) => {
-    const value = String(text || "").trim();
-    if (!value) return;
-    const portugueseHint = /\b(que|não|para|com|uma|dos|das|como|sobre|estudar|resposta|pergunta|sistema|função|classe|exemplo)\b/i.test(value) || /[ãõáéíóúç]/i.test(value);
-    const language = portugueseHint ? "pt-BR" : "en-US";
-    const result = await window.studyhubDesktop?.translator?.speak?.({ text: value, language });
-    if (result?.audioBase64) {
-      const audio = new Audio(`data:${result.mimeType || "audio/wav"};base64,${result.audioBase64}`);
-      await audio.play().catch(() => {});
-      return;
-    }
-    // The native provider may return ok without Base64 (macOS `say` plays in
-    // the main process). Do not start a second browser voice in that case.
-    if (result?.ok) return;
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(value);
-      utterance.lang = language;
-      utterance.voice = (window.speechSynthesis.getVoices?.() || []).find((voice) => voice.lang?.toLowerCase().startsWith(language.toLowerCase())) || null;
-      window.speechSynthesis.speak(utterance);
-    }
-  }, []);
-  
+  const [narration, setNarration] = useState({ key: null, status: "idle" });
+  const player = useMemo(() => createCardNarration({
+    native: window.studyhubDesktop?.translator,
+    synthesis: window.speechSynthesis,
+    createUtterance: text => new SpeechSynthesisUtterance(text),
+    createAudio: url => new Audio(url),
+    onChange: setNarration,
+  }), []);
+  const narrationLabel = key => narration.key !== key || narration.status === "idle"
+    ? "Ouvir" : narration.status === "paused" ? "Retomar" : "Pausar";
   const [isFlipped, setIsFlipped] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("ALL");
@@ -54,6 +42,9 @@ export function FlashcardsScreen({ onNavigate }) {
   const [isGlobalReview, setIsGlobalReview] = useState(false);
   const [globalReviewIndex, setGlobalReviewIndex] = useState(0);
   const [globalReviewedCount, setGlobalReviewedCount] = useState(0);
+
+  // React cleanup stops playback on card/side changes and when leaving the screen.
+  useEffect(() => () => player.stop(), [player, activeDeckId, isFlipped, studyAheadIndex, flashcardDecks]);
 
   // ─── 1. Lista de todos os cartões e quizzes pendentes para hoje ───────────
   const allDueItems = useMemo(() => {
@@ -950,7 +941,7 @@ export function FlashcardsScreen({ onNavigate }) {
                     <h2 className="max-w-[700px] text-2xl md:text-3xl font-bold leading-relaxed text-[color:var(--on-surface)]">
                       <VocabTextRenderer text={activeCard.front || " "} />
                     </h2>
-                    <button type="button" onClick={(event) => { event.stopPropagation(); speakCardText(activeCard.front); }} className="rounded-xl px-3 py-2 text-xs font-bold neo-inset" title="Ouvir frente"><Icon name="volume_up" /> Ouvir</button>
+                    <button type="button" onClick={(event) => { event.stopPropagation(); void player.toggle(activeCard.front, `${activeCard.id}:front`); }} className="rounded-xl px-3 py-2 text-xs font-bold neo-inset" title={`${narrationLabel(`${activeCard.id}:front`)} frente`} aria-label={`${narrationLabel(`${activeCard.id}:front`)} frente`}><Icon name={narration.key === `${activeCard.id}:front` && narration.status === "playing" ? "pause" : "volume_up"} /> {narrationLabel(`${activeCard.id}:front`)}</button>
                     <p className="text-xs text-[color:var(--on-surface-variant)] opacity-70 flex items-center gap-1.5">
                       <Icon name="touch_app" className="text-sm" />
                       Clique no cartão para virar
@@ -964,7 +955,7 @@ export function FlashcardsScreen({ onNavigate }) {
                     <h3 className="max-w-[700px] text-xl md:text-2xl font-medium leading-relaxed text-[color:var(--on-surface)]">
                       <VocabTextRenderer text={activeCard.back || " "} />
                     </h3>
-                    <button type="button" onClick={(event) => { event.stopPropagation(); speakCardText(activeCard.back); }} className="rounded-xl px-3 py-2 text-xs font-bold neo-inset" title="Ouvir resposta"><Icon name="volume_up" /> Ouvir</button>
+                    <button type="button" onClick={(event) => { event.stopPropagation(); void player.toggle(activeCard.back, `${activeCard.id}:back`); }} className="rounded-xl px-3 py-2 text-xs font-bold neo-inset" title={`${narrationLabel(`${activeCard.id}:back`)} resposta`} aria-label={`${narrationLabel(`${activeCard.id}:back`)} resposta`}><Icon name={narration.key === `${activeCard.id}:back` && narration.status === "playing" ? "pause" : "volume_up"} /> {narrationLabel(`${activeCard.id}:back`)}</button>
                     <p className="text-xs text-[color:var(--on-surface-variant)] opacity-70">
                       Classifique sua lembrança abaixo
                     </p>

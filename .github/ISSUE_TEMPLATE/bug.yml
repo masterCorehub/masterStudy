@@ -1,0 +1,38 @@
+name: Relatar problema
+description: Um comportamento do aplicativo que precisa de correção.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Use dados fictícios. Para vulnerabilidades, siga SECURITY.md."
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente e versão
+      placeholder: "macOS arm64, desktop 1.1.2, commit… / Chrome, web"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Passos para reproduzir
+      description: "Inclua o estado inicial e as ações em ordem."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Resultado observado
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidências sem dados pessoais
+      description: "Captura ou log sanitizado; nunca envie .env, tokens ou livros pessoais."

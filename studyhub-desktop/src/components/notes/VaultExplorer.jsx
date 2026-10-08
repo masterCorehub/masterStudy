@@ -17,6 +17,11 @@ const TreeItem = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const isFolder = item.type === 'folder';
+  const hasChildren = Boolean(item.children?.length);
+  useEffect(() => {
+    const containsActive = children => children?.some(child => child.id === activeNoteId || containsActive(child.children));
+    if (containsActive(item.children)) setIsExpanded(true);
+  }, [activeNoteId, item.children]);
   const isActive = !isFolder && item.id === activeNoteId;
   const isSelected = selectedIds?.has(item.id);
   const paddingLeft = `${level * 12 + 12}px`;
@@ -120,6 +125,7 @@ const TreeItem = ({
           />
         )}
         
+        {!isFolder && hasChildren && <button type="button" aria-label={`Mostrar notas internas de ${item.title}`} aria-expanded={isExpanded} onClick={event => { event.stopPropagation(); setIsExpanded(value => !value); }} className="mr-1"><Icon name={isExpanded ? 'expand_more' : 'chevron_right'} /></button>}
         <span className={`text-sm truncate flex-1 ${isActive ? 'font-medium' : ''}`}>
           {item.name || item.title}
         </span>
@@ -130,7 +136,7 @@ const TreeItem = ({
       </div>
 
       <AnimatePresence initial={false}>
-        {isFolder && isExpanded && item.children && (
+        {(isFolder || hasChildren) && isExpanded && item.children && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -231,10 +237,21 @@ export const VaultExplorer = ({
       }
     });
 
-    // Process notes and implicitly create folders if needed
+    const noteItems = new Map(notes.map(note => [note.id, { ...note, type: 'note', children: [] }]));
+    // As subnotas pertencem à árvore da nota principal, não à raiz do Vault.
     notes.forEach(note => {
       const path = note.path || '';
-      const noteItem = { ...note, type: 'note' };
+      const noteItem = noteItems.get(note.id);
+      const parent = noteItems.get(note.parentNoteId);
+      let validParent = Boolean(parent && parent.id !== note.id);
+      const visited = new Set([note.id]);
+      let ancestor = parent;
+      while (ancestor) {
+        if (visited.has(ancestor.id)) { validParent = false; break; }
+        visited.add(ancestor.id);
+        ancestor = noteItems.get(ancestor.parentNoteId);
+      }
+      if (validParent) { parent.children.push(noteItem); return; }
 
       if (!path) {
         root.push(noteItem);

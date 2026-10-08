@@ -1,4 +1,5 @@
 import { getLocalDateKey } from "../utils/dateUtils.js";
+import { getAcademicSemesterData } from "./academic.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -69,6 +70,8 @@ export function selectTodayData(state, now = Date.now()) {
 }
 
 export function buildSearchIndex(state) {
+  // Usa o mesmo semestre e arquivamento da tela Cursos e Disciplinas.
+  const academic = getAcademicSemesterData(state.academic);
   const lessons = flattenLessons(state.courses || []);
   const notes = (state.studyItems || []).filter((item) => !item.parentNoteId && item.sourceKind !== "nested-note");
   const tasks = state.tasks?.list || [];
@@ -85,11 +88,12 @@ export function buildSearchIndex(state) {
     ["Novo projeto de programação", "Ação", "projects", "terminal", "create-project"],
 
     // ⏱️ Foco, Estudo & Revisão
-    ["Iniciar Pomodoro (25 min)", "Foco", "pomodoro", "timer", "start-pomodoro"],
+    // O comando de Pomodoro fica preservado no handler para reativação futura.
     ["Revisar cartões e flashcards", "Revisão", "flashcards", "psychology"],
     ["Modo Imersão (Estudo Focado)", "Foco", "immersion", "headphones"],
     ["Abrir tela Hoje (Dashboard)", "Navegar", "today", "dashboard"],
     ["Abrir Cursos e Módulos", "Navegar", "dashboard", "school"],
+    ["Abrir Tarefas", "Navegar", "tasks", "task_alt"],
     ["Abrir Central Acadêmica", "Navegar", "academic", "history_edu"],
     ["Abrir Disciplinas", "Navegar", "disciplines", "menu_book"],
     ["Abrir Hub de Conhecimento", "Navegar", "knowledge_hub", "hub"],
@@ -97,7 +101,6 @@ export function buildSearchIndex(state) {
     ["Abrir Biblioteca de Livros e PDFs", "Navegar", "books", "menu_book"],
     ["Abrir Quadro Branco (Whiteboard)", "Navegar", "whiteboard", "draw"],
     ["Abrir Code Lab (Programação)", "Navegar", "code_lab", "code"],
-    ["Abrir Tarefas", "Navegar", "tasks", "task_alt"],
     ["Abrir Projetos", "Navegar", "projects", "terminal"],
     ["Abrir Diário", "Navegar", "journal", "auto_stories"],
     ["Abrir aula atual em andamento", "Navegar", "lesson", "play_circle"],
@@ -146,9 +149,9 @@ export function buildSearchIndex(state) {
     ...notes.map((item) => ({ id: item.id, title: item.title || "Nota", type: "Nota", screen: "notes", noteId: item.id, search: `${item.title || ""} ${item.content || ""} ${(item.tags || []).join(" ")}` })),
     ...tasks.map((item) => ({ id: item.id, title: item.title, type: "Tarefa", screen: "tasks", taskId: item.id, search: `${item.title} ${item.description || ""}` })),
     ...decks.map((item) => ({ id: item.id, title: item.title || item.deckTitle || "Deck", type: "Deck", screen: "flashcards", deckId: item.id, search: `${item.title || item.deckTitle || ""}` })),
-    ...((state.academic?.subjects || []).map((item) => ({ id: item.id, title: item.name, type: "Disciplina", screen: "academic_subject", academicSubjectId: item.id, search: `${item.name || ""} ${item.code || ""} ${item.professor || ""}` }))),
-    ...((state.academic?.exams || []).map((item) => ({ id: item.id, title: item.title, type: "Prova", screen: "academic", search: `${item.title || ""} ${(item.topics || []).join(" ")}` }))),
-    ...((state.academic?.references || []).map((item) => ({ id: item.id, title: item.title, type: "Referência", screen: "academic", search: `${item.title || ""} ${item.authors || ""} ${(item.tags || []).join(" ")}` }))),
+    ...academic.subjects.map((item) => ({ id: item.id, title: item.name, type: "Disciplina", screen: "academic_subject", academicSubjectId: item.id, search: `${item.name || ""} ${item.code || ""} ${item.professor || ""}` })),
+    ...academic.exams.map((item) => ({ id: item.id, title: item.title, type: "Prova", screen: "academic", search: `${item.title || ""} ${(item.topics || []).join(" ")}` })),
+    ...academic.references.map((item) => ({ id: item.id, title: item.title, type: "Referência", screen: "academic", search: `${item.title || ""} ${item.authors || ""} ${(item.tags || []).join(" ")}` })),
   ];
 }
 

@@ -66,7 +66,7 @@ export function TrashHistoryScreen() {
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--primary)]">Segurança dos dados</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight text-[color:var(--on-surface)]">Lixeira e histórico universal</h2>
             <p className="mt-2 max-w-2xl text-sm text-[color:var(--on-surface-variant)]">
-              Recupere conteúdos excluídos e acompanhe as ações recentes realizadas no CampusFlow.
+              Recupere conteúdos excluídos e acompanhe as ações recentes realizadas no masterStudy.
             </p>
           </div>
           <button

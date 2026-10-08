@@ -105,6 +105,16 @@ export const THEMES = [
 
   // ─── Temas Escuros (Dark) ──────────────────────────────────────
   {
+    id: "brisa-amber",
+    title: "Brisa Âmbar",
+    subtitle: "Café & Âmbar",
+    desc: "Inspirado no Brisa: superfícies de café, luz âmbar e texto creme para estudar com calma",
+    icon: "air",
+    category: "dark",
+    isDark: true,
+    colors: ["#f4b873", "#18110e", "#33271f"],
+  },
+  {
     id: "dark",
     title: "Slate Obsidian",
     subtitle: "Escuro Clássico",

@@ -41,18 +41,15 @@ export function stringifyFrontmatter(data, content) {
  */
 export function extractInlineTags(text) {
   if (!text) return [];
-  const regex = /(?:^|\s)#([a-zA-Z0-9_\-\/]+)(?=\s|$|[.,!?;:)}\]])/g;
+  // O editor salva HTML: lê apenas texto, ignorando código e atributos de links.
+  const plain = String(text).replace(/```[\s\S]*?```|`[^`]*`|<pre\b[^>]*>[\s\S]*?<\/pre>|<code\b[^>]*>[\s\S]*?<\/code>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/g, ' ');
+  const regex = /(?:^|[\s([{])#([\p{L}\p{N}_-]+(?:\/[\p{L}\p{N}_-]+)*)(?=$|[\s.,!?;:)}\]<'"])/gu;
   const tags = new Set();
-  let match;
-  
-  while ((match = regex.exec(text)) !== null) {
-    const tag = match[1];
-    if (tag && /[a-zA-Z_\-\/]/.test(tag)) {
-      tags.add(tag);
-    }
+  for (const match of plain.matchAll(regex)) {
+    if (/\p{L}|_/u.test(match[1])) tags.add(match[1].normalize('NFC').toLowerCase());
   }
-  
-  return Array.from(tags);
+  return [...new Set(Array.from(tags).map(tag => String(tag).normalize('NFC').trim().replace(/^#/, '').toLowerCase()))];
 }
 
 /**
@@ -88,7 +85,7 @@ export function extractAllTags(markdownText) {
   const inlineTags = extractInlineTags(content);
   inlineTags.forEach(t => tags.add(t));
   
-  return Array.from(tags);
+  return [...new Set(Array.from(tags).map(tag => String(tag).normalize('NFC').trim().replace(/^#/, '').toLowerCase()))];
 }
 
 /**
@@ -114,5 +111,5 @@ export function getNoteTags(note, activeContent) {
     });
   }
   
-  return Array.from(tags);
+  return [...new Set(Array.from(tags).map(tag => String(tag).normalize('NFC').trim().replace(/^#/, '').toLowerCase()))];
 }

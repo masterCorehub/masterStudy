@@ -90,6 +90,7 @@ function TitleBarPomodoroWidget({ onNavigate }) {
 export function AppTitleBar({ onNavigate }) {
   const [isMaximized, setIsMaximized] = useState(false);
   const controls = getWindowControls();
+  const platform = controls ? window.studyhubDesktop?.platform || "win32" : "web";
 
   useEffect(() => {
     let unsubscribe;
@@ -107,6 +108,7 @@ export function AppTitleBar({ onNavigate }) {
   };
 
   const handleTitleBarDoubleClick = (event) => {
+    if (platform === "darwin") return; // Let the native draggable title bar handle macOS behavior.
     if (event.target instanceof Element && event.target.closest("[data-titlebar-control]")) {
       return;
     }
@@ -118,23 +120,22 @@ export function AppTitleBar({ onNavigate }) {
   };
 
   return (
-    <header className="app-titlebar relative flex items-center justify-between" onDoubleClick={handleTitleBarDoubleClick}>
+    <header data-platform={platform} className="app-titlebar relative flex items-center justify-between" onDoubleClick={handleTitleBarDoubleClick}>
       {/* Left: Brand */}
       <div className="app-titlebar-brand flex items-center gap-2">
         <span className="app-titlebar-logo">
           <Icon className="text-[16px]" name="school" filled />
         </span>
-        <span className="app-titlebar-title">CampusFlow</span>
-        <span className="app-titlebar-subtitle">Academic Management</span>
+        <span className="app-titlebar-title">masterStudy</span>
       </div>
 
       {/* Center Container: Search Everything Button + Pomodoro Widget Side-by-Side */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-3 z-10" data-titlebar-control style={{ WebkitAppRegion: "no-drag" }}>
+      <div className="app-titlebar-tools absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-3 z-10" data-titlebar-control style={{ WebkitAppRegion: "no-drag" }}>
         <button
           type="button"
           onClick={handleOpenSearch}
-          className="flex items-center justify-between gap-3 w-56 sm:w-72 md:w-80 px-3.5 py-1 rounded-full bg-[color:var(--surface-container-high)]/70 hover:bg-[color:var(--surface-container-high)] border border-[color:var(--outline-variant)]/30 text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)] text-xs font-semibold shadow-inner transition-all group cursor-pointer"
-          title={`Buscar em todo o CampusFlow (${shortcutLabel("Mod+K")})`}
+          className="flex items-center justify-between gap-3 app-titlebar-search px-3.5 py-1 rounded-full bg-[color:var(--surface-container-high)]/70 hover:bg-[color:var(--surface-container-high)] border border-[color:var(--outline-variant)]/30 text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)] text-xs font-semibold shadow-inner transition-all group cursor-pointer"
+          title={`Buscar em todo o masterStudy (${shortcutLabel("Mod+K")})`}
         >
           <div className="flex items-center gap-2 truncate">
             <Icon name="search" className="text-[15px] text-[color:var(--primary)] group-hover:scale-110 transition-transform" />
@@ -145,12 +146,11 @@ export function AppTitleBar({ onNavigate }) {
           </span>
         </button>
 
-        {/* Pomodoro Widget with Mute button */}
-        <TitleBarPomodoroWidget onNavigate={onNavigate} />
+        {/* Pomodoro permanece implementado, mas está oculto até ser reativado. */}
       </div>
 
       {/* Right: Window Controls */}
-      {controls ? <div className="app-window-controls z-10" data-titlebar-control style={{ WebkitAppRegion: "no-drag" }}>
+      {controls && platform !== "darwin" ? <div className="app-window-controls z-10" data-titlebar-control style={{ WebkitAppRegion: "no-drag" }}>
         <button
           aria-label="Minimizar"
           className="app-window-control"

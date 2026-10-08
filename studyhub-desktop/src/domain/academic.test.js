@@ -33,6 +33,18 @@ test("migra os dados acadêmicos antigos para um semestre preservando vínculos"
   assert.equal(academic.references[0].semesterId, academic.activeSemesterId);
 });
 
+test("migra o histórico antigo da disciplina para um chat persistido", () => {
+  const academic = normalizeAcademicData({
+    aiChatHistories: {
+      "subject-1": [{ role: "user", content: "O que é derivada?" }],
+    },
+  });
+
+  assert.equal(academic.aiChats["subject-1"].length, 1);
+  assert.equal(academic.aiChats["subject-1"][0].title, "Conversa anterior");
+  assert.equal(academic.aiChats["subject-1"][0].messages[0].content, "O que é derivada?");
+});
+
 test("separa disciplinas e registros pelo semestre selecionado", () => {
   const academic = getAcademicSemesterData({
     semesters: [

@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "../../ui/Icon";
+import { BookAnnotationExcerpt } from "../../components/books/BookAnnotationExcerpt";
 
 const HIGHLIGHT_COLORS = {
   yellow: "#fef08a",
@@ -13,7 +14,7 @@ function formatDate(ts) {
   return new Date(ts).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
-export function ReaderSidebar({ book, toc, currentPage, onNavigatePage, onNavigateCfi, onRemoveHighlight, onRemoveBookmark, onToggleFavorite, onRemoveNote, onRemoveQuote, onAddPageNote, activeTab, onTabChange }) {
+export function ReaderSidebar({ book, toc, currentPage, onNavigatePage, onNavigateCfi, onNavigateAnnotation, onRemoveHighlight, onRemoveBookmark, onToggleFavorite, onRemoveNote, onRemoveQuote, onAddPageNote, activeTab, onTabChange, onClose, totalPages, fileType, pdfRef }) {
   const highlights = book?.highlights || [];
   const bookmarks = book?.bookmarks || [];
   const favorites = book?.favorites || [];
@@ -26,12 +27,15 @@ export function ReaderSidebar({ book, toc, currentPage, onNavigatePage, onNaviga
     { id: "favorites", icon: "star", label: "Favoritos" },
     { id: "highlights", icon: "format_ink_highlighter", label: "Grifos" },
     { id: "notes", icon: "sticky_note_2", label: "Notas" },
+    { id: "quotes", icon: "format_quote", label: "Citações" },
   ];
 
   return (
-    <aside className="w-72 h-full flex flex-col border-r border-[color:var(--outline-variant)]/20 bg-[color:var(--surface-container-low)]">
+    <aside className="reader-library-panel" aria-label="Sumário e anotações">
+      <div className="reader-panel-heading"><h2>Seu livro</h2><button aria-label="Fechar sumário" onClick={onClose}><Icon name="close" /></button></div>
+      <div className="reader-sidebar-book"><strong>{book.title}</strong><small>{book.author || "Biblioteca pessoal"}</small></div>
       {/* Tab bar */}
-      <div className="flex overflow-x-auto gap-0.5 p-2 border-b border-[color:var(--outline-variant)]/20 scrollbar-hide">
+      <div className="reader-sidebar-tabs">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -44,7 +48,7 @@ export function ReaderSidebar({ book, toc, currentPage, onNavigatePage, onNaviga
             }`}
           >
             <Icon name={tab.icon} className="text-[14px]" />
-            <span className="hidden xl:inline">{tab.label}</span>
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
@@ -69,10 +73,12 @@ export function ReaderSidebar({ book, toc, currentPage, onNavigatePage, onNaviga
                 </button>
               ))
             ) : (
-              <EmptyState icon="list" text="Nenhum índice disponível" />
+              <p className="reader-panel-intro">{fileType === "pdf" ? "Este PDF não tem sumário. Navegue pelas páginas abaixo." : "Este livro não contém um sumário."}</p>
             )}
           </div>
         )}
+
+        {activeTab === "toc" && fileType === "pdf" && <div className="reader-thumbnails">{Array.from({ length: totalPages }, (_, i) => <PdfThumbnail key={i} page={i + 1} pdfRef={pdfRef} active={currentPage === i + 1} onNavigate={onNavigatePage} />)}</div>}
 
         {/* BOOKMARKS */}
         {activeTab === "bookmarks" && (
@@ -131,7 +137,7 @@ export function ReaderSidebar({ book, toc, currentPage, onNavigatePage, onNaviga
             {highlights.length > 0 ? highlights.map(h => (
               <div key={h.id}
                 className="group bg-[color:var(--surface)] rounded-xl p-3 border border-transparent hover:border-[color:var(--outline-variant)]/30 transition-colors cursor-pointer"
-                onClick={() => h.cfi ? onNavigateCfi(h.cfi) : onNavigatePage(h.page)}>
+                onClick={() => onNavigateAnnotation(h)}>
                 <div className="flex items-start gap-2">
                   <div className="w-1 rounded-full self-stretch mt-0.5 shrink-0" style={{ backgroundColor: HIGHLIGHT_COLORS[h.color] || "#fef08a" }} />
                   <div className="flex-1 min-w-0">
@@ -151,11 +157,11 @@ export function ReaderSidebar({ book, toc, currentPage, onNavigatePage, onNaviga
         )}
 
         {/* NOTES & QUOTES */}
-        {activeTab === "notes" && (
+        {(activeTab === "notes" || activeTab === "quotes") && (
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-2 px-1">
               <p className="text-[10px] font-bold text-[color:var(--on-surface-variant)] uppercase tracking-wider">
-                Anotações ({notes.length})
+                {activeTab === "quotes" ? `Citações (${quotes.length})` : `Anotações (${notes.length})`}
               </p>
               <button
                 onClick={onAddPageNote}
@@ -166,7 +172,7 @@ export function ReaderSidebar({ book, toc, currentPage, onNavigatePage, onNaviga
               </button>
             </div>
 
-            {notes.length === 0 && quotes.length === 0 && (
+            {(activeTab === "quotes" ? quotes.length === 0 : notes.length === 0) && (
               <div className="text-center py-8">
                 <EmptyState icon="sticky_note_2" text="Nenhuma anotação ainda" />
                 <button
@@ -179,11 +185,11 @@ export function ReaderSidebar({ book, toc, currentPage, onNavigatePage, onNaviga
               </div>
             )}
 
-            {notes.map(n => (
+            {(activeTab === "notes" ? notes : []).map(n => (
               <div
                 key={n.id}
                 className="group relative bg-[color:var(--surface)] rounded-xl p-3 border border-[color:var(--outline-variant)]/20 hover:border-[color:var(--primary)]/30 transition-colors cursor-pointer"
-                onClick={() => n.page && onNavigatePage(n.page)}
+                onClick={() => onNavigateAnnotation(n)}
               >
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Icon name="sticky_note_2" className="text-[14px] text-[color:var(--primary)]" />
@@ -200,22 +206,18 @@ export function ReaderSidebar({ book, toc, currentPage, onNavigatePage, onNaviga
                   )}
                 </div>
 
-                {/* If note was created from selected text */}
-                {n.selectedText && (
-                  <div className="my-1.5 p-2 bg-[color:var(--surface-container-low)] border-l-2 border-[color:var(--primary)] rounded-r-lg text-xs italic text-[color:var(--on-surface-variant)] line-clamp-3">
-                    "{n.selectedText}"
-                  </div>
-                )}
+                <BookAnnotationExcerpt annotation={n} highlights={highlights} />
 
                 {n.content && <p className="text-xs text-[color:var(--on-surface-variant)] leading-relaxed">{n.content}</p>}
+                <button aria-label="Abrir anotação no livro" className="text-xs text-[color:var(--primary)] mt-2" onClick={e => { e.stopPropagation(); onNavigateAnnotation(n); }}>Ir para trecho</button>
               </div>
             ))}
 
-            {quotes.map(q => (
+            {(activeTab === "quotes" ? quotes : []).map(q => (
               <div
                 key={q.id}
                 className="group relative bg-[color:var(--surface)] rounded-xl p-3 border-l-4 border-l-amber-500 border border-[color:var(--outline-variant)]/20 hover:border-amber-500/40 transition-colors cursor-pointer"
-                onClick={() => q.page && onNavigatePage(q.page)}
+                onClick={() => onNavigateAnnotation(q)}
               >
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Icon name="format_quote" className="text-[14px] text-amber-500" />
@@ -232,6 +234,7 @@ export function ReaderSidebar({ book, toc, currentPage, onNavigatePage, onNaviga
                   )}
                 </div>
                 <p className="text-xs italic text-[color:var(--on-surface-variant)] leading-relaxed line-clamp-4">"{q.text}"</p>
+                <button aria-label="Abrir citação no livro" className="text-xs text-[color:var(--primary)] mt-2" onClick={e => { e.stopPropagation(); onNavigateAnnotation(q); }}>Ir para trecho</button>
               </div>
             ))}
           </div>
@@ -248,4 +251,23 @@ function EmptyState({ icon, text }) {
       <p className="text-xs font-bold text-center">{text}</p>
     </div>
   );
+}
+
+function PdfThumbnail({ page, pdfRef, active, onNavigate }) {
+  const element = useRef(null);
+  const [image, setImage] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    const observer = new IntersectionObserver(async entries => {
+      if (!entries[0].isIntersecting) return;
+      observer.disconnect();
+      try {
+        const url = await pdfRef.current?.thumbnail(page);
+        if (!cancelled) setImage(url);
+      } catch {}
+    }, { rootMargin: "150px" });
+    observer.observe(element.current);
+    return () => { cancelled = true; observer.disconnect(); };
+  }, [page, pdfRef]);
+  return <button ref={element} aria-label={`Abrir página ${page}`} aria-current={active ? "page" : undefined} className={active ? "is-active" : ""} onClick={() => onNavigate(page)}>{image ? <img src={image} alt="" /> : <span className="reader-thumbnail-placeholder"><Icon name="description" /></span>}<small>{page}</small></button>;
 }

@@ -51,7 +51,7 @@ test("abre o produto em perfil limpo sem tela branca", async ({ page }) => {
   const response = await page.goto("/", { waitUntil: "domcontentloaded" });
   expect(response?.ok()).toBeTruthy();
   await expect(page.locator("main")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Entre para continuar" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Entre na sua conta" })).toBeVisible();
   await expect(page.getByText("Something went wrong", { exact: false })).toHaveCount(0);
   expect(pageErrors).toEqual([]);
 
@@ -67,7 +67,35 @@ test("fluxo de cadastro exige os campos básicos sem liberar o app", async ({ pa
   await expect(page.getByRole("heading", { name: "Criar conta" })).toBeVisible();
   await expect(page.getByLabel("Nome")).toBeVisible();
   await expect(page.getByLabel("E-mail")).toBeVisible();
-  const password = page.getByLabel("Senha");
+  // Target the input, since the visibility button also has "senha" in its label.
+  const password = page.locator("#account-password");
   await expect(password).toHaveAttribute("minlength", "8");
-  await expect(page.getByRole("heading", { name: "Entre para continuar" })).toBeVisible();
+  await expect(page.locator(".account-auth-shell")).toBeVisible();
+  await expect(page.locator(".account-auth-intro")).toBeVisible();
+});
+
+test("recuperação envia o destino web publicado ao Supabase", async ({ page }) => {
+  let recoveryUrl;
+  let recoveryBody;
+  const env = await readFile(".env", "utf8").catch(() => "");
+  const publicUrl = process.env.VITE_PUBLIC_APP_URL ||
+    env.match(/^VITE_PUBLIC_APP_URL=(.+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, "") ||
+    "http://studyhub.test";
+  await page.route("**/auth/v1/**", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith("/recover")) {
+      recoveryUrl = url;
+      recoveryBody = route.request().postDataJSON();
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Esqueci minha senha" }).click();
+  await page.getByLabel("E-mail").fill("preview@example.invalid");
+  await page.locator('form button[type="submit"]').click();
+  await expect.poll(() => recoveryUrl?.searchParams.get("redirect_to")).toBe(
+    `${publicUrl.replace(/\/$/, "")}/?auth=recovery`,
+  );
+  expect(recoveryBody.code_challenge).toBeNull();
+  await expect(page.getByText("Enviamos um link de recuperação.", { exact: false })).toBeVisible();
 });

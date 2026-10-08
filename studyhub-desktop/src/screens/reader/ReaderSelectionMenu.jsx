@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "../../ui/Icon";
 
 const HIGHLIGHT_COLORS = [
@@ -10,12 +10,24 @@ const HIGHLIGHT_COLORS = [
 ];
 
 export function ReaderSelectionMenu({ position, selectedText, hasExistingHighlight, onHighlight, onRemoveHighlight, onSaveAsNote, onSaveAsQuote, onCopy, onClose }) {
+  const menuRef = useRef(null);
+  const [placement, setPlacement] = useState({ top: 8, left: 8 });
+  useLayoutEffect(() => {
+    if (!position || !menuRef.current) return;
+    const { width, height } = menuRef.current.getBoundingClientRect();
+    // Keep every action visible when selecting near the top or side of a page.
+    const above = position.y - height - 12;
+    setPlacement({ left: Math.max(8, Math.min(position.x - width / 2, window.innerWidth - width - 8)), top: Math.max(8, Math.min(above >= 8 ? above : position.y + 24, window.innerHeight - height - 8)) });
+  }, [position]);
   if (!position) return null;
 
   return (
     <div
+      ref={menuRef}
+      role="toolbar"
+      aria-label="Ações do trecho selecionado"
       className="fixed z-[200] flex flex-col gap-1 bg-[color:var(--surface)] border border-[color:var(--outline-variant)]/30 rounded-2xl shadow-2xl p-2 select-none"
-      style={{ top: position.y, left: position.x, transform: "translate(-50%, -100%)", marginTop: "-8px" }}
+      style={{ ...placement, maxWidth: "calc(100vw - 16px)", maxHeight: "calc(100vh - 16px)", overflowY: "auto" }}
       onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
       onClick={e => e.stopPropagation()}
     >

@@ -2,10 +2,12 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useStudyStore } from "./store/useStore";
+import { isDarkTheme } from "./theme/themes";
 import { AccountScreen } from "./screens/AccountScreen";
 import {
   collaborationCloud,
   collaborationCloudConfigured,
+  initialAuthRedirect,
 } from "./services/collaboration-cloud";
 
 const PdfGuidedReadingModal = lazy(() =>
@@ -54,25 +56,14 @@ export function App() {
     import.meta.env.DEV &&
     new URLSearchParams(window.location.search).get("guided-reading-preview") === "1";
   const utilityScreen = new URLSearchParams(window.location.search).get("screen");
-  const authMode = new URLSearchParams(window.location.search).get("auth");
+  const [recovering, setRecovering] = useState(initialAuthRedirect.isRecovery);
 
   useEffect(() => {
     const media = window.matchMedia?.("(prefers-color-scheme: dark)");
     const applyTheme = () => {
       const isSystem = themePreference === "system";
-      const resolvedDark = isSystem
-        ? Boolean(media?.matches)
-        : [
-            "dark",
-            "midnight-oled",
-            "dracula",
-            "catppuccin-mocha",
-            "tokyo-night",
-            "nord",
-            "matcha-forest",
-            "rose-pine",
-            "cyber-matrix",
-          ].includes(themePreference);
+      // Keep dark utilities and native color-scheme aligned with the catalog.
+      const resolvedDark = isDarkTheme(themePreference, Boolean(media?.matches));
 
       const activeThemeAttr = isSystem
         ? resolvedDark
@@ -83,6 +74,7 @@ export function App() {
       document.documentElement.setAttribute("data-theme", activeThemeAttr);
       document.documentElement.classList.toggle("dark", resolvedDark);
       document.documentElement.style.colorScheme = resolvedDark ? "dark" : "light";
+      window.studyhubDesktop?.setNativeTheme?.(resolvedDark ? "dark" : "light");
     };
     applyTheme();
     if (themePreference !== "system" || !media) return undefined;
@@ -111,7 +103,9 @@ export function App() {
         if (mounted) setAuthState({ loading: false, session: null });
       });
 
-    const unsubscribe = collaborationCloud.onAuthStateChange((session) => {
+    const unsubscribe = collaborationCloud.onAuthStateChange((session, event) => {
+      // Keep recovery above the app shell, even if the callback signs the user in.
+      if (mounted && event === "PASSWORD_RECOVERY") setRecovering(true);
       window.clearTimeout(authTimeout);
       if (mounted) setAuthState({ loading: false, session });
     });
@@ -127,10 +121,20 @@ export function App() {
     return <AppLoadingScreen message="Verificando sua conta…" />;
   }
 
-  if (!authState.session || authMode === "recovery") {
+  if (!authState.session || recovering) {
     return (
       <ErrorBoundary>
-        <AccountScreen required recovery={authMode === "recovery"} />
+        <AccountScreen
+          required
+          recovery={recovering}
+          onRecoveryComplete={() => {
+            const target = new URL(window.location.href);
+            target.searchParams.delete("auth");
+            target.hash = "";
+            window.history.replaceState(null, "", target.pathname + target.search);
+            setRecovering(false);
+          }}
+        />
       </ErrorBoundary>
     );
   }

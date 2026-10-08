@@ -12,3 +12,6 @@ test-results/
 playwright-report/
 *.log
 C:*
+
+# Rebuilt by the macOS beforePack hook.
+electron/native/*.node
