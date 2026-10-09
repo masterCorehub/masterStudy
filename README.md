@@ -4,11 +4,11 @@
 
 <p align="center">Organize sua rotina. Conecte suas ideias. Continue aprendendo.</p>
 
-<p align="center"><a href="https://studyhub-desktop.vercel.app/">Acessar o app</a> · <a href="https://github.com/alexandre-wayss/masterStudy/releases">Releases</a> · <a href="https://github.com/alexandre-wayss/masterStudy/issues">Reportar um problema</a></p>
+<p align="center"><a href="https://studyhub-desktop.vercel.app/">Acessar o app</a> · <a href="https://github.com/masterCorehub/masterStudy/releases">Releases</a> · <a href="https://github.com/masterCorehub/masterStudy/issues">Reportar um problema</a></p>
 
 O **masterStudy** é um aplicativo de organização acadêmica e estudo para web e desktop. Ele reúne disciplinas, tarefas, livros, notas e revisões em um ambiente que acompanha o caminho entre planejar e aprender.
 
-Projeto mantido por [Alexandre Wayss](https://github.com/alexandre-wayss), desenvolvido e evoluído com apoio de ferramentas de IA. A proposta é um produto utilizável e um projeto para demonstrar decisões, implementação e manutenção de software.
+Projeto mantido por [Alexandre Wayss](https://github.com/alexandre-wayss). A proposta é um produto utilizável e um projeto para demonstrar decisões, implementação e manutenção de software.
 
 ## Veja o app em ação
 
@@ -68,14 +68,14 @@ Comece com **uma tarefa, um material e uma nota**. O app web usa conta; não há
 
 [Acesse a versão web](https://studyhub-desktop.vercel.app/) pelo navegador. O desktop acrescenta integração com o sistema, como janelas flutuantes, acesso a arquivos e ferramentas locais.
 
-Instaladores estarão em [Releases](https://github.com/alexandre-wayss/masterStudy/releases) quando disponibilizados. O projeto possui alvos de empacotamento para macOS, Windows e Linux, mas isso não comprova uma release validada em todos eles. Pacotes macOS locais usam assinatura ad-hoc e não equivalem a distribuição notarizada pela Apple.
+Instaladores estarão em [Releases](https://github.com/masterCorehub/masterStudy/releases) quando disponibilizados. O projeto possui alvos de empacotamento para macOS, Windows e Linux, mas isso não comprova uma release validada em todos eles. Pacotes macOS locais usam assinatura ad-hoc e não equivalem a distribuição notarizada pela Apple.
 
 ## Executar localmente
 
 Use **Node.js 24**, npm e Git. Execute os comandos no pacote da aplicação:
 
 ```bash
-git clone https://github.com/alexandre-wayss/masterStudy.git
+git clone https://github.com/masterCorehub/masterStudy.git
 cd masterStudy/studyhub-desktop
 npm ci
 cp .env.example .env
@@ -123,7 +123,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-A CI executa testes e build a cada envio ou pull request. A auditoria de dependências roda separadamente e tem uma [pendência conhecida na cadeia de narração local](https://github.com/alexandre-wayss/masterStudy/issues/1). Testes simulados não substituem a validação de serviços reais e dos pacotes distribuídos.
+A CI executa testes, build e auditoria das dependências de produção a cada envio ou pull request. Testes simulados não substituem a validação de serviços reais e dos pacotes distribuídos.
 
 ## Dados e limites atuais
 

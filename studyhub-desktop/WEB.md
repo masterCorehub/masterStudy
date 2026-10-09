@@ -16,7 +16,7 @@ O build gera `dist/`. Recursos de sistema, janelas flutuantes e algumas ferramen
 
 ## Vercel
 
-Importe `alexandre-wayss/masterStudy` e defina **Root Directory: studyhub-desktop**. O `vercel.json` configura `npm run build`, saída `dist/`, cabeçalhos e rotas. O projeto também possui uma função em `api/`, por isso a publicação completa usa esse diretório, não só os arquivos estáticos.
+Importe `masterCorehub/masterStudy` e defina **Root Directory: studyhub-desktop**. O `vercel.json` configura `npm run build`, saída `dist/`, cabeçalhos e rotas. O projeto também possui uma função em `api/`, por isso a publicação completa usa esse diretório, não só os arquivos estáticos.
 
 Configure as variáveis públicas:
 

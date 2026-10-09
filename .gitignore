@@ -46,9 +46,7 @@ playwright-report/
 *.AppImage
 Mairo Vergara/
 
-# Local agent configuration and generated QA evidence
-.agents/
-.codex/
+# Generated QA evidence
 studyhub-desktop/qa/
 studyhub-desktop/audit/
 studyhub-desktop/audits/

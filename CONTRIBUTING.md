@@ -17,7 +17,7 @@ Preencha apenas as chaves públicas indicadas no exemplo. Variáveis `VITE_*` fi
 ## Fluxo de trabalho
 
 1. Abra uma issue com problema e critério de conclusão, ou escolha uma existente.
-2. Crie uma branch curta, como `codex/fix-reader-resume`. Confira `git status` antes de editar e preserve mudanças de outras tarefas.
+2. Crie uma branch curta e vinculada ao tipo da mudança, como `fix/reader-resume` ou `feat/book-categories`. Use os prefixos `feat/`, `fix/`, `docs/`, `refactor/`, `test/` ou `chore/`.
 3. Faça uma mudança com escopo claro. Regras de dados reutilizáveis vão em `src/domain/`; integrações em `src/services/` ou `electron/`.
 4. Execute as verificações aplicáveis e atualize a documentação afetada.
 5. Abra um pull request explicando problema, resultado, testes e limites. Para mudanças visuais, anexe evidência com dados fictícios.
@@ -33,7 +33,7 @@ npm run test:e2e
 
 `npm ci` instala o lockfile sem recalcular versões. Os testes E2E precisam de Chromium: `npx playwright install chromium`. Testes com fixtures não comprovam Supabase real ou comportamento nativo. Valide o pacote na plataforma afetada quando alterar Electron ou pontes de sistema.
 
-Use commits descritivos, como `fix: preserva posição de leitura ao reabrir`. Evite misturar ajuste visual, migração e dependências sem relação na mesma revisão.
+Use Conventional Commits com assunto curto e no imperativo, como `fix: preserva posição de leitura ao reabrir`. Cada commit deve representar uma mudança revisável. Evite misturar ajuste visual, migração e dependências sem relação na mesma revisão.
 
 ## Segurança e suporte
 
