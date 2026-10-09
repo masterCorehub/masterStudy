@@ -4,7 +4,7 @@
 
 <p align="center">Organize your routine. Connect your ideas. Keep learning.</p>
 
-<p align="center"><a href="https://studyhub-desktop.vercel.app/">Open the app</a> · <a href="https://github.com/masterCorehub/masterStudy/releases">Releases</a> · <a href="https://github.com/masterCorehub/masterStudy/issues">Report an issue</a></p>
+<p align="center"><a href="https://master-study-three.vercel.app/">Open the app</a> · <a href="https://github.com/masterCorehub/masterStudy/releases">Releases</a> · <a href="https://github.com/masterCorehub/masterStudy/issues">Report an issue</a></p>
 
 **masterStudy** is an academic organization and study app for web and desktop. It brings courses, tasks, books, notes, and reviews together, with **local AI study tools** and **desktop shortcuts for everyday work**.
 
@@ -109,7 +109,7 @@ Start with **one task, one source, and one note**. The web app requires an accou
 
 ## Web and desktop
 
-[Open the web app](https://studyhub-desktop.vercel.app/) in your browser. The desktop app adds system integrations such as floating windows, global shortcuts, screen capture, and local file access.
+[Open the web app](https://master-study-three.vercel.app/) in your browser. The desktop app adds system integrations such as floating windows, global shortcuts, screen capture, and local file access.
 
 Installers will be available under [Releases](https://github.com/masterCorehub/masterStudy/releases) when published. Packaging targets exist for macOS, Windows, and Linux, but this does not establish that releases have been validated on every platform. Local macOS packages use ad-hoc signing and are not Apple-notarized distributions.
 

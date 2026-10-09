@@ -2,9 +2,9 @@
 
 O destino da recuperação é configurado por `VITE_PUBLIC_APP_URL`. O Vite inclui essa variável no build; alterar o `.env` exige gerar novamente o aplicativo.
 
-1. No Supabase, em **Authentication → URL Configuration**, configure **Site URL** como `https://studyhub-desktop.vercel.app`.
-2. Em **Redirect URLs**, autorize `https://studyhub-desktop.vercel.app/?auth=recovery` (e `https://studyhub-desktop.vercel.app/?auth=confirmed` para confirmação de cadastro).
-3. Na Vercel, configure `VITE_PUBLIC_APP_URL=https://studyhub-desktop.vercel.app` no ambiente de produção e faça um novo deploy.
+1. No Supabase, em **Authentication → URL Configuration**, configure **Site URL** como `https://master-study-three.vercel.app`.
+2. Em **Redirect URLs**, autorize `https://master-study-three.vercel.app/?auth=recovery` (e `https://master-study-three.vercel.app/?auth=confirmed` para confirmação de cadastro).
+3. Na Vercel, configure `VITE_PUBLIC_APP_URL=https://master-study-three.vercel.app` no ambiente de produção e faça um novo deploy.
 4. No build local para Mac, use a mesma variável no `.env` e gere novamente o aplicativo.
 5. Solicite um novo e-mail de recuperação. A página web deve mostrar o formulário de nova senha.
 

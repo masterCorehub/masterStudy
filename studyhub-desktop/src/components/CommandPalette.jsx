@@ -192,7 +192,7 @@ export function CommandPalette({ onNavigate, standalone = false, initialOpen = f
     if (action) {
       switch (action) {
         case "toggle-theme": {
-          const currentTheme = useStudyStore.getState().themePreference || "system";
+          const currentTheme = useStudyStore.getState().themePreference || "brisa-amber";
           const themeList = ["light", "dark", "midnight-oled", "dracula", "catppuccin-mocha", "tokyo-night", "nord", "matcha-forest", "rose-pine", "warm-sepia", "cyber-matrix"];
           const currIdx = themeList.indexOf(currentTheme);
           const nextTheme = themeList[(currIdx + 1) % themeList.length];

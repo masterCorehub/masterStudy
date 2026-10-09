@@ -4,7 +4,7 @@ import { useStudyStore } from "../store/useStore";
 
 export function CompactSidebar({ activeScreen, onNavigate }) {
   const isDarkMode = useStudyStore((state) => state.isDarkMode);
-  const themePreference = useStudyStore((state) => state.themePreference || "system");
+  const themePreference = useStudyStore((state) => state.themePreference || "brisa-amber");
   const setThemePreference = useStudyStore((state) => state.setThemePreference);
 
   return (
@@ -58,7 +58,7 @@ export function CompactSidebar({ activeScreen, onNavigate }) {
       ))}
       <button
         type="button"
-        title={`Tema: ${themePreference === "system" ? "automático" : themePreference === "dark" ? "escuro" : "claro"}`}
+        title={`Tema: ${themePreference === "system" ? "automático" : isDarkMode ? "escuro" : "claro"}`}
         aria-label="Alternar tema"
         onClick={() => setThemePreference(themePreference === "system" ? "dark" : themePreference === "dark" ? "light" : "system")}
         className="flex w-full items-center overflow-hidden whitespace-nowrap rounded-[18px] p-4 text-left text-[color:var(--on-surface-variant)] transition-colors duration-200 hover:text-[color:var(--primary)]"

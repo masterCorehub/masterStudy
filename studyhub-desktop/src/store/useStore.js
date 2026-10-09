@@ -824,7 +824,7 @@ export const useStudyStore = create(
       immersionMediaTime: 0,
       immersionSeekTo: null,
       isDarkMode: false,
-      themePreference: "system",
+      themePreference: "brisa-amber",
       sidebarOrder: DEFAULT_SIDEBAR_ORDER,
       sidebarNavigationVersion: 1,
       sidebarHiddenItems: [],
@@ -1200,7 +1200,7 @@ export const useStudyStore = create(
         })),
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
       setThemePreference: (preference) => set((state) => {
-        const nextPref = THEME_IDS.includes(preference) ? preference : "system";
+        const nextPref = THEME_IDS.includes(preference) ? preference : "brisa-amber";
         // null means automatic: App resolves the operating-system preference.
         const { isDark } = getThemeById(nextPref);
         return {

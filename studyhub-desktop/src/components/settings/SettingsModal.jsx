@@ -121,7 +121,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
   }, [isOpen, initialTab]);
 
   const store = useStudyStore();
-  const themePreference = useStudyStore((state) => state.themePreference || "system");
+  const themePreference = useStudyStore((state) => state.themePreference || "brisa-amber");
   const setThemePreference = useStudyStore((state) => state.setThemePreference);
   const isDarkMode = useStudyStore((state) => state.isDarkMode);
   const [themeCategoryFilter, setThemeCategoryFilter] = useState("all");

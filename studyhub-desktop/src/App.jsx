@@ -47,7 +47,7 @@ function AppLoadingScreen({ message = "Preparando seu espaço…" }) {
 
 export function App() {
   const isDarkMode = useStudyStore((state) => state.isDarkMode);
-  const themePreference = useStudyStore((state) => state.themePreference || "system");
+  const themePreference = useStudyStore((state) => state.themePreference || "brisa-amber");
   const [authState, setAuthState] = useState({
     loading: collaborationCloudConfigured,
     session: null,

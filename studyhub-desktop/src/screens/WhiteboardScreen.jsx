@@ -20,7 +20,7 @@ export function WhiteboardScreen({ onNavigate, onClose }) {
   const routeModuleId = searchParams?.get("moduleId");
   const routeLessonId = searchParams?.get("lessonId");
   const isDarkModeStore = useStudyStore((state) => state.isDarkMode);
-  const themePreference = useStudyStore((state) => state.themePreference || "system");
+  const themePreference = useStudyStore((state) => state.themePreference || "brisa-amber");
   const [systemDark, setSystemDark] = useState(() => {
     if (typeof window !== "undefined" && window.matchMedia) {
       return window.matchMedia("(prefers-color-scheme: dark)").matches;

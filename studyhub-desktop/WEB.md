@@ -26,7 +26,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sua-chave-publica
 VITE_PUBLIC_APP_URL=https://seu-dominio.example
 ```
 
-Nunca coloque credenciais administrativas em `VITE_*`; esses valores entram no cliente. O endereço atual do app é `https://studyhub-desktop.vercel.app/`.
+Nunca coloque credenciais administrativas em `VITE_*`; esses valores entram no cliente. O endereço atual do app é `https://master-study-three.vercel.app/`.
 
 Siga [supabase/README.md](supabase/README.md) para migrações, permissões e função de exclusão de conta. Inclua o domínio público e os destinos de confirmação/recuperação nas URLs autorizadas do serviço de autenticação.
 
