@@ -586,7 +586,7 @@ export function NoteAiChatModal({
               </button>
               <div className="flex flex-col min-w-0">
                 <h3 className="text-sm font-black text-[color:var(--on-surface)] truncate flex items-center gap-1.5">
-                  <span>{activeThread?.title || "ChatGPT da Nota"}</span>
+                  <span>{activeThread?.title || "Assistente da Nota"}</span>
                   <span className="text-[10px] font-bold text-[color:var(--primary)] bg-[color:var(--primary)]/10 px-2 py-0.5 rounded-full border border-[color:var(--primary)]/20">
                     Modo Janela IA
                   </span>
@@ -682,7 +682,7 @@ export function NoteAiChatModal({
                   <Icon name="psychology" className="text-4xl animate-pulse" />
                 </div>
                 <h3 className="text-lg font-black text-[color:var(--on-surface)] mb-1">
-                  Assistente ChatGPT da Nota
+                  Assistente da Nota
                 </h3>
                 <p className="text-xs text-[color:var(--on-surface-variant)] mb-6 max-w-md leading-relaxed">
                   Tire dúvidas, peça explicações ou solicite revisões conversacionais sobre o texto da nota e seus arquivos anexados.

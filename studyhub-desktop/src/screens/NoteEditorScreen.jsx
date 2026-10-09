@@ -2065,13 +2065,13 @@ export function NoteEditorScreen({ onNavigate }) {
                     </button>
                   </div>
 
-                  {/* ChatGPT Window Launcher Card */}
+                  {/* Note assistant window launcher */}
                   <div className="campus-note-side-card bg-gradient-to-br from-[color:var(--primary)]/10 via-[color:var(--surface-container)] to-[color:var(--surface-container)] border border-[color:var(--primary)]/30 shadow-md">
                     <div className="flex items-center justify-between gap-1 mb-2">
                       <div className="flex items-center gap-1.5">
                         <Icon name="psychology" className="text-xl text-[color:var(--primary)]" />
                         <h4 className="text-xs font-black text-[color:var(--on-surface)]">
-                          ChatGPT da Nota
+                          Assistente da Nota
                         </h4>
                       </div>
                       {Array.isArray(data.aiChats) && data.aiChats.length > 0 && (
@@ -2081,7 +2081,7 @@ export function NoteEditorScreen({ onNavigate }) {
                       )}
                     </div>
                     <p className="text-[11px] text-[color:var(--on-surface-variant)] leading-relaxed mb-3">
-                      Abra uma janela dedicada de Chat com IA com histórico de conversas salvo, suporte a anexos e respostas no estilo ChatGPT.
+                      Abra uma janela dedicada ao assistente, com histórico de conversas, anexos e contexto completo da nota.
                     </p>
                     <button
                       type="button"
@@ -2177,7 +2177,7 @@ export function NoteEditorScreen({ onNavigate }) {
                         className="rounded-lg bg-[color:var(--primary)] px-3 py-2.5 text-xs font-bold text-white shadow-sm flex items-center justify-center gap-1 hover:opacity-90 transition-all"
                         type="button"
                         onClick={() => setIsChatModalOpen(true)}
-                        title="Abrir ChatGPT da Nota em nova janela"
+                        title="Abrir Assistente da Nota em nova janela"
                       >
                         <Icon name="chat" className="text-[15px]" />
                         <span>Chat Completo</span>
