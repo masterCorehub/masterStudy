@@ -93,6 +93,7 @@
     "zustand": "^5.0.14"
   },
   "overrides": {
+    "@huggingface/transformers": "4.3.1",
     "dompurify": "$dompurify",
     "epubjs": {
       "@xmldom/xmldom": "0.8.13"
@@ -172,11 +173,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/alexandre-wayss/masterStudy.git"
+    "url": "git+https://github.com/masterCorehub/masterStudy.git"
   },
   "homepage": "https://studyhub-desktop.vercel.app/",
   "bugs": {
-    "url": "https://github.com/alexandre-wayss/masterStudy/issues"
+    "url": "https://github.com/masterCorehub/masterStudy/issues"
   },
   "engines": {
     "node": ">=24 <25"
