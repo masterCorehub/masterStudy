@@ -1,3 +1,5 @@
+import { mergeWaterTrackers } from "../domain/waterTracker.js";
+
 export const STUDY_STATE_SCHEMA_VERSION = 15;
 
 const isPlainObject = (value) =>
@@ -186,6 +188,10 @@ export function cloudStateSizeBytes(state = {}) {
 export function mergeStudyStates(base = {}, local = {}, remote = {}) {
   const report = { conflicts: [] };
   const state = mergeNode(base, local, remote, "", report) || {};
+  if (local.waterTracker || remote.waterTracker) {
+    // Intake from another device must not carry an older goal over a new setting.
+    state.waterTracker = mergeWaterTrackers(local.waterTracker, remote.waterTracker);
+  }
   // Cloud snapshots omit device files and embedded covers. Absence there is
   // not deletion: retain these fields on surviving books, matched by ID.
   const localBooks = new Map((local.books?.list || []).map(book => [String(book.id), book]));

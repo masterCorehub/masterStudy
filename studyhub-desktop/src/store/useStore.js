@@ -4,6 +4,7 @@ import { mergeMigratedStickyNotes } from "../domain/stickyNoteMigration";
 import { create } from "zustand";
 import { reorderDashboardFlow, stepDashboardFlow } from "../domain/dashboardFlow";
 import { persist } from "zustand/middleware";
+import { parseWaterTarget, waterTrackerForDate, mergeWaterTrackers } from "../domain/waterTracker";
 import {
   ACADEMIC_COLLECTIONS,
   createEmptyAcademicData,
@@ -858,20 +859,7 @@ export const useStudyStore = create(
       // Actions
       addWaterIntake: (amountMl = 250) => set((state) => {
         const todayKey = getLocalDateKey();
-        const existingTarget = state.waterTracker?.targetMl || 2000;
-        const existingCup = state.waterTracker?.cupSizeMl || 250;
-        const existingBottle = state.waterTracker?.bottleSizeMl || 500;
-
-        const current = state.waterTracker && state.waterTracker.date === todayKey
-          ? state.waterTracker
-          : {
-              ...(state.waterTracker || {}),
-              date: todayKey,
-              targetMl: existingTarget,
-              cupSizeMl: existingCup,
-              bottleSizeMl: existingBottle,
-              consumedMl: 0,
-            };
+        const current = waterTrackerForDate(state.waterTracker, todayKey);
 
         const normalizedAmount = Number(amountMl);
         if (!Number.isFinite(normalizedAmount) || normalizedAmount === 0) return state;
@@ -888,75 +876,40 @@ export const useStudyStore = create(
             consumedMl: newConsumed,
             lastIntakeAmount: normalizedAmount,
             lastIntakeAt: now,
+            consumptionUpdatedAt: now,
             updatedAt: now,
           }
         };
       }),
       resetWaterIntake: () => set((state) => {
-        const todayKey = getLocalDateKey();
+        const now = Date.now();
         return {
           waterTracker: {
-            ...(state.waterTracker || {}),
-            date: todayKey,
-            targetMl: state.waterTracker?.targetMl || 2000,
-            cupSizeMl: state.waterTracker?.cupSizeMl || 250,
-            bottleSizeMl: state.waterTracker?.bottleSizeMl || 500,
+            ...waterTrackerForDate(state.waterTracker, getLocalDateKey()),
             consumedMl: 0,
-            updatedAt: Date.now(),
+            lastIntakeAmount: undefined,
+            lastIntakeAt: undefined,
+            consumptionUpdatedAt: now,
+            updatedAt: now,
           }
         };
       }),
-      setWaterTarget: (targetMl) => set((state) => {
-        const todayKey = getLocalDateKey();
-        let parsed = parseFloat(String(targetMl).replace(/[^\d.]/g, ""));
-        if (!Number.isFinite(parsed) || parsed <= 0) parsed = 2000;
-        if (parsed <= 15) parsed = parsed * 1000;
-        const validTarget = Math.max(500, Math.min(15000, Math.round(parsed)));
-
-        const current = state.waterTracker && state.waterTracker.date === todayKey
-          ? state.waterTracker
-          : {
-              ...(state.waterTracker || {}),
-              date: todayKey,
-              targetMl: validTarget,
-              consumedMl: 0,
-            };
-        return {
-          waterTracker: {
-            ...current,
-            targetMl: validTarget,
-            date: todayKey,
-            updatedAt: Date.now(),
-          }
-        };
-      }),
+      setWaterTarget: (targetMl) => get().updateWaterSettings({ targetMl }),
       updateWaterSettings: (newSettings = {}) => set((state) => {
-        const todayKey = getLocalDateKey();
-        let rawTarget = newSettings.targetMl;
-        let parsedTarget = parseFloat(String(rawTarget).replace(/[^\d.]/g, ""));
-        if (!Number.isFinite(parsedTarget) || parsedTarget <= 0) {
-          parsedTarget = state.waterTracker?.targetMl || 2000;
-        } else if (parsedTarget <= 15) {
-          parsedTarget = parsedTarget * 1000;
-        }
-        const validTarget = Math.max(500, Math.min(15000, Math.round(parsedTarget)));
-
-        const current = state.waterTracker && state.waterTracker.date === todayKey
-          ? state.waterTracker
-          : {
-              ...(state.waterTracker || {}),
-              date: todayKey,
-              consumedMl: 0,
-            };
+        const current = waterTrackerForDate(state.waterTracker, getLocalDateKey());
+        const targetMl = newSettings.targetMl === undefined
+          ? current.targetMl : parseWaterTarget(newSettings.targetMl);
+        // Invalid input must never replace a saved goal with the default.
+        if (targetMl === null) return state;
+        const now = Date.now();
         return {
           waterTracker: {
             ...current,
-            ...newSettings,
-            targetMl: validTarget,
-            cupSizeMl: Number(newSettings.cupSizeMl) || current.cupSizeMl || 250,
-            bottleSizeMl: Number(newSettings.bottleSizeMl) || current.bottleSizeMl || 500,
-            date: todayKey,
-            updatedAt: Date.now(),
+            targetMl,
+            cupSizeMl: Number(newSettings.cupSizeMl) || current.cupSizeMl,
+            bottleSizeMl: Number(newSettings.bottleSizeMl) || current.bottleSizeMl,
+            settingsUpdatedAt: now,
+            updatedAt: now,
           }
         };
       }),
@@ -3766,6 +3719,11 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
     {
       name: "studyhub-storage-v2",
       version: 25,
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...persistedState,
+        waterTracker: mergeWaterTrackers(currentState.waterTracker, persistedState?.waterTracker),
+      }),
       migrate: (persistedState, version) => {
         const studyItems = migrateStudyItems(persistedState);
         const contextual = migrateAcademicContexts({

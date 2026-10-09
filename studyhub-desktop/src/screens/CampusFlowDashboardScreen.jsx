@@ -1,6 +1,7 @@
 import { StickyMarkdown } from "../components/StickyMarkdown";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { dashboardFlowLanes } from "../domain/dashboardFlow";
+import { parseWaterTarget, waterTrackerForDate } from "../domain/waterTracker";
 import { selectTodayTasks } from "../domain/taskDates";
 import { SCREEN_IDS } from "../app/screenIds";
 import { getAcademicSemesterData } from "../domain/academic";
@@ -671,17 +672,7 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
 
   const todayKey = getLocalDateKey(currentDate);
   const todayIso = getLocalDateKey(currentDate);
-  const waterTracker =
-    waterTrackerState && waterTrackerState.date === todayIso
-      ? waterTrackerState
-      : {
-          ...(waterTrackerState || {}),
-          date: todayIso,
-          targetMl: waterTrackerState?.targetMl || 2000,
-          cupSizeMl: waterTrackerState?.cupSizeMl || 250,
-          bottleSizeMl: waterTrackerState?.bottleSizeMl || 500,
-          consumedMl: 0,
-        };
+  const waterTracker = waterTrackerForDate(waterTrackerState, todayIso);
   const waterTarget = waterTracker.targetMl || 2000;
   const waterConsumed = waterTracker.consumedMl || 0;
   const cupSizeMl = waterTracker.cupSizeMl || 250;
@@ -1720,6 +1711,7 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
 
 function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
   const [targetMl, setTargetMl] = useState(waterTracker.targetMl || 2000);
+  const [targetError, setTargetError] = useState("");
   const [cupSizeMl, setCupSizeMl] = useState(waterTracker.cupSizeMl || 250);
   const [bottleSizeMl, setBottleSizeMl] = useState(
     waterTracker.bottleSizeMl || 500,
@@ -1727,10 +1719,12 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    let parsed = parseFloat(String(targetMl).replace(/[^\d.]/g, ""));
-    if (!Number.isFinite(parsed) || parsed <= 0) parsed = 2000;
-    if (parsed <= 15) parsed = parsed * 1000;
-    const validTarget = Math.max(500, Math.min(15000, Math.round(parsed)));
+    const validTarget = parseWaterTarget(targetMl);
+    if (validTarget === null) {
+      setTargetError("Informe uma meta entre 0,5 e 15 L (500 a 15000 ml).");
+      e.currentTarget.querySelector("#water-target")?.focus();
+      return;
+    }
 
     onSave({
       targetMl: validTarget,
@@ -1740,13 +1734,8 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
     onClose();
   };
 
-  const parsedTargetNum = parseFloat(String(targetMl).replace(/[^\d.]/g, ""));
-  const displayLiters =
-    Number.isFinite(parsedTargetNum) && parsedTargetNum > 0
-      ? parsedTargetNum <= 15
-        ? parsedTargetNum
-        : parsedTargetNum / 1000
-      : 2;
+  const parsedTargetMl = parseWaterTarget(targetMl);
+  const displayLiters = parsedTargetMl === null ? null : parsedTargetMl / 1000;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
@@ -1778,12 +1767,11 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
           {/* Target Intake */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-bold text-[color:var(--on-surface-variant)] uppercase tracking-wider">
+              <label htmlFor="water-target" className="block text-xs font-bold text-[color:var(--on-surface-variant)] uppercase tracking-wider">
                 Meta Diária de Água
               </label>
               <span className="text-xs font-black text-cyan-500">
-                {displayLiters.toFixed(1).replace(".0", "")} L (
-                {displayLiters * 1000} ml)
+                {displayLiters === null ? "—" : `${displayLiters.toLocaleString("pt-BR")} L (${parsedTargetMl} ml)`}
               </span>
             </div>
             <div className="grid grid-cols-5 gap-1.5 mb-3">
@@ -1791,10 +1779,9 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
                 <button
                   key={amt}
                   type="button"
-                  onClick={() => setTargetMl(amt)}
+                  onClick={() => { setTargetMl(amt); setTargetError(""); }}
                   className={`py-2 text-[11px] font-extrabold rounded-xl border transition-all ${
-                    Number(targetMl) === amt ||
-                    (parsedTargetNum <= 15 && parsedTargetNum * 1000 === amt)
+                    parsedTargetMl === amt
                       ? "bg-cyan-500 text-white border-cyan-500 shadow-md shadow-cyan-500/20"
                       : "bg-[color:var(--surface-container-low)] text-[color:var(--on-surface)] border-[color:var(--outline-variant)]/30 hover:border-cyan-500/50"
                   }`}
@@ -1805,19 +1792,27 @@ function WaterSettingsModal({ waterTracker, onClose, onSave, onReset }) {
             </div>
             <div className="relative flex items-center">
               <input
-                type="number"
-                min="0.5"
-                max="15"
-                step="0.1"
+                id="water-target"
+                type="text"
+                inputMode="decimal"
+                required
+                aria-invalid={Boolean(targetError)}
+                aria-describedby="water-target-help water-target-error"
                 value={targetMl}
-                onChange={(e) => setTargetMl(e.target.value)}
-                placeholder="Ex: 5 ou 5000"
-                className="w-full bg-[color:var(--surface-container-low)] border border-[color:var(--outline-variant)]/30 rounded-xl px-4 py-3 text-sm font-bold text-[color:var(--on-surface)] outline-none focus:border-cyan-500"
+                onChange={(e) => { setTargetMl(e.target.value); setTargetError(""); }}
+                placeholder="Ex: 4 L ou 4000 ml"
+                className="w-full bg-[color:var(--surface-container-low)] border border-[color:var(--outline-variant)]/30 rounded-xl pl-4 pr-36 py-3 text-sm font-bold text-[color:var(--on-surface)] outline-none focus:border-cyan-500"
               />
               <span className="absolute right-4 text-xs font-bold text-[color:var(--on-surface-variant)] opacity-70">
                 Litros (L) ou ml
               </span>
             </div>
+            <p id="water-target-help" className="mt-2 text-xs text-[color:var(--on-surface-variant)]">
+              De 0,5 a 15 L (500 a 15000 ml). Ex.: 4,5 L ou 4500 ml.
+            </p>
+            <p id="water-target-error" role={targetError ? "alert" : undefined} className="mt-1 text-xs text-red-500">
+              {targetError}
+            </p>
           </div>
 
           {/* Quick Shortcuts: Bottle Size */}

@@ -19,6 +19,7 @@ import { isPrimaryShortcut } from "../utils/keyboardShortcuts";
 import { useStudyStore } from "../store/useStore";
 import { collaborationCloud, collaborationCloudConfigured } from "../services/collaboration-cloud";
 import { usePomodoroStore } from "../store/usePomodoroStore";
+import { mergeWaterTrackers } from "../domain/waterTracker";
 import { normalizeAcademicStateSnapshot } from "../domain/academic";
 import {
   getCloudDeviceId,
@@ -237,7 +238,10 @@ export function AppShell() {
             if (snapshot?.state) {
               const normalized = normalizeAcademicStateSnapshot(snapshot.state);
               // Força que a referência seja completamente nova no store
-              useStudyStore.setState({ ...normalized });
+              useStudyStore.setState((state) => ({
+                ...normalized,
+                waterTracker: mergeWaterTrackers(state.waterTracker, normalized.waterTracker),
+              }));
               useStudyStore.getState().upgradeDashboardStickyNotes?.();
             }
           })
@@ -571,9 +575,12 @@ export function AppShell() {
         notify("loading");
         const snapshot = await database.load();
         if (mounted && snapshot?.state) {
-          useStudyStore.setState(
-            normalizeAcademicStateSnapshot(snapshot.state),
-          );
+          const normalized = normalizeAcademicStateSnapshot(snapshot.state);
+          useStudyStore.setState((state) => ({
+            ...normalized,
+            // localStorage is synchronous; SQLite may still contain an older goal.
+            waterTracker: mergeWaterTrackers(state.waterTracker, normalized.waterTracker),
+          }));
           useStudyStore.getState().upgradeDashboardStickyNotes?.();
         } else if (mounted) {
           await database.save(useStudyStore.getState());
