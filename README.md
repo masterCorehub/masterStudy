@@ -1,78 +1,121 @@
-<p align="center"><img src="branding/logo.svg" width="104" alt="Logo do masterStudy: livro aberto"></p>
+<p align="center"><img src="branding/logo.svg" width="104" alt="masterStudy open-book logo"></p>
 
 <h1 align="center">masterStudy</h1>
 
-<p align="center">Organize sua rotina. Conecte suas ideias. Continue aprendendo.</p>
+<p align="center">Organize your routine. Connect your ideas. Keep learning.</p>
 
-<p align="center"><a href="https://studyhub-desktop.vercel.app/">Acessar o app</a> · <a href="https://github.com/masterCorehub/masterStudy/releases">Releases</a> · <a href="https://github.com/masterCorehub/masterStudy/issues">Reportar um problema</a></p>
+<p align="center"><a href="https://studyhub-desktop.vercel.app/">Open the app</a> · <a href="https://github.com/masterCorehub/masterStudy/releases">Releases</a> · <a href="https://github.com/masterCorehub/masterStudy/issues">Report an issue</a></p>
 
-O **masterStudy** é um aplicativo de organização acadêmica e estudo para web e desktop. Ele reúne disciplinas, tarefas, livros, notas e revisões em um ambiente que acompanha o caminho entre planejar e aprender.
+**masterStudy** is an academic organization and study app for web and desktop. It brings courses, tasks, books, notes, and reviews together, with **local AI study tools** and **desktop shortcuts for everyday work**.
 
-Projeto mantido por [Alexandre Wayss](https://github.com/alexandre-wayss). A proposta é um produto utilizável e um projeto para demonstrar decisões, implementação e manutenção de software.
+Maintained by [Alexandre Wayss](https://github.com/alexandre-wayss), the project combines a usable learning workspace with ongoing software development and maintenance.
 
-## Veja o app em ação
+## Local AI for studying and writing
 
-![Visão do dia no masterStudy](branding/screenshots/hoje.png)
+Connect **Ollama** to use models running on your own computer. Turn selected class materials and notes into study resources, ask questions about their content, and get help developing your writing.
 
-O **Hoje** reúne tarefas, prazos e agenda para você escolher o próximo passo.
+| Tool | What it helps you do |
+| --- | --- |
+| Flashcard generation | Create question-and-answer cards from your study materials and use them for review |
+| Writing assistant | Rewrite passages, adjust tone, summarize ideas, and ask for explanations while working on a note |
+| Class material analysis | Ask questions about notes and supported attachments, using the selected sources as context |
+| Practice questions | Generate multiple-choice questions with answers and explanations |
+| Study guides | Build guides with concepts, examples, a glossary, and exam preparation tips |
+| Review plans and summaries | Organize revision into sessions and exercises, or extract the essential concepts |
+| Mind maps | Generate a hierarchy of concepts and their relationships from the study sources |
+| Separate study chats | Keep conversations organized by topic in the Study Studio |
 
-### Um percurso rápido
+To get started, run Ollama with an installed model, select **Ollama local** in the app's AI settings, and choose the model to use. Results depend on the model, available hardware, and the quality of the source material. Review generated content before using it for an assignment or exam.
 
-![Demonstração: criar e concluir uma tarefa, abrir disciplinas e consultar livros](branding/demo.gif)
+**Google Gemini** is also available as a cloud provider. With Ollama selected, model inference runs locally; with Gemini selected, the context sent for the request is processed by the configured online service. Screen translation is a separate feature and may use an online translation service even when the study assistant uses Ollama.
 
-Criação e conclusão de uma tarefa, seguida da navegação por disciplinas e biblioteca. O GIF mostra a interface real com dados fictícios de demonstração.
+## Everyday tools, one shortcut away
 
-### Explore as áreas
+The desktop app provides quick-access windows for taking notes, drawing, translating text, extracting text from the screen, and generating flashcards. Supported global shortcuts work while the desktop app is running, including when another application is in front.
 
-Clique nas imagens para abrir em tamanho maior.
+**Mod** means **Command (⌘)** on macOS and **Control** on Windows/Linux. **Alt** means **Option (⌥)** on macOS.
+
+| Action | Default shortcut | Scope |
+| --- | --- | --- |
+| Find or create a quick note | `Mod + Shift + Alt + 1` | Desktop global shortcut |
+| Open the quick drawing board | `Mod + Shift + Alt + 2` | Desktop global shortcut |
+| Open text translation | `Mod + Shift + Alt + 3` | Desktop global shortcut |
+| Capture a screen area and extract text with OCR for translation | `Mod + Shift + Alt + 4` | Desktop global shortcut |
+| Open AI flashcard generation | `Mod + Shift + Alt + 5` | Desktop global shortcut |
+| Open Sticky Notes | `Mod + Shift + Alt + 6` | Desktop global shortcut |
+| Open the command palette | `Mod + K` | In-app |
+| Find a note across vaults | `Mod + O` | Note workspace |
+| Create a capture | `Mod + Shift + K` | Knowledge Hub |
+| Focus the Hub search | `Mod + /` | Knowledge Hub |
+| Save the current note or journal entry | `Mod + S` | Supported editors |
+| Close the active note tab | `Mod + W` | Note editor |
+| Open settings | `Mod + ,` | In-app |
+
+For example, select a region of a lecture slide with the OCR shortcut to extract its text for translation, or open the flashcard window while studying a document. Global shortcuts can be customized in **Settings → Shortcuts**. Availability depends on the platform, system permissions, and whether another application has reserved the same key combination.
+
+## See the app in action
+
+![masterStudy Today dashboard](branding/screenshots/hoje.png)
+
+**Today** brings daily tasks, deadlines, and your schedule together so you can choose what to work on next.
+
+### A quick walkthrough
+
+![Demo: create and complete a task, browse subjects, and open the library](branding/demo.gif)
+
+Create and complete a task, then navigate through subjects and the book library. The demo shows the real interface with fictional sample data.
+
+### Explore the workspace
+
+Click an image to view it at full size.
 
 <table>
   <tr>
-    <td width="50%"><strong>Cursos e disciplinas</strong><br>Organize suas matérias e materiais.<br><a href="branding/screenshots/disciplinas.png"><img src="branding/screenshots/disciplinas.png" alt="Cursos e disciplinas no masterStudy"></a></td>
-    <td width="50%"><strong>Biblioteca</strong><br>Acompanhe os livros e seu progresso.<br><a href="branding/screenshots/biblioteca.png"><img src="branding/screenshots/biblioteca.png" alt="Biblioteca de livros no masterStudy"></a></td>
+    <td width="50%"><strong>Courses and subjects</strong><br>Organize classes and learning materials.<br><a href="branding/screenshots/disciplinas.png"><img src="branding/screenshots/disciplinas.png" alt="masterStudy courses and subjects"></a></td>
+    <td width="50%"><strong>Library</strong><br>Keep track of books and reading progress.<br><a href="branding/screenshots/biblioteca.png"><img src="branding/screenshots/biblioteca.png" alt="masterStudy book library"></a></td>
   </tr>
   <tr>
-    <td width="50%"><strong>Estúdio de Estudo</strong><br>Separe conversas e explore assuntos.<br><a href="branding/screenshots/estudio.png"><img src="branding/screenshots/estudio.png" alt="Estúdio de Estudo no masterStudy"></a></td>
-    <td width="50%"><strong>Leitor</strong><br>Leia e ajuste a aparência do conteúdo.<br><a href="branding/screenshots/leitor.png"><img src="branding/screenshots/leitor.png" alt="Leitor EPUB e opções de aparência no masterStudy"></a></td>
+    <td width="50%"><strong>Study Studio</strong><br>Keep separate chats and explore your sources.<br><a href="branding/screenshots/estudio.png"><img src="branding/screenshots/estudio.png" alt="masterStudy Study Studio"></a></td>
+    <td width="50%"><strong>Reader</strong><br>Read and customize the reading experience.<br><a href="branding/screenshots/leitor.png"><img src="branding/screenshots/leitor.png" alt="EPUB reader and appearance settings"></a></td>
   </tr>
 </table>
 
-_As capturas usam conteúdo de exemplo. A demonstração visual não valida serviços externos de conta ou IA._
+_The screenshots show the Portuguese interface with sample content. Visual demonstrations do not validate external account or AI services. This README is in English; the app's study-generation prompts currently request Brazilian Portuguese output._
 
-## Funcionalidades
+## Features
 
-| Área | O que você pode fazer |
+| Area | What you can do |
 | --- | --- |
-| Hoje | Conferir tarefas do dia, agenda, hábitos, hidratação e notas fixadas |
-| Cursos e disciplinas | Organizar matérias, aulas, avaliações e materiais de estudo |
-| Agenda e tarefas | Acompanhar compromissos, prazos, subtarefas e entregas |
-| Estúdio de Estudo | Manter conversas por assunto e usar fontes e ferramentas de IA |
-| Biblioteca e leitor | Importar PDF/EPUB, ler, grifar, anotar e retomar o progresso |
-| Notas | Organizar por pastas e tags, relacionar ideias e explorar conexões |
-| Revisões | Praticar com flashcards e acompanhar revisões |
-| Diário e Sticky Notes | Registrar reflexões, ideias rápidas e lembretes |
-| Capturas & Hub | Guardar textos e referências encontrados durante a pesquisa |
-| Personalização | Escolher temas e organizar menu e visão do dia |
+| Today | View today's tasks, schedule, habits, hydration, and pinned notes |
+| Courses and subjects | Organize subjects, lessons, assessments, and study materials |
+| Calendar and tasks | Track appointments, deadlines, subtasks, and completed work |
+| Study Studio | Maintain topic-based chats and work with selected sources and AI tools |
+| Library and reader | Import PDF/EPUB books, read, highlight, annotate, and resume your progress |
+| Notes and vaults | Organize notes with folders and tags, link ideas, and explore their connections |
+| Reviews | Practice with flashcards and spaced repetition |
+| Journal and Sticky Notes | Record reflections, quick ideas, and reminders |
+| Captures & Hub | Save text and references found during research |
+| Personalization | Choose themes and customize navigation and the Today layout |
 
-Há recursos auxiliares para aulas, mídia, idiomas, programação, tradução e reconhecimento de texto. A disponibilidade depende da plataforma e da configuração.
+Additional tools support lessons, media, language learning, programming, translation, and text recognition. Availability varies by platform and configuration.
 
-## Fluxo de uso
+## A typical workflow
 
-**Planejar → reunir materiais → estudar → anotar → revisar.**
+**Plan → gather materials → study → take notes → review.**
 
-Para preparar uma prova, organize a disciplina e o prazo, reúna os materiais, estude um capítulo, registre sua explicação e pratique com perguntas de revisão. Você escolhe e confirma cada ação; não precisa usar todas as áreas nem seguir uma sequência fixa.
+To prepare for an exam, organize the subject and deadline, gather class materials, read a chapter, write down your explanation, and generate practice questions or flashcards. You choose the sources and confirm each action; you can use only the areas that fit your routine.
 
-Comece com **uma tarefa, um material e uma nota**. O app web usa conta; não há credenciais públicas de demonstração neste repositório.
+Start with **one task, one source, and one note**. The web app requires an account; this repository does not provide public demo credentials.
 
-## Web e desktop
+## Web and desktop
 
-[Acesse a versão web](https://studyhub-desktop.vercel.app/) pelo navegador. O desktop acrescenta integração com o sistema, como janelas flutuantes, acesso a arquivos e ferramentas locais.
+[Open the web app](https://studyhub-desktop.vercel.app/) in your browser. The desktop app adds system integrations such as floating windows, global shortcuts, screen capture, and local file access.
 
-Instaladores estarão em [Releases](https://github.com/masterCorehub/masterStudy/releases) quando disponibilizados. O projeto possui alvos de empacotamento para macOS, Windows e Linux, mas isso não comprova uma release validada em todos eles. Pacotes macOS locais usam assinatura ad-hoc e não equivalem a distribuição notarizada pela Apple.
+Installers will be available under [Releases](https://github.com/masterCorehub/masterStudy/releases) when published. Packaging targets exist for macOS, Windows, and Linux, but this does not establish that releases have been validated on every platform. Local macOS packages use ad-hoc signing and are not Apple-notarized distributions.
 
-## Executar localmente
+## Run locally
 
-Use **Node.js 24**, npm e Git. Execute os comandos no pacote da aplicação:
+Use **Node.js 24**, npm, and Git. Run commands from the application package:
 
 ```bash
 git clone https://github.com/masterCorehub/masterStudy.git
@@ -81,62 +124,65 @@ npm ci
 cp .env.example .env
 ```
 
-Preencha o `.env` com a URL do seu projeto Supabase, a chave pública de cliente e o endereço público do app, conforme o exemplo. Nunca use uma chave administrativa em variáveis `VITE_*`. Veja [configuração do Supabase](studyhub-desktop/supabase/README.md) e [deploy web](studyhub-desktop/WEB.md).
+Fill in `.env` with your Supabase project URL, public client key, and public app URL as shown in the example. Never place an administrative key in a `VITE_*` variable. See [Supabase setup](studyhub-desktop/supabase/README.md) and [web deployment](studyhub-desktop/WEB.md).
 
 ```bash
-npm run dev:web # Interface no navegador.
-npm run dev     # Aplicativo desktop com Electron.
+npm run dev:web # Browser interface.
+npm run dev     # Electron desktop app.
 ```
 
-## Estrutura
+For local AI, install and run Ollama separately, download a model suitable for your computer, and configure it in the app's AI settings.
+
+## Project structure
 
 ```text
 masterStudy/
-├── branding/               # Marca do produto
-├── .github/                # CI e modelos de colaboração
-├── README.md               # Apresentação e início rápido
-├── CONTRIBUTING.md         # Fluxo de contribuição
-├── SECURITY.md             # Orientações de segurança
+├── branding/               # Product identity and demo media
+├── .github/                # CI and contribution templates
+├── README.md               # Overview and quick start
+├── CONTRIBUTING.md         # Contribution workflow
+├── SECURITY.md             # Security guidance
 └── studyhub-desktop/
-    ├── src/                # Interface, domínio, serviços e estado
-    ├── electron/           # Integração desktop
-    ├── native/             # Pontes de plataforma
-    ├── public/             # Recursos do aplicativo
-    ├── tests/              # Testes automatizados
-    ├── scripts/            # Desenvolvimento e distribuição
-    ├── supabase/           # Conta, permissões e sincronização
-    └── studyhub-extension/ # Extensão de captura
+    ├── src/                # UI, domain logic, services, and state
+    ├── electron/           # Desktop integration
+    ├── native/             # Platform bridges
+    ├── public/             # Application assets
+    ├── tests/              # Automated tests
+    ├── scripts/            # Development and distribution
+    ├── supabase/           # Accounts, permissions, and synchronization
+    └── studyhub-extension/ # Browser capture extension
 ```
 
-O nome técnico `studyhub-desktop` e identificadores antigos são mantidos para preservar compatibilidade com dados e integrações existentes.
+The technical name `studyhub-desktop` and legacy identifiers remain to preserve compatibility with existing data and integrations.
 
-## Qualidade e tecnologias
+## Technology and quality
 
-React, Vite e Electron sustentam a interface web/desktop. O projeto também utiliza Zustand, Supabase, leitores PDF/EPUB e Playwright.
+React, Vite, and Electron power the web and desktop interface. The project also uses Zustand, Supabase, PDF/EPUB readers, Ollama and Gemini integrations, OCR, and Playwright.
 
-Na pasta `studyhub-desktop`:
+From `studyhub-desktop`:
 
 ```bash
 npm test
 npm run build
+npm run audit:prod
 npx playwright install chromium
 npm run test:e2e
 ```
 
-A CI executa testes, build e auditoria das dependências de produção a cada envio ou pull request. Testes simulados não substituem a validação de serviços reais e dos pacotes distribuídos.
+CI runs tests, a production build, and a production dependency audit on pushes and pull requests. Simulated tests do not replace validation of real services or distributed desktop packages.
 
-## Dados e limites atuais
+## Data and current limitations
 
-- Sincronização não transfere necessariamente todos os livros e anexos locais.
-- A exportação em Configurações é parcial; preserve os arquivos originais importantes.
-- IA precisa de configuração e revisão; serviços online podem receber o contexto enviado.
-- Notificações dependem de permissão e podem parar ao encerrar o app.
-- A extensão envia capturas ao desktop aberto; a ponte local não é um serviço público.
+- Synchronization does not necessarily transfer every local book or attachment.
+- The export available in Settings is partial; keep important original files.
+- AI requires configuration and review. Cloud providers may receive the context included in a request.
+- Notifications require permission and may stop when the app is closed.
+- The browser extension sends captures to the running desktop app; its local bridge is not a public service.
 
-## Contribuição e suporte
+## Contributing and support
 
-Leia [CONTRIBUTING.md](CONTRIBUTING.md). Para falhas, informe passos, versão, plataforma e resultado esperado. Use dados fictícios nas evidências. Para vulnerabilidades, siga [SECURITY.md](SECURITY.md).
+Read [CONTRIBUTING.md](CONTRIBUTING.md). When reporting a bug, include reproduction steps, version, platform, and expected behavior. Use fictional data in screenshots and test cases. For vulnerabilities, follow [SECURITY.md](SECURITY.md).
 
-## Licença
+## License
 
-A licença de reutilização ainda não foi definida pelo mantenedor.
+A reuse license has not yet been selected by the maintainer.
