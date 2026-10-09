@@ -90,10 +90,12 @@ test("Cmd+K e biblioteca mostram as mesmas disciplinas, sem arquivadas nem outro
     .locator(".campus-discipline-card h2")
     .allTextContents();
   expect(names).toHaveLength(4);
-  await page.keyboard.press("Meta+k");
+  // Playwright escolhe Command no macOS e Control no Linux/Windows.
+  await page.keyboard.press("ControlOrMeta+k");
   const palette = page.getByRole("dialog", {
     name: "Paleta de Comandos Global",
   });
+  await expect(palette).toBeVisible();
   await palette.getByRole("button", { name: /Cursos/ }).click();
   for (const name of names)
     await expect(palette.getByText(name, { exact: true })).toBeVisible();
