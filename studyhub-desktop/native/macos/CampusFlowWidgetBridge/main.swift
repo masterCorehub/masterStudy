@@ -22,7 +22,6 @@ do {
     )
     try input.write(to: url, options: .atomic)
     WidgetCenter.shared.reloadTimelines(ofKind: "CampusFlowTasksWidget")
-    WidgetCenter.shared.reloadTimelines(ofKind: "CampusFlowPomodoroWidget")
     print(url.path)
 } catch {
     FileHandle.standardError.write(Data("\(error.localizedDescription)\n".utf8))

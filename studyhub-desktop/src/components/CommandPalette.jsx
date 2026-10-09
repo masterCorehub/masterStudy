@@ -3,7 +3,7 @@ import { Icon } from "../ui/Icon";
 import { SCREEN_IDS } from "../app/screenIds";
 import { useStudyStore } from "../store/useStore";
 import { buildSearchIndex } from "../domain/studySelectors";
-import { usePomodoroStore } from "../store/usePomodoroStore";
+
 import { isPrimaryShortcut, shortcutLabel } from "../utils/keyboardShortcuts";
 
 const screenId = (value) => value === "today" ? SCREEN_IDS.TODAY : value;
@@ -95,7 +95,7 @@ export function CommandPalette({ onNavigate, standalone = false, initialOpen = f
       }
 
       if (!open) return;
-      
+
       if (event.key === "Escape") {
         event.preventDefault();
         setOpen(false);
@@ -269,13 +269,7 @@ export function CommandPalette({ onNavigate, standalone = false, initialOpen = f
           }, 100);
           return;
         }
-        case "start-pomodoro": {
-          usePomodoroStore.getState().setMode?.("focus");
-          usePomodoroStore.getState().startTimer?.();
-          closePalette();
-          onNavigate?.(SCREEN_IDS.POMODORO);
-          return;
-        }
+
         case "quick-capture": {
           closePalette();
           onNavigate?.(SCREEN_IDS.KNOWLEDGE_HUB);

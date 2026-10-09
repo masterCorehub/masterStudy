@@ -83,64 +83,6 @@ struct TasksWidgetView: View {
     }
 }
 
-struct PomodoroWidgetView: View {
-    let entry: CampusFlowEntry
-
-    private var title: String {
-        switch entry.state.pomodoro.mode {
-        case "shortBreak": return "Pausa curta"
-        case "longBreak": return "Pausa longa"
-        default: return "Foco"
-        }
-    }
-
-    private var endDate: Date? {
-        guard let value = entry.state.pomodoro.endTime else { return nil }
-        return Date(timeIntervalSince1970: value / 1000)
-    }
-
-    private var pausedTime: String {
-        let seconds = max(0, entry.state.pomodoro.remainingSeconds)
-        return String(format: "%02d:%02d", seconds / 60, seconds % 60)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label(title, systemImage: entry.state.pomodoro.isActive ? "timer" : "pause.circle")
-                    .font(.system(size: 13, weight: .bold))
-                Spacer()
-                Text("\(entry.state.pomodoro.completedCount)")
-                    .font(.caption.bold())
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Group {
-                if entry.state.pomodoro.isActive, let endDate {
-                    Text(timerInterval: Date()...endDate, countsDown: true)
-                } else {
-                    Text(pausedTime)
-                }
-            }
-            .font(.system(size: 31, weight: .bold, design: .rounded))
-            .monospacedDigit()
-            .foregroundStyle(deepNavy)
-            if let task = entry.state.pomodoro.taskTitle, !task.isEmpty {
-                Text(task)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            } else {
-                Text(entry.state.pomodoro.isActive ? "Sessão em andamento" : "Pronto para começar")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .containerBackground(.background, for: .widget)
-        .widgetURL(URL(string: "campusflow://pomodoro"))
-    }
-}
-
 struct CampusFlowTasksWidget: Widget {
     let kind = "CampusFlowTasksWidget"
     var body: some WidgetConfiguration {
@@ -153,22 +95,9 @@ struct CampusFlowTasksWidget: Widget {
     }
 }
 
-struct CampusFlowPomodoroWidget: Widget {
-    let kind = "CampusFlowPomodoroWidget"
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: CampusFlowProvider()) { entry in
-            PomodoroWidgetView(entry: entry)
-        }
-        .configurationDisplayName("Pomodoro")
-        .description("Acompanhe sua sessão de foco no desktop.")
-        .supportedFamilies([.systemSmall, .systemMedium])
-    }
-}
-
 @main
 struct CampusFlowWidgetBundle: WidgetBundle {
     var body: some Widget {
         CampusFlowTasksWidget()
-        CampusFlowPomodoroWidget()
     }
 }

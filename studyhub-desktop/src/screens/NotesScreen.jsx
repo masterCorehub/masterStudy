@@ -294,12 +294,27 @@ export function NotesScreen({ onNavigate }) {
     });
   }, [store, activeVaultId, currentVault]);
 
-  const handleCreateNestedNote = (title = "Nova nota interna") => {
+  const handleCreateNestedNote = (requestedTitle = "Nova nota interna") => {
     if (!activeNote || activeNote.sharedReadOnly) return null;
-    if (title === "Nova nota interna") title = `Nota interna — ${activeNote.title || "Sem título"}`;
-    const child = { id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title, content: "", markdownContent: "", itemType: "note", ...nestedNoteContext(activeNote) };
-    store.addStudyItem(child);
-    return child.id;
+    const defaultTitle = requestedTitle === "Nova nota interna"
+      ? `Nota interna — ${activeNote.title || "Sem título"}`
+      : requestedTitle;
+    return new Promise((resolve) => setPromptDialog({
+      title: "Nome da nota interna:",
+      defaultValue: defaultTitle,
+      onCancel: () => resolve(null),
+      onConfirm: (value) => {
+        const title = String(value || "").trim();
+        if (!title) { resolve(null); return; }
+        const child = {
+          id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          title, content: "", markdownContent: "", itemType: "note",
+          ...nestedNoteContext(activeNote),
+        };
+        store.addStudyItem(child);
+        resolve({ id: child.id, title });
+      },
+    }));
   };
 
   const handleCreateFolder = useCallback((parentPath = "") => {
@@ -432,6 +447,7 @@ export function NotesScreen({ onNavigate }) {
                   promptDialog.onConfirm(e.target.value);
                   setPromptDialog(null);
                 } else if (e.key === 'Escape') {
+                  promptDialog.onCancel?.();
                   setPromptDialog(null);
                 }
               }}
@@ -439,7 +455,7 @@ export function NotesScreen({ onNavigate }) {
             />
             <div className="flex justify-end gap-3">
               <button 
-                onClick={() => setPromptDialog(null)}
+                onClick={() => { promptDialog.onCancel?.(); setPromptDialog(null); }}
                 className="px-4 py-2 rounded-lg text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] font-medium"
               >
                 Cancelar
@@ -577,12 +593,9 @@ export function NotesScreen({ onNavigate }) {
             
             {/* Note Sub-header */}
             {activeNote && (
-              <div className="h-10 border-b border-[var(--outline-variant)] flex items-center justify-between px-4 bg-[var(--surface-lowest)] shrink-0">
+            <div className="h-10 border-b border-[var(--outline-variant)] flex items-center justify-between px-4 bg-[var(--surface-lowest)] shrink-0">
                 <div className="flex items-center gap-2">
                   <Icon name="description" className="text-sm text-[var(--primary)]" />
-                  <span className="text-xs font-bold truncate max-w-[300px]">
-                    {activeNote.title || "Sem título"}
-                  </span>
                   {(activeNote.category === "Nota de aula" || activeNote.classLogId) && <span className="text-[11px] text-[var(--primary)] inline-flex items-center gap-1"><Icon name="school" className="text-sm" />Nota de aula{activeNote.date ? ` · ${new Date(`${activeNote.date}T12:00:00`).toLocaleDateString("pt-BR")}` : ""}</span>}
                   {activeNote.path && (
                     <span className="text-[11px] text-[var(--on-surface-variant)] opacity-60 truncate max-w-[200px]">
@@ -627,6 +640,17 @@ export function NotesScreen({ onNavigate }) {
         {/* Editor Content Area */}
         {activeNote && (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative bg-[var(--surface)]">
+            <input
+              aria-label="Título da nota"
+              value={activeNote.title || ""}
+              onChange={(event) => {
+                const title = event.target.value;
+                store.updateStudyItem(activeNote.id, { title, updatedAt: Date.now() });
+                store.updateTabTitle(activeNote.id, title || "Sem título");
+              }}
+              placeholder="Sem título"
+              className="mx-auto mt-8 mb-3 w-full max-w-4xl border-0 bg-transparent px-8 text-3xl font-bold tracking-tight text-[var(--on-surface)] outline-none placeholder:opacity-40 focus:ring-0"
+            />
             <div className="flex shrink-0 flex-wrap items-center gap-2 px-4 py-2 border-b border-[var(--outline-variant)] text-xs">
               {activeNote.parentNoteId && <button type="button" onClick={() => { const parent = allNotes.find(note => note.id === activeNote.parentNoteId); if (parent) store.openTab(parent); }}>← {allNotes.find(note => note.id === activeNote.parentNoteId)?.title || "Nota principal"}</button>}
               {vaultNotes.filter(note => note.parentNoteId === activeNote.id).map(child => <button type="button" key={child.id} onClick={() => store.openTab(child)} className="rounded border border-[var(--outline-variant)] px-2 py-1">↳ {child.title}</button>)}

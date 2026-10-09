@@ -102,7 +102,6 @@ const NOTIFICATION_TESTS = [
   { id: "tasks", icon: "event_upcoming", title: "2 tarefas vencem hoje", subtitle: "masterStudy • Planejamento acadêmico", body: "Confira seus prazos e escolha o próximo passo.", screen: SCREEN_IDS.TASKS, actionLabel: "Ver tarefas" },
   { id: "exams", icon: "quiz", title: "Prova amanhã", subtitle: "masterStudy • Calendário acadêmico", body: "Sua revisão final de Cálculo está programada para hoje.", screen: SCREEN_IDS.ACADEMIC, actionLabel: "Abrir calendário" },
   { id: "attendance", icon: "warning", title: "Atenção à frequência", subtitle: "masterStudy • Desempenho acadêmico", body: "Uma disciplina está próxima do limite mínimo de presença.", screen: SCREEN_IDS.ACADEMIC, actionLabel: "Ver frequência", persistent: true },
-  { id: "pomodoro", icon: "timer", title: "Ciclo de foco concluído", subtitle: "masterStudy • Pomodoro", body: "Ótimo trabalho. Respire e aproveite seu intervalo.", screen: SCREEN_IDS.POMODORO, actionLabel: "Abrir Pomodoro" },
 ];
 
 export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavigate }) {
@@ -139,7 +138,6 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
   const appSettings = useStudyStore((state) => state.appSettings || {
     notificationsEnabled: true,
     soundEnabled: true,
-    pomodoroAutoBreak: false,
     taskDueReminders: true,
     flashcardReviewReminders: true,
     liveTranslationCapture: false,
@@ -580,12 +578,14 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  {DEFAULT_SHORTCUTS.filter(
-                    (s) =>
+                  {DEFAULT_SHORTCUTS
+                    .filter((shortcut) => window.studyhubDesktop || !shortcut.nativeKey)
+                    .filter((s) =>
                       s.label.toLowerCase().includes(shortcutFilter.toLowerCase()) ||
                       s.keys.toLowerCase().includes(shortcutFilter.toLowerCase()) ||
-                      s.desc.toLowerCase().includes(shortcutFilter.toLowerCase()),
-                  ).map((sc) => (
+                      s.desc.toLowerCase().includes(shortcutFilter.toLowerCase())
+                    )
+                    .map((sc) => (
                     <div
                       key={sc.id}
                       className="flex items-center justify-between p-3.5 rounded-2xl bg-[color:var(--surface-container-low)] border border-[color:var(--outline-variant)]/30"
@@ -607,8 +607,12 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
               </div>
             )}
 
-            {activeTab === "ai" && (
-              <div className="flex flex-col gap-6">
+            {activeTab === "ai" && (!window.studyhubDesktop?.academicAI ? (
+              <div className="rounded-2xl border border-[color:var(--outline-variant)]/40 bg-[color:var(--surface-container-low)] p-6">
+                <h3 className="text-base font-bold text-[color:var(--on-surface)]">IA MasterStudy</h3>
+                <p className="mt-2 text-sm leading-6 text-[color:var(--on-surface-variant)]">Na versão web, as ferramentas de IA usam o serviço seguro do masterStudy. A chave da API fica no servidor e você não precisa instalar modelos nem configurar tokens.</p>
+              </div>
+            ) : <div className="flex flex-col gap-6">
                 <div>
                   <h3 className="text-base font-bold text-[color:var(--on-surface)]">Provedor de inteligência artificial</h3>
                   <p className="mt-0.5 text-xs text-[color:var(--on-surface-variant)]">Escolha entre processamento local com Ollama ou Gemini pela API do Google.</p>
@@ -667,13 +671,13 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
                     {
                       key: "notificationsEnabled",
                       title: "Ativar notificações do sistema",
-                      desc: "Permite receber alertas de pausas e conclusões",
+                      desc: "Permite receber alertas de tarefas e revisões",
                       icon: "notifications",
                     },
                     {
                       key: "soundEnabled",
                       title: "Efeitos sonoros de conclusão",
-                      desc: "Toca um som suave ao finalizar ciclos de foco ou tarefas",
+                      desc: "Reproduz um som ao receber notificações",
                       icon: "volume_up",
                     },
                     {
@@ -688,12 +692,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
                       desc: "Mostra uma notificação nativa quando houver cartões vencidos",
                       icon: "style",
                     },
-                    {
-                      key: "pomodoroAutoBreak",
-                      title: "Iniciar pausas automaticamente",
-                      desc: "Inicia o intervalo do Pomodoro assim que o tempo de foco termina",
-                      icon: "timer",
-                    },
+
                     {
                       key: "suppressDeleteConfirmation",
                       title: "Pular confirmação ao excluir notas e itens",
@@ -706,7 +705,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
                       desc: "Mantém vídeos e animações em movimento durante a seleção. Desative para usar uma captura congelada.",
                       icon: "screenshot_region",
                     },
-                  ].filter(setting => setting.key !== "pomodoroAutoBreak").map((setting) => {
+                  ].map((setting) => {
                     const isChecked = Boolean(appSettings[setting.key]);
                     return (
                       <div
@@ -760,7 +759,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
                     </div>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {NOTIFICATION_TESTS.filter(test => test.id !== "pomodoro").map((test) => (
+                    {NOTIFICATION_TESTS.map((test) => (
                       <button
                         className="flex items-center gap-3 rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] px-3 py-3 text-left text-xs font-bold text-[color:var(--on-surface)] transition hover:border-[color:var(--primary)]/40 hover:text-[color:var(--primary)]"
                         key={test.id}

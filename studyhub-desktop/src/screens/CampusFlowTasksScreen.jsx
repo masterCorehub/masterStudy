@@ -118,7 +118,7 @@ export function CampusFlowTasksScreen({ onNavigate }) {
       subjectId: form.academicSubjectId,
       category: subject?.name || "",
       estimatedMinutes: 25,
-      estimatedPomodoros: 1,
+
       attachments: [],
     });
     setForm(initialTask);

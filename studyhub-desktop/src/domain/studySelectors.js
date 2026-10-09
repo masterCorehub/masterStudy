@@ -88,7 +88,6 @@ export function buildSearchIndex(state) {
     ["Novo projeto de programação", "Ação", "projects", "terminal", "create-project"],
 
     // ⏱️ Foco, Estudo & Revisão
-    // O comando de Pomodoro fica preservado no handler para reativação futura.
     ["Revisar cartões e flashcards", "Revisão", "flashcards", "psychology"],
     ["Modo Imersão (Estudo Focado)", "Foco", "immersion", "headphones"],
     ["Abrir tela Hoje (Dashboard)", "Navegar", "today", "dashboard"],
@@ -156,18 +155,18 @@ export function buildSearchIndex(state) {
 }
 
 export function scheduleTaskSessions(tasks = [], options = {}) {
-  const dailyPomodoros = Math.max(1, options.dailyPomodoros || 2);
+  const dailySessions = Math.max(1, options.dailySessions || 2);
   const today = new Date(options.now || Date.now());
   today.setHours(0, 0, 0, 0);
   const sessions = [];
-  const pending = tasks.filter((task) => task.status !== "completed" && task.dueDate && Number(task.estimatedPomodoros || 0) > 0).sort((a, b) => (a.priority === "high" ? -1 : 1) - (b.priority === "high" ? -1 : 1) || String(a.dueDate).localeCompare(String(b.dueDate)));
+  const pending = tasks.filter((task) => task.status !== "completed" && task.dueDate && Math.ceil(Number(task.estimatedMinutes || 0) / 25) > 0).sort((a, b) => (a.priority === "high" ? -1 : 1) - (b.priority === "high" ? -1 : 1) || String(a.dueDate).localeCompare(String(b.dueDate)));
   for (const task of pending) {
-    let remaining = Number(task.estimatedPomodoros || 0);
+    let remaining = Math.ceil(Number(task.estimatedMinutes || 0) / 25);
     const deadline = new Date(`${task.dueDate}T00:00:00`);
     for (let date = new Date(today); remaining > 0 && date <= deadline; date.setDate(date.getDate() + 1)) {
       const dateKey = getLocalDateKey(date);
       const used = sessions.filter((session) => session.date === dateKey).length;
-      const available = Math.max(0, dailyPomodoros - used);
+      const available = Math.max(0, dailySessions - used);
       for (let index = 0; index < available && remaining > 0; index += 1) {
         sessions.push({ id: `plan-${task.id}-${dateKey}-${index}`, taskId: task.id, date: dateKey, status: "planned", order: index });
         remaining -= 1;

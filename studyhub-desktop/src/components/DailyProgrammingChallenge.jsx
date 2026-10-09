@@ -14,7 +14,7 @@ export function DailyProgrammingChallenge({ onNavigate }) {
   const draft = store.drafts[challenge.id] || "";
 
   const createPracticeTask = () => {
-    addTask({ title: `Desafio: ${challenge.title}`, description: challenge.prompt, type: "programming", category: "Programação", priority: "medium", estimatedPomodoros: 1 });
+    addTask({ title: `Desafio: ${challenge.title}`, description: challenge.prompt, type: "programming", category: "Programação", priority: "medium", estimatedMinutes: 25 });
     onNavigate?.("tasks");
   };
 

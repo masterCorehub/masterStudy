@@ -144,7 +144,6 @@ export function moveWidgetInList(widgets, id, direction) {
 // One shared composition for new profiles, restore-default, and the migration.
 export const DEFAULT_DASHBOARD_WIDGETS = [
   { id: "summary", visible: true, size: 8, rowSpan: 2, x: 0, y: 0 },
-  { id: "focus", visible: true, size: 4, rowSpan: 2, x: 8, y: 0 },
   { id: "schedule", visible: true, size: 8, rowSpan: 4, x: 0, y: 2 },
   { id: "deadlines", visible: true, size: 4, rowSpan: 2, x: 8, y: 2 },
   { id: "flashcards", visible: true, size: 4, rowSpan: 2, x: 8, y: 4 },
@@ -164,7 +163,7 @@ export function upgradeDashboardComposition(saved = []) {
       const { mobileOrder, ...previous } = byId.get(layout.id) || {};
       return { ...previous, ...layout, visible: previous.visible !== false };
     }),
-    ...saved.filter((widget) => !knownIds.has(widget.id)),
+    ...saved.filter((widget) => !knownIds.has(widget.id) && widget.id !== "focus"),
   ]);
 }
 

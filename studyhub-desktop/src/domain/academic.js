@@ -1,3 +1,5 @@
+import { retireStudyTimer } from "./retiredStudyFeatures.js";
+import { applyEntityDeletionTombstones } from "../services/account-sync.js";
 import { getLocalDateKey } from "../utils/dateUtils.js";
 import { migrateTasksNavigation } from "./sidebarNavigation.js";
 import { getTaskCompletionDate } from "./taskDates.js";
@@ -515,7 +517,7 @@ export function resolveAcademicSubjectId(item = {}, subjects = []) {
 }
 
 export function normalizeAcademicStateSnapshot(state = {}) {
-  state = migrateTasksNavigation(state);
+  state = retireStudyTimer(migrateTasksNavigation(state));
   const academic = normalizeAcademicData(state.academic);
   const subjects = academic.subjects;
   const withContext = (item = {}) => {
@@ -573,7 +575,7 @@ export function normalizeAcademicStateSnapshot(state = {}) {
         }
       : session;
   });
-  return {
+  return applyEntityDeletionTombstones({
     ...state,
     academic,
     studyItems,
@@ -587,7 +589,7 @@ export function normalizeAcademicStateSnapshot(state = {}) {
     flashcardDecks: asArray(state.flashcardDecks).map(withContext),
     focusSessions,
     activeAcademicSubjectId: state.activeAcademicSubjectId || null,
-  };
+  });
 }
 
 const lessonContext = (courses = []) =>

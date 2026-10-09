@@ -8,7 +8,7 @@ const localDateKey = (value = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-export function buildMacWidgetState(studyState, pomodoroState, now = Date.now()) {
+export function buildMacWidgetState(studyState, now = Date.now()) {
   const today = localDateKey(new Date(now));
   const tasks = (studyState?.tasks?.list || [])
     .filter((task) => task?.id && !completedStatuses.has(String(task.status || "").toLowerCase()))
@@ -29,20 +29,5 @@ export function buildMacWidgetState(studyState, pomodoroState, now = Date.now())
       overdue: Boolean(task.dueDate && task.dueDate < today),
     }));
 
-  const selectedTaskId = pomodoroState?.selectedTasks?.[0];
-  const selectedTask = (studyState?.tasks?.list || []).find((task) => task.id === selectedTaskId);
-  const isActive = Boolean(pomodoroState?.isActive && pomodoroState?.endTime);
-
-  return {
-    updatedAt: now,
-    tasks,
-    pomodoro: {
-      mode: pomodoroState?.mode || "focus",
-      isActive,
-      endTime: isActive ? Number(pomodoroState.endTime) : null,
-      remainingSeconds: isActive ? 0 : Math.max(0, Number(pomodoroState?.timeLeft || 0)),
-      taskTitle: selectedTask?.title || null,
-      completedCount: Math.max(0, Number(pomodoroState?.pomodorosCompleted || 0)),
-    },
-  };
+  return { updatedAt: now, tasks };
 }

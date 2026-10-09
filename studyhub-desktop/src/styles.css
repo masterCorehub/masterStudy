@@ -636,13 +636,6 @@
   body:has(.translator-capture-overlay.is-live) #root {
     background: transparent !important;
   }
-  html:has(.pomodoro-widget-screen),
-  body:has(.pomodoro-widget-screen),
-  body:has(.pomodoro-widget-screen) #root {
-    min-width: 0;
-    min-height: 0;
-    background: transparent !important;
-  }
   html:has(.sticky-note-widget-screen),
   body:has(.sticky-note-widget-screen),
   body:has(.sticky-note-widget-screen) #root {
@@ -650,18 +643,6 @@
     min-height: 0;
     background: transparent !important;
   }
-
-  .pomodoro-widget-card {
-    border-color: rgba(255, 255, 255, .7);
-    background: rgba(255, 255, 255, .95);
-  }
-  .pomodoro-widget-dial { background: #fff; }
-  .pomodoro-widget-secondary { border-color: #dbe2ea; background: #fff; color: #334155; }
-  .pomodoro-widget-select { border-color: #dbe2ea; background: #fff; color: #334155; }
-  .dark .pomodoro-widget-card { border-color: var(--outline-variant); background: rgba(32, 33, 37, .97); }
-  .dark .pomodoro-widget-dial { background: var(--surface-container-lowest); }
-  .dark .pomodoro-widget-secondary, .dark .pomodoro-widget-select { border-color: var(--outline-variant); background: var(--surface-high); color: var(--on-surface); }
-  .dark .pomodoro-widget-screen .text-\[\#475569\] { color: var(--on-surface-variant) !important; }
 
   button,
   input,
@@ -1253,7 +1234,7 @@
 }
 
 .note-document-editor .tiptap-container.grid .ProseMirror {
-  background-image: 
+  background-image:
     linear-gradient(var(--outline-variant) 1px, transparent 1px),
     linear-gradient(90deg, var(--outline-variant) 1px, transparent 1px);
   background-size: 1.8rem 1.8rem;
@@ -1265,7 +1246,7 @@
 }
 
 .note-document-editor .tiptap-container.paged .ProseMirror {
-  min-height: 29.7cm; 
+  min-height: 29.7cm;
   padding: 1.5cm 2cm;
   background-image: linear-gradient(
     to bottom,
@@ -1293,7 +1274,7 @@
 
 /* Combinations for Page Layout + Line Marking */
 .note-document-editor .tiptap-container.paged.ruled .ProseMirror {
-  background-image: 
+  background-image:
     linear-gradient(
       to bottom,
       transparent 29.7cm,
@@ -1309,7 +1290,7 @@
 }
 
 .note-document-editor .tiptap-container.paged.grid .ProseMirror {
-  background-image: 
+  background-image:
     linear-gradient(
       to bottom,
       transparent 29.7cm,
@@ -1326,7 +1307,7 @@
 }
 
 .dark .note-document-editor .tiptap-container.paged.ruled .ProseMirror {
-  background-image: 
+  background-image:
     linear-gradient(
       to bottom,
       transparent 29.7cm,
@@ -1340,7 +1321,7 @@
 }
 
 .dark .note-document-editor .tiptap-container.paged.grid .ProseMirror {
-  background-image: 
+  background-image:
     linear-gradient(
       to bottom,
       transparent 29.7cm,
@@ -7782,29 +7763,6 @@ textarea[placeholder="Pergunte sobre seu erro ou conceito..."] + button:hover {
   padding-bottom: 0;
 }
 
-/* Deep-focus dark theme compatibility for legacy screens that still use
-   fixed light utility colors in their markup. */
-.dark .pomodoro-screen {
-  background: var(--background) !important;
-  color: var(--on-surface);
-}
-
-.dark .pomodoro-screen .bg-white,
-.dark .pomodoro-screen [class*="bg-[#fff"],
-.dark .pomodoro-screen [class*="bg-white"] {
-  background: var(--surface-container-lowest) !important;
-}
-
-.dark .pomodoro-screen [class*="text-[#0f172a"],
-.dark .pomodoro-screen [class*="text-[#334155"],
-.dark .pomodoro-screen [class*="text-[#64748b"] {
-  color: var(--on-surface) !important;
-}
-
-.dark .pomodoro-screen [class*="border-[#"] {
-  border-color: var(--outline-variant) !important;
-}
-
 .dark .flashcards-screen {
   background: var(--background) !important;
   color: var(--on-surface) !important;
@@ -9223,28 +9181,6 @@ tr:hover td {
   .dark .campus-task-row-completed strong, .dark .campus-task-row-completed time, .dark .campus-task-row-completed .campus-task-subject, .dark .campus-kanban-item-completed h3, .dark .campus-kanban-item-completed span, .dark .campus-kanban-item-completed footer { color: #9bd3a4 !important; }
   .dark .campus-task-modal { background: rgba(0, 0, 0, .72); }
 }
-
-/* Pomodoro principal: remove os fundos claros restantes no tema escuro. */
-.dark .pomodoro-screen { background: var(--background) !important; color: var(--on-surface) !important; }
-.dark .pomodoro-screen [class*="bg-[#f7f8fb]"],
-.dark .pomodoro-screen [class*="bg-[#edf1f7]"],
-.dark .pomodoro-screen [class*="bg-white"],
-.dark .pomodoro-screen [class*="bg-[#eef2f7]"] { background: var(--surface-container-low) !important; }
-.dark .pomodoro-screen [class*="border-[#dbe2ea]"],
-.dark .pomodoro-screen [class*="border-[#e6ebf2]"],
-.dark .pomodoro-screen [class*="border-[#e3e8ef]"],
-.dark .pomodoro-screen [class*="border-[#dde5ee]"],
-.dark .pomodoro-screen [class*="border-[#e2e8f0]"] { border-color: var(--outline-variant) !important; }
-.dark .pomodoro-screen [class*="text-[#0b1730]"],
-.dark .pomodoro-screen [class*="text-[#0f172a]"],
-.dark .pomodoro-screen [class*="text-[#111d34]"],
-.dark .pomodoro-screen [class*="text-[#334155]"],
-.dark .pomodoro-screen [class*="text-[#475569]"],
-.dark .pomodoro-screen [class*="text-[#64748b]"] { color: var(--on-surface) !important; }
-.dark .pomodoro-screen [class*="bg-[#0f172a]/6"] { background: rgba(255,255,255,.08) !important; }
-.dark .pomodoro-screen aside { border-color: var(--outline-variant) !important; background: var(--surface-container-lowest) !important; }
-.dark .pomodoro-screen div[style*="conic-gradient"] { background: conic-gradient(from 0deg, var(--primary) 0deg, var(--surface-high) 5deg, var(--surface-high) 360deg) !important; }
-.dark .pomodoro-screen aside article { background: var(--surface-high) !important; color: var(--on-surface) !important; }
 
 @media (min-width: 761px) {
   .dark .campus-tasks-page, .dark .campus-task-detail-page { background: var(--background) !important; color: var(--on-surface); }

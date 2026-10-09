@@ -590,7 +590,7 @@ export function LessonScreen({ onNavigate }) {
     dueDate: "",
     category: "",
     type: "task",
-    estimatedPomodoros: 1,
+    estimatedMinutes: 25,
   });
   const [selectedPanelItem, setSelectedPanelItem] = useState(null);
   const [editingDeckCardId, setEditingDeckCardId] = useState(null);
@@ -2817,7 +2817,7 @@ export function LessonScreen({ onNavigate }) {
                     dueDate: "",
                     category: "",
                     type: "task",
-                    estimatedPomodoros: 1,
+                    estimatedMinutes: 25,
                   });
                   setShowAddTaskModal(false);
                 }}
@@ -2889,18 +2889,18 @@ export function LessonScreen({ onNavigate }) {
                   </label>
                   <label className="flex flex-col gap-2">
                     <span className="text-xs font-bold uppercase text-[color:var(--on-surface-variant)]">
-                      Pomodoros
+                      Minutos estimados
                     </span>
                     <input
                       className="rounded-xl border border-[color:var(--outline-variant)]/45 bg-[color:var(--background)] px-4 py-3 text-sm outline-none focus:border-[color:var(--primary)]"
                       max="10"
                       min="1"
                       type="number"
-                      value={newTask.estimatedPomodoros}
+                      value={newTask.estimatedMinutes}
                       onChange={(event) =>
                         setNewTask({
                           ...newTask,
-                          estimatedPomodoros: parseInt(event.target.value) || 1,
+                          estimatedMinutes: parseInt(event.target.value) || 1,
                         })
                       }
                     />

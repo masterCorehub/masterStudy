@@ -1,3 +1,5 @@
+import { retireStudyTimer } from "../domain/retiredStudyFeatures";
+import { applyEntityDeletionTombstones } from "../services/account-sync";
 import { allBookCategories, validateBookCategoryName, removeBookCategory, migrateBookCategories } from "../domain/bookCategories";
 import { repairNestedNotes } from "../domain/nestedNotes";
 import { mergeMigratedStickyNotes } from "../domain/stickyNoteMigration";
@@ -33,6 +35,18 @@ const isReadOnlySharedItem = (item) =>
 const getDeletedItemTitle = (item, fallback = "Item sem título") =>
   String(item?.title || item?.name || item?.text || fallback).trim() || fallback;
 
+const updateDeletionTombstone = (state, entityType, entityId, timestamp, collection = "", restored = false) => {
+  const id = `${entityType}:${collection}:${entityId}`;
+  const previous = (state.entityDeletionTombstones || []).find((item) => item.id === id);
+  const next = {
+    ...(previous || {}), id, entityType, entityId, collection,
+    deletedAt: restored ? Number(previous?.deletedAt || 0) : timestamp,
+    restoredAt: restored ? timestamp : 0,
+    updatedAt: timestamp,
+  };
+  return [...(state.entityDeletionTombstones || []).filter((item) => item.id !== id), next];
+};
+
 const moveToUniversalTrash = (state, entityType, item, metadata = {}) => {
   if (!item) return {};
   const now = Date.now();
@@ -47,6 +61,7 @@ const moveToUniversalTrash = (state, entityType, item, metadata = {}) => {
     metadata,
   };
   return {
+    entityDeletionTombstones: updateDeletionTombstone(state, entityType, item.id, now, metadata.collection || ""),
     universalTrash: [trashItem, ...(state.universalTrash || [])].slice(0, 1000),
     universalHistory: [
       {
@@ -54,6 +69,7 @@ const moveToUniversalTrash = (state, entityType, item, metadata = {}) => {
         action: "deleted",
         entityType,
         entityId: item.id,
+        metadata,
         title: trashItem.title,
         timestamp: now,
       },
@@ -750,6 +766,7 @@ export const useStudyStore = create(
       books: { list: [] },
       bookCategories: [],
       universalTrash: [],
+      entityDeletionTombstones: [],
       universalHistory: [],
       activeBookId: null,
       noteVersions: [],
@@ -786,7 +803,7 @@ export const useStudyStore = create(
       vaultFolders: [],        // Array of { id, name, path, parentId, vaultId, createdAt }
       openTabs: [],            // Array of { id, title, isDirty, pinned, itemType }
       activeTabId: null,       // ID of the active tab
-      vaultSearchQuery: "",    // Current search in vault explorer  
+      vaultSearchQuery: "",    // Current search in vault explorer
       activeTag: null,         // Currently active tag filter
       vocabulary: {}, // Record<string, "seen" | "learning">
       activeSidePanel: "backlinks",  // "backlinks" | "graph" | "ai" | "tags" | null
@@ -811,13 +828,12 @@ export const useStudyStore = create(
       sidebarOrder: DEFAULT_SIDEBAR_ORDER,
       sidebarNavigationVersion: 1,
       sidebarHiddenItems: [],
-      sidebarQuickActions: ["calendar", "tasks", "pomodoro"],
+      sidebarQuickActions: ["calendar", "tasks"],
       knowledgeItems: DEFAULT_KNOWLEDGE_ITEMS,
       activeKnowledgeItemId: null,
       appSettings: {
         notificationsEnabled: true,
         soundEnabled: true,
-        pomodoroAutoBreak: false,
         taskDueReminders: true,
         flashcardReviewReminders: true,
         liveTranslationCapture: false,
@@ -827,7 +843,6 @@ export const useStudyStore = create(
       favoriteCommands: [
         "command-today-Abrir tela Hoje (Dashboard)",
         "command-note_editor-Criar nova nota",
-        "command-pomodoro-Iniciar Pomodoro (25 min)",
         "command-flashcards-Revisar cartões e flashcards (Anki)",
       ],
       favoriteSlashCommands: ["h1", "bullet", "table", "callout_tip", "code", "mermaid"],
@@ -837,7 +852,7 @@ export const useStudyStore = create(
         const vocab = { ...(state.vocabulary || {}) };
         const cleanWord = String(word).trim().toLowerCase();
         if (!cleanWord) return state;
-        
+
         const currentStatus = vocab[cleanWord];
         if (currentStatus === "seen") {
           vocab[cleanWord] = "learning";
@@ -846,7 +861,7 @@ export const useStudyStore = create(
         } else {
           vocab[cleanWord] = "seen";
         }
-        
+
         return { vocabulary: vocab };
       }),
       markWordAsSeen: (word) => set((state) => {
@@ -2138,9 +2153,9 @@ export const useStudyStore = create(
           const itemIdsToDelete = new Set(
             ids.filter((_, idx) => types[idx] === 'note')
           );
-          
+
           let nextState = {};
-          
+
           if (itemIdsToDelete.size > 0) {
             let trashPatch = {};
             state.studyItems
@@ -2160,13 +2175,13 @@ export const useStudyStore = create(
               nextState.activeNoteId = null;
             }
           }
-          
+
           if (folderIdsToDelete.size > 0) {
             nextState.vaultFolders = (state.vaultFolders || []).filter(
               (folder) => !folderIdsToDelete.has(folder.id)
             );
           }
-          
+
           return nextState;
         }),
 
@@ -2315,7 +2330,7 @@ export const useStudyStore = create(
       resetSidebarConfig: () => set({
         sidebarOrder: [...DEFAULT_SIDEBAR_ORDER],
         sidebarHiddenItems: [],
-        sidebarQuickActions: ["calendar", "tasks", "pomodoro"],
+        sidebarQuickActions: ["calendar", "tasks"],
       }),
       updateAppSettings: (updates) => set((state) => ({
         appSettings: { ...(state.appSettings || {}), ...updates },
@@ -2348,7 +2363,7 @@ export const useStudyStore = create(
 
       // ─── Knowledge Hub & Quick Capture Actions ──────────────────
       setActiveKnowledgeItemId: (id) => set({ activeKnowledgeItemId: id }),
-      
+
       addKnowledgeItem: (item) => set((state) => {
         const newItem = {
           id: item.id || `kitem-${Date.now()}`,
@@ -2671,18 +2686,18 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
             }
           };
         }),
-      
+
       setActiveBook: (bookId) => set({ activeBookId: bookId }),
-      
+
       updateBook: (bookId, updates) =>
         set((state) => ({
           books: {
-            list: (state.books?.list || []).map(b => 
+            list: (state.books?.list || []).map(b =>
               b.id === bookId ? { ...b, ...updates, updatedAt: Date.now() } : b
             )
           }
         })),
-        
+
       deleteBook: (bookId) =>
         set((state) => ({
           ...moveToUniversalTrash(
@@ -3554,12 +3569,14 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
           const now = Date.now();
           return {
             ...patch,
+            entityDeletionTombstones: updateDeletionTombstone(state, trashItem.entityType, trashItem.entityId, now, trashItem.metadata?.collection || "", true),
             universalTrash: (state.universalTrash || []).filter((item) => item.id !== trashId),
             universalHistory: [{
               id: `history-${now}-${Math.random().toString(36).slice(2, 8)}`,
               action: "restored",
               entityType: trashItem.entityType,
               entityId: trashItem.entityId,
+              metadata: trashItem.metadata,
               title: trashItem.title,
               timestamp: now,
             }, ...(state.universalHistory || [])].slice(0, 2000),
@@ -3572,12 +3589,14 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
           if (!item) return state;
           const now = Date.now();
           return {
+            entityDeletionTombstones: updateDeletionTombstone(state, item.entityType, item.entityId, now, item.metadata?.collection || ""),
             universalTrash: state.universalTrash.filter((entry) => entry.id !== trashId),
             universalHistory: [{
               id: `history-${now}-${Math.random().toString(36).slice(2, 8)}`,
               action: "permanently_deleted",
               entityType: item.entityType,
               entityId: item.entityId,
+              metadata: item.metadata,
               title: item.title,
               timestamp: now,
             }, ...(state.universalHistory || [])].slice(0, 2000),
@@ -3718,13 +3737,15 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
     }),
     {
       name: "studyhub-storage-v2",
-      version: 25,
+      version: 27,
       merge: (persistedState, currentState) => ({
         ...currentState,
-        ...persistedState,
+        ...retireStudyTimer(persistedState),
         waterTracker: mergeWaterTrackers(currentState.waterTracker, persistedState?.waterTracker),
       }),
       migrate: (persistedState, version) => {
+        persistedState = retireStudyTimer(persistedState);
+        persistedState = applyEntityDeletionTombstones(persistedState);
         const studyItems = migrateStudyItems(persistedState);
         const contextual = migrateAcademicContexts({
           ...persistedState,

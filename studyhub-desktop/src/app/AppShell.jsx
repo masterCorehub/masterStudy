@@ -9,16 +9,14 @@ import { CampusFlowDashboardScreen } from "../screens/CampusFlowDashboardScreen"
 import { AccountScreen } from "../screens/AccountScreen";
 import { StudyAlerts } from "../components/StudyAlerts";
 import { BookImportProgress } from "../components/books/BookImportProgress";
-import { PomodoroCompletionCelebration } from "../components/PomodoroCompletionCelebration";
 import { QuickNoteModal } from "../components/QuickNoteModal";
 import { CommandPalette } from "../components/CommandPalette";
 import { Icon } from "../ui/Icon";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { isPrimaryShortcut } from "../utils/keyboardShortcuts";
 
 import { useStudyStore } from "../store/useStore";
 import { collaborationCloud, collaborationCloudConfigured } from "../services/collaboration-cloud";
-import { usePomodoroStore } from "../store/usePomodoroStore";
 import { mergeWaterTrackers } from "../domain/waterTracker";
 import { normalizeAcademicStateSnapshot } from "../domain/academic";
 import {
@@ -43,7 +41,6 @@ import { JournalScreen } from "../screens/JournalScreen";
 import { StickyNotesScreen } from "../screens/StickyNotesScreen";
 import { StickyNoteWidgetScreen } from "../screens/StickyNoteWidgetScreen";
 import { FlashcardsScreen } from "../screens/FlashcardsScreen";
-import { PomodoroScreen } from "../screens/PomodoroScreen";
 import { KnowledgeHubScreen } from "../screens/KnowledgeHubScreen";
 import { KnowledgeItemDetailScreen } from "../screens/KnowledgeItemDetailScreen";
 import { TrashHistoryScreen } from "../screens/TrashHistoryScreen";
@@ -96,10 +93,6 @@ const WhiteboardScreen = lazyNamed(
 const CreateCourseScreen = lazyNamed(
   () => import("../screens/CreateCourseScreen"),
   "CreateCourseScreen",
-);
-const PomodoroWidgetScreen = lazyNamed(
-  () => import("../screens/PomodoroWidgetScreen"),
-  "PomodoroWidgetScreen",
 );
 const WorkSpaceScreen = lazyNamed(
   () => import("../screens/WorkSpaceScreen"),
@@ -266,8 +259,13 @@ export function AppShell() {
       const childId = dataId || href.split("#nested-note=")[1];
 
       if (childId) {
-        useStudyStore.getState().setActiveNote(childId);
-        setActiveScreen(SCREEN_IDS.NOTE_EDITOR);
+        const store = useStudyStore.getState();
+        const note = store.studyItems?.find((item) => String(item.id) === String(childId));
+        if (note) {
+          store.openTab(note);
+          store.setActiveNote(childId);
+          setActiveScreen(SCREEN_IDS.NOTES);
+        }
       }
     };
 
@@ -278,7 +276,13 @@ export function AppShell() {
   const [activeScreen, setActiveScreen] = useState(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get("screen") || SCREEN_IDS.TODAY;
+      const requestedScreen = urlParams.get("screen");
+      const desktopOnlyScreens = ["tray_popover", SCREEN_IDS.STICKY_NOTE_WIDGET];
+      // Native popup windows are not valid web routes; return users to a useful page.
+      return requestedScreen?.toLowerCase().includes("pomodoro") ||
+        (!window.studyhubDesktop && desktopOnlyScreens.includes(requestedScreen))
+        ? SCREEN_IDS.TODAY
+        : requestedScreen || SCREEN_IDS.TODAY;
     }
     return SCREEN_IDS.TODAY;
   });
@@ -381,13 +385,6 @@ export function AppShell() {
               setTimeout(() => {
                 window.dispatchEvent(new CustomEvent("studyhub-open-add-project", { detail: { programming: true } }));
               }, 100);
-              break;
-            case "start-pomodoro":
-              import("../store/usePomodoroStore").then(({ usePomodoroStore }) => {
-                usePomodoroStore.getState().setMode?.("focus");
-                usePomodoroStore.getState().startTimer?.();
-              });
-              handleNavigate(SCREEN_IDS.POMODORO);
               break;
             case "quick-capture":
               handleNavigate(SCREEN_IDS.KNOWLEDGE_HUB);
@@ -513,11 +510,11 @@ export function AppShell() {
   const [isLessonSidebarCompact, setIsLessonSidebarCompact] = useState(true);
   const [isImmersionCanvasFullscreen, setIsImmersionCanvasFullscreen] =
     useState(false);
-  const isNoteSearchWindow = windowParams?.get("mode") === "note-search";
+  const isNoteSearchWindow = Boolean(window.studyhubDesktop) && windowParams?.get("mode") === "note-search";
   const isCommandPaletteWindow =
-    windowParams?.get("mode") === "command-palette";
+    Boolean(window.studyhubDesktop) && windowParams?.get("mode") === "command-palette";
   const isAiFlashcardWindow =
-    windowParams?.get("mode") === "ai-quick-flashcard";
+    Boolean(window.studyhubDesktop) && windowParams?.get("mode") === "ai-quick-flashcard";
   const [showQuickNote, setShowQuickNote] = useState(isNoteSearchWindow);
   const databaseHydratedRef = useRef(false);
   const cloudHydratedRef = useRef(false);
@@ -538,7 +535,6 @@ export function AppShell() {
       () => import("../screens/CampusFlowProjectsScreen"),
       () => import("../screens/CampusFlowDashboardScreen"),
       () => import("../screens/JournalScreen"),
-      () => import("../screens/PomodoroScreen"),
       () => import("../screens/NoteEditorScreen"),
       () => import("../screens/LessonScreen"),
       () => import("../screens/BookReaderScreen"),
@@ -903,13 +899,13 @@ export function AppShell() {
   };
   const standardBrand = standardBrandByScreen[activeScreen] || "";
   const isQuickUtilityWindow =
-    windowParams?.get("mode") === "quick-note" ||
-    windowParams?.get("mode") === "quick-draw";
+    Boolean(window.studyhubDesktop) && (windowParams?.get("mode") === "quick-note" ||
+    windowParams?.get("mode") === "quick-draw");
   const isStandaloneReaderWindow =
     windowParams?.get("screen") === SCREEN_IDS.BOOK_READER ||
     windowParams?.get("standalone") === "1";
   const showAppTitleBar =
-    activeScreen !== "pomodoro_widget" && !isStandaloneReaderWindow;
+    !isStandaloneReaderWindow;
 
   if (activeScreen === "tray_popover") {
     return <TrayPopoverScreen />;
@@ -955,11 +951,7 @@ export function AppShell() {
     >
       {showAppTitleBar ? <AppTitleBar onNavigate={handleNavigate} /> : null}
       <div className="app-shell">
-        {activeScreen === "pomodoro_widget" ? (
-          <Suspense fallback={null}>
-            <PomodoroWidgetScreen />
-          </Suspense>
-        ) : activeScreen === SCREEN_IDS.IMMERSION ? (
+        {activeScreen === SCREEN_IDS.IMMERSION ? (
           <>
             {!isImmersionCanvasFullscreen ? (
               <CompactSidebar
@@ -1082,9 +1074,6 @@ export function AppShell() {
                   {activeScreen === SCREEN_IDS.ACCOUNT ? (
                     <AccountScreen />
                   ) : null}
-                  {activeScreen === SCREEN_IDS.POMODORO ? (
-                    <PomodoroScreen onNavigate={handleNavigate} />
-                  ) : null}
                   {activeScreen === SCREEN_IDS.CODE_LAB ? (
                     <CodeLabScreen onNavigate={handleNavigate} />
                   ) : null}
@@ -1103,7 +1092,7 @@ export function AppShell() {
           </>
         )}
         {!isQuickUtilityWindow && !isNoteSearchWindow ? null : null}
-        {activeScreen !== "pomodoro_widget" ? <GlobalAudioPlayer /> : null}
+
 
         {capturedNotification && (
           <div className="fixed bottom-6 right-6 z-[300] flex items-center gap-3 p-4 rounded-3xl bg-[color:var(--surface)] border-2 border-[color:var(--primary)] text-[color:var(--on-surface)] shadow-2xl animate-in slide-in-from-bottom-5">
@@ -1148,640 +1137,14 @@ export function AppShell() {
           )}
         </AnimatePresence>
       </div>
-        {activeScreen !== "pomodoro_widget" ? (
+        {(
           <>
           <StudyAlerts onNavigate={handleNavigate} />
           <BookImportProgress />
           </>
-      ) : null}
-      {/* Pomodoro permanece implementado para reativação, mas fica fora da interface atual. */}
+      )}
+
       <CommandPalette onNavigate={handleNavigate} />
       </div>
     );
   }
-
-function getYouTubeVideoId(url) {
-  if (!url) return null;
-  const str = String(url).trim();
-  if (/^[a-zA-Z0-9_-]{11}$/.test(str)) return str;
-  const match = str.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|live\/|shorts\/))([a-zA-Z0-9_-]{11})/);
-  return match ? match[1] : null;
-}
-
-function getYouTubeStartTime(url, overrideSeconds = 0) {
-  if (overrideSeconds > 0) return overrideSeconds;
-  if (!url) return 0;
-  const match = url.match(/[?&](?:t|start)=([0-9hms]+)/);
-  if (!match) return 0;
-  const timeStr = match[1];
-  if (/^\d+$/.test(timeStr)) return parseInt(timeStr, 10);
-  
-  let seconds = 0;
-  const hours = timeStr.match(/(\d+)h/);
-  const minutes = timeStr.match(/(\d+)m/);
-  const secs = timeStr.match(/(\d+)s/);
-  if (hours) seconds += parseInt(hours[1], 10) * 3600;
-  if (minutes) seconds += parseInt(minutes[1], 10) * 60;
-  if (secs) seconds += parseInt(secs[1], 10);
-  return seconds;
-}
-
-function YouTubeAudioPlayer({ url, volume = 0.5, startTime = 0 }) {
-  const iframeRef = useRef(null);
-  const videoId = getYouTubeVideoId(url);
-  const setAudioTime = usePomodoroStore((state) => state.setAudioTime);
-
-  const sendCommand = useCallback((func, args = []) => {
-    try {
-      if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(
-          JSON.stringify({ event: 'command', func, args }),
-          '*'
-        );
-      }
-    } catch (e) {}
-  }, []);
-
-  useEffect(() => {
-    const volPct = Math.round(Math.max(0, Math.min(1, volume)) * 100);
-    sendCommand('setVolume', [volPct]);
-    if (volPct > 0) sendCommand('unMute', []);
-  }, [volume, sendCommand]);
-
-  useEffect(() => {
-    if (startTime >= 0) {
-      sendCommand('seekTo', [startTime, true]);
-    }
-  }, [startTime, sendCommand]);
-
-  useEffect(() => {
-    let current = startTime || 0;
-    setAudioTime(current, 7200);
-    const interval = setInterval(() => {
-      current += 1;
-      setAudioTime(current, 7200);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [startTime, setAudioTime]);
-
-  if (!videoId) return null;
-  const computedStart = getYouTubeStartTime(url, startTime);
-  const startParam = computedStart > 0 ? `&start=${computedStart}` : '';
-
-  return (
-    <div style={{ position: 'absolute', top: -9999, left: -9999, width: 200, height: 200, overflow: 'hidden', opacity: 0 }}>
-      <iframe
-        ref={iframeRef}
-        src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&loop=1&playlist=${videoId}${startParam}`}
-        title="YouTube Audio Player"
-        width="100%"
-        height="100%"
-        allow="autoplay; encrypted-media"
-        frameBorder="0"
-        onLoad={() => {
-          setTimeout(() => {
-            const volPct = Math.round(Math.max(0, Math.min(1, volume)) * 100);
-            sendCommand('setVolume', [volPct]);
-            sendCommand('unMute', []);
-          }, 600);
-        }}
-      />
-    </div>
-  );
-}
-
-function GlobalAudioPlayer() {
-  const activeSound = usePomodoroStore((state) => state.activeSound);
-  const soundVolume = usePomodoroStore((state) => state.soundVolume);
-  const audioRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const ambientCleanupRef = useRef(() => {});
-  const masterGainRef = useRef(null);
-  const setAudioTime = usePomodoroStore((state) => state.setAudioTime);
-
-  const SOUND_URLS = {
-    lofi: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3",
-    rain: "/assets/audio/rain.wav",
-    nature: "/assets/audio/forest.wav",
-    coffee: "/assets/audio/coffee.wav",
-    fireplace: "/assets/audio/fire.wav",
-  };
-
-  const stopAmbientSound = () => {
-    ambientCleanupRef.current?.();
-    ambientCleanupRef.current = () => {};
-    masterGainRef.current = null;
-  };
-
-  const getAudioContext = () => {
-    if (audioContextRef.current) return audioContextRef.current;
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return null;
-    audioContextRef.current = new AudioCtx();
-    return audioContextRef.current;
-  };
-
-  const createNoiseBuffer = (context, color = "white") => {
-    const duration = 2;
-    const buffer = context.createBuffer(
-      1,
-      context.sampleRate * duration,
-      context.sampleRate,
-    );
-    const channelData = buffer.getChannelData(0);
-
-    if (color === "brown") {
-      let lastOut = 0;
-      for (let i = 0; i < channelData.length; i += 1) {
-        const white = Math.random() * 2 - 1;
-        lastOut = (lastOut + 0.02 * white) / 1.02;
-        channelData[i] = lastOut * 3.5;
-      }
-      return buffer;
-    }
-
-    if (color === "pink") {
-      let b0 = 0;
-      let b1 = 0;
-      let b2 = 0;
-      let b3 = 0;
-      let b4 = 0;
-      let b5 = 0;
-      let b6 = 0;
-
-      for (let i = 0; i < channelData.length; i += 1) {
-        const white = Math.random() * 2 - 1;
-        b0 = 0.99886 * b0 + white * 0.0555179;
-        b1 = 0.99332 * b1 + white * 0.0750759;
-        b2 = 0.969 * b2 + white * 0.153852;
-        b3 = 0.8665 * b3 + white * 0.3104856;
-        b4 = 0.55 * b4 + white * 0.5329522;
-        b5 = -0.7616 * b5 - white * 0.016898;
-        channelData[i] =
-          (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
-        b6 = white * 0.115926;
-      }
-      return buffer;
-    }
-
-    for (let i = 0; i < channelData.length; i += 1) {
-      channelData[i] = Math.random() * 2 - 1;
-    }
-    return buffer;
-  };
-
-  const createLoopingNoiseSource = (context, color) => {
-    const source = context.createBufferSource();
-    source.buffer = createNoiseBuffer(context, color);
-    source.loop = true;
-    return source;
-  };
-
-  const startAmbientSound = async (sound, volume) => {
-    const context = getAudioContext();
-    if (!context) return;
-
-    if (context.state === "suspended") {
-      await context.resume();
-    }
-
-    stopAmbientSound();
-
-    const nodes = [];
-    const masterGain = context.createGain();
-    masterGain.gain.value = Math.max(0.001, volume);
-    masterGain.connect(context.destination);
-    nodes.push(masterGain);
-    masterGainRef.current = masterGain;
-
-    const registerNode = (node) => {
-      nodes.push(node);
-      return node;
-    };
-
-    if (sound === "brown_noise") {
-      const source = registerNode(createLoopingNoiseSource(context, "brown"));
-      const filter = registerNode(context.createBiquadFilter());
-      filter.type = "lowpass";
-      filter.frequency.value = 950;
-      filter.Q.value = 0.2;
-      source.connect(filter);
-      filter.connect(masterGain);
-      source.start();
-    }
-
-    if (sound === "white_noise") {
-      const source = registerNode(createLoopingNoiseSource(context, "white"));
-      source.connect(masterGain);
-      source.start();
-    }
-
-    if (sound === "ocean") {
-      const source = registerNode(createLoopingNoiseSource(context, "white"));
-      const filter = registerNode(context.createBiquadFilter());
-      filter.type = "lowpass";
-      filter.frequency.value = 1250;
-      const swell = registerNode(context.createOscillator());
-      swell.type = "sine";
-      swell.frequency.value = 0.09;
-      const swellGain = registerNode(context.createGain());
-      swellGain.gain.value = 0.3;
-      swell.connect(swellGain);
-      swellGain.connect(masterGain.gain);
-      source.connect(filter);
-      filter.connect(masterGain);
-      source.start();
-      swell.start();
-    }
-
-    if (sound === "fan") {
-      const source = registerNode(createLoopingNoiseSource(context, "brown"));
-      const filter = registerNode(context.createBiquadFilter());
-      filter.type = "bandpass";
-      filter.frequency.value = 420;
-      filter.Q.value = 0.45;
-      source.connect(filter);
-      filter.connect(masterGain);
-      source.start();
-    }
-
-    if (sound === "rain") {
-      const source = registerNode(createLoopingNoiseSource(context, "white"));
-      const highpass = registerNode(context.createBiquadFilter());
-      highpass.type = "highpass";
-      highpass.frequency.value = 900;
-
-      const lowpass = registerNode(context.createBiquadFilter());
-      lowpass.type = "lowpass";
-      lowpass.frequency.value = 6800;
-
-      const rainGain = registerNode(context.createGain());
-      rainGain.gain.value = 0.38;
-
-      const lfo = registerNode(context.createOscillator());
-      lfo.type = "sine";
-      lfo.frequency.value = 0.14;
-
-      const lfoGain = registerNode(context.createGain());
-      lfoGain.gain.value = 0.06;
-
-      source.connect(highpass);
-      highpass.connect(lowpass);
-      lowpass.connect(rainGain);
-      rainGain.connect(masterGain);
-      lfo.connect(lfoGain);
-      lfoGain.connect(rainGain.gain);
-
-      source.start();
-      lfo.start();
-    }
-
-    if (sound === "fireplace") {
-      const base = registerNode(createLoopingNoiseSource(context, "brown"));
-      const baseFilter = registerNode(context.createBiquadFilter());
-      baseFilter.type = "lowpass";
-      baseFilter.frequency.value = 720;
-
-      const baseGain = registerNode(context.createGain());
-      baseGain.gain.value = 0.32;
-
-      const crackle = registerNode(createLoopingNoiseSource(context, "white"));
-      const crackleFilter = registerNode(context.createBiquadFilter());
-      crackleFilter.type = "bandpass";
-      crackleFilter.frequency.value = 2400;
-      crackleFilter.Q.value = 1.2;
-
-      const crackleGain = registerNode(context.createGain());
-      crackleGain.gain.value = 0.06;
-
-      const crackleLfo = registerNode(context.createOscillator());
-      crackleLfo.type = "triangle";
-      crackleLfo.frequency.value = 5;
-
-      const crackleLfoGain = registerNode(context.createGain());
-      crackleLfoGain.gain.value = 0.045;
-
-      base.connect(baseFilter);
-      baseFilter.connect(baseGain);
-      baseGain.connect(masterGain);
-
-      crackle.connect(crackleFilter);
-      crackleFilter.connect(crackleGain);
-      crackleGain.connect(masterGain);
-      crackleLfo.connect(crackleLfoGain);
-      crackleLfoGain.connect(crackleGain.gain);
-
-      base.start();
-      crackle.start();
-      crackleLfo.start();
-    }
-
-    ambientCleanupRef.current = () => {
-      nodes.forEach((node) => {
-        try {
-          if (typeof node.stop === "function") node.stop();
-        } catch (error) {
-          console.debug("Ambient node stop skipped:", error);
-        }
-        try {
-          if (typeof node.disconnect === "function") node.disconnect();
-        } catch (error) {
-          console.debug("Ambient node disconnect skipped:", error);
-        }
-      });
-    };
-  };
-
-  useEffect(() => {
-    if (audioRef.current) {
-      if (activeSound === "none" || activeSound === "youtube") {
-        audioRef.current.pause();
-        audioRef.current.removeAttribute("src");
-        audioRef.current.load();
-        stopAmbientSound();
-      } else if (SOUND_URLS[activeSound]) {
-        stopAmbientSound();
-        audioRef.current.src = SOUND_URLS[activeSound];
-        audioRef.current.volume = soundVolume;
-        audioRef.current
-          .play()
-          .catch((e) => console.log("Audio auto-play prevented:", e));
-      } else if (activeSound !== "spotify") {
-        audioRef.current.pause();
-        audioRef.current.removeAttribute("src");
-        audioRef.current.load();
-        startAmbientSound(activeSound, soundVolume).catch((error) => {
-          console.error("Failed to start ambient sound:", error);
-        });
-      }
-    }
-  }, [activeSound]);
-
-  useEffect(() => {
-    if (!audioRef.current) return;
-    if (SOUND_URLS[activeSound]) {
-      audioRef.current.volume = soundVolume;
-    }
-    if (
-      masterGainRef.current &&
-      activeSound !== "none" &&
-      !SOUND_URLS[activeSound] &&
-      activeSound !== "spotify" &&
-      activeSound !== "youtube"
-    ) {
-      masterGainRef.current.gain.setTargetAtTime(
-        Math.max(0.0001, soundVolume),
-        audioContextRef.current.currentTime,
-        0.05,
-      );
-    }
-  }, [soundVolume, activeSound]);
-
-  useEffect(
-    () => () => {
-      stopAmbientSound();
-      audioRef.current?.pause();
-      audioContextRef.current?.close?.().catch(() => {});
-    },
-    [],
-  );
-
-  const youtubeUrl = usePomodoroStore((state) => state.youtubeUrl);
-  const youtubePlaying = usePomodoroStore((state) => state.youtubePlaying);
-  const youtubeStartTime = usePomodoroStore((state) => state.youtubeStartTime);
-
-  return (
-    <>
-      <audio
-        ref={audioRef}
-        loop
-        className="hidden"
-        onTimeUpdate={(e) => setAudioTime(e.target.currentTime, e.target.duration)}
-        onLoadedMetadata={(e) => setAudioTime(e.target.currentTime, e.target.duration)}
-      />
-      {activeSound === "youtube" && youtubeUrl && youtubePlaying !== false ? (
-        <YouTubeAudioPlayer url={youtubeUrl} volume={soundVolume} startTime={youtubeStartTime} />
-      ) : null}
-    </>
-  );
-}
-
-function GlobalPomodoroWidget({ onNavigate, activeScreen }) {
-  const store = usePomodoroStore();
-  const addFocusSession = useStudyStore((state) => state.addFocusSession);
-  const lastRecordedCompletion = useRef("");
-  const [mounted, setMounted] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [isSoundMenuOpen, setIsSoundMenuOpen] = useState(false);
-  const soundOptions = [
-    { id: "none", label: "Sem música", icon: "volume_off" },
-    { id: "rain", label: "Chuva", icon: "water_drop" },
-    { id: "nature", label: "Natureza", icon: "forest" },
-    { id: "coffee", label: "Cafeteria", icon: "local_cafe" },
-    { id: "fireplace", label: "Lareira", icon: "local_fire_department" },
-    { id: "lofi", label: "Lo-Fi Study", icon: "headphones" },
-    { id: "youtube", label: "YouTube", icon: "youtube_activity" },
-  ];
-  const selectedSound =
-    soundOptions.find((sound) => sound.id === store.activeSound) ||
-    soundOptions[0];
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    let interval = null;
-    if (store.isActive && store.endTime) {
-      interval = setInterval(() => {
-        store.syncTick();
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [store.isActive, store.endTime, store.syncTick]);
-
-  useEffect(() => {
-    const completion = store.lastCompletion;
-    if (
-      activeScreen === "pomodoro_widget" ||
-      !completion?.id ||
-      completion.phase !== "focus" ||
-      completion.id === lastRecordedCompletion.current
-    ) {
-      return;
-    }
-    lastRecordedCompletion.current = completion.id;
-    addFocusSession({
-      id: `focus-${completion.id}`,
-      taskId: store.selectedTasks[0] || null,
-      plannedSeconds: store.focusTime * 60,
-      actualSeconds: store.focusTime * 60,
-      status: "completed",
-      endedAt: completion.at,
-      startedAt: completion.at - store.focusTime * 60 * 1000,
-      pomodoros: 1,
-    });
-  }, [
-    activeScreen,
-    addFocusSession,
-    store.focusTime,
-    store.lastCompletion,
-    store.selectedTasks,
-  ]);
-
-  if (
-    !mounted ||
-    !store.isActive ||
-    activeScreen === SCREEN_IDS.POMODORO ||
-    activeScreen === "pomodoro_widget"
-  )
-    return null;
-
-  const minutes = Math.floor(store.timeLeft / 60)
-    .toString()
-    .padStart(2, "0");
-  const seconds = (store.timeLeft % 60).toString().padStart(2, "0");
-  const modeIcon = store.mode === "focus" ? "local_fire_department" : "coffee";
-  const colorClass =
-    store.mode === "focus"
-      ? "text-[color:var(--error)] bg-[color:var(--error)]/10"
-      : "text-[color:var(--primary)] bg-[color:var(--primary)]/10";
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className={`fixed bottom-8 right-8 z-[100] border border-[color:var(--outline-variant)]/30 bg-[color:var(--surface)] neo-raised shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] ${isMinimized ? "rounded-full p-2.5" : "flex flex-col gap-2 rounded-2xl p-3"}`}
-      >
-        {isMinimized ? (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onNavigate(SCREEN_IDS.POMODORO)}
-              className="flex items-center gap-2 rounded-full pl-1 pr-2 text-left transition-opacity hover:opacity-80"
-              title="Abrir Pomodoro"
-            >
-              <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${colorClass}`}
-              >
-                <Icon name={modeIcon} className="text-lg animate-pulse" />
-              </div>
-              <span className="font-mono text-sm font-bold leading-none text-[color:var(--on-surface)]">
-                {minutes}:{seconds}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsMinimized(false)}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--on-surface-variant)] transition-colors hover:bg-[color:var(--surface-bright)] hover:text-[color:var(--on-surface)]"
-              title="Expandir widget"
-            >
-              <Icon name="unfold_more" className="text-[18px]" />
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-start justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => onNavigate(SCREEN_IDS.POMODORO)}
-                className="flex items-center gap-3 px-2 py-1 text-left transition-opacity hover:opacity-80"
-              >
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${colorClass}`}
-                >
-                  <Icon name={modeIcon} className="text-lg animate-pulse" />
-                </div>
-                <div className="flex min-w-[70px] flex-col items-start">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--on-surface-variant)]">
-                    {store.mode === "focus" ? "Foco" : "Pausa"}
-                  </span>
-                  <span className="font-mono text-xl font-bold leading-none text-[color:var(--on-surface)]">
-                    {minutes}:{seconds}
-                  </span>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsMinimized(true)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--on-surface-variant)] transition-colors hover:bg-[color:var(--surface-bright)] hover:text-[color:var(--on-surface)]"
-                title="Minimizar widget"
-              >
-                <Icon name="remove" className="text-[18px]" />
-              </button>
-            </div>
-
-            <div className="mt-1 flex flex-col gap-2 border-t border-[color:var(--outline-variant)]/30 px-2 pb-1 pt-2">
-              <div className="flex items-center justify-between gap-2">
-                <Icon
-                  name={selectedSound.icon}
-                  className="text-sm text-[color:var(--primary)]"
-                />
-                <div className="relative min-w-0 flex-1">
-                  <button
-                    type="button"
-                    onClick={() => setIsSoundMenuOpen((value) => !value)}
-                    className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1 text-left text-xs font-semibold text-[color:var(--on-surface)] hover:bg-[color:var(--background)]"
-                  >
-                    <span className="truncate">{selectedSound.label}</span>
-                    <Icon
-                      name="expand_more"
-                      className={`text-sm transition-transform ${isSoundMenuOpen ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                  {isSoundMenuOpen ? (
-                    <div className="absolute bottom-[calc(100%+8px)] left-0 right-0 z-30 rounded-xl border border-[color:var(--outline-variant)]/40 bg-[color:var(--surface)] p-1.5 neo-raised">
-                      {soundOptions.map((sound) => (
-                        <button
-                          key={sound.id}
-                          type="button"
-                          onClick={() => {
-                            store.setActiveSound(sound.id);
-                            setIsSoundMenuOpen(false);
-                          }}
-                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-bold ${store.activeSound === sound.id ? "bg-[color:var(--primary)]/10 text-[color:var(--primary)]" : "text-[color:var(--on-surface-variant)] hover:bg-[color:var(--background)]"}`}
-                        >
-                          <Icon name={sound.icon} className="text-sm" />
-                          {sound.label}
-                          {store.activeSound === sound.id ? (
-                            <Icon name="check" className="ml-auto text-sm" />
-                          ) : null}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              {store.activeSound !== "none" && (
-                <div className="flex items-center gap-2">
-                  <Icon
-                    name="volume_down"
-                    className="text-xs text-[color:var(--on-surface-variant)]"
-                  />
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={store.soundVolume}
-                    onChange={(e) =>
-                      store.setSoundVolume(parseFloat(e.target.value))
-                    }
-                    className="h-1 w-full cursor-pointer appearance-none rounded-full bg-[color:var(--outline-variant)]"
-                  />
-                  <Icon
-                    name="volume_up"
-                    className="text-xs text-[color:var(--on-surface-variant)]"
-                  />
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </motion.div>
-    </AnimatePresence>
-  );
-}

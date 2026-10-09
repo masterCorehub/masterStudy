@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Icon } from "../ui/Icon";
 import { SCREEN_IDS } from "../app/screenIds";
 import { useStudyStore } from "../store/useStore";
-import { usePomodoroStore } from "../store/usePomodoroStore";
+
 import {
   selectTodayData,
   scheduleTaskSessions,
@@ -24,14 +24,10 @@ const formatFocus = (seconds) =>
 export function TodayScreen({ onNavigate }) {
   const currentDate = useCurrentDate();
   const state = useStudyStore((store) => store);
-  const startTimer = usePomodoroStore((store) => store.startTimer);
-  const clearSelectedTasks = usePomodoroStore(
-    (store) => store.clearSelectedTasks,
-  );
-  const toggleTaskSelection = usePomodoroStore(
-    (store) => store.toggleTaskSelection,
-  );
-  const updateTimerSettings = usePomodoroStore((store) => store.updateSettings);
+
+
+
+
   const replaceStudyPlans = useStudyStore((store) => store.replaceStudyPlans);
   const addAcademicEntity = useStudyStore((store) => store.addAcademicEntity);
   const updateAcademicEntity = useStudyStore((store) => store.updateAcademicEntity);
@@ -502,14 +498,7 @@ export function TodayScreen({ onNavigate }) {
       (recommendation.kind === "task" || recommendation.kind === "project") &&
       recommendation.sourceId
     ) {
-      if (startFocus && recommendation.kind === "task") {
-        clearSelectedTasks();
-        toggleTaskSelection(recommendation.sourceId);
-        updateTimerSettings({ focusTime: studyMinutes });
-        startTimer();
-        onNavigate?.(SCREEN_IDS.POMODORO);
-        return;
-      }
+
       if (recommendation.kind === "task") {
         setActiveTask(recommendation.sourceId);
         onNavigate?.(SCREEN_IDS.TASK_DETAILS);
@@ -697,7 +686,7 @@ export function TodayScreen({ onNavigate }) {
               onClick={() =>
                 replaceStudyPlans(
                   scheduleTaskSessions(state.tasks?.list || [], {
-                    dailyPomodoros: Math.max(1, Math.round(goalMinutes / 25)),
+                    dailySessions: Math.max(1, Math.round(goalMinutes / 25)),
                   }),
                 )
               }

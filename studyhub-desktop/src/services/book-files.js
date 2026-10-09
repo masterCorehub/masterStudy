@@ -1,4 +1,5 @@
 import { getLocalFilePath, getLocalFileUrl } from "../utils/localFileUrl.js";
+import { collaborationCloud, collaborationCloudConfigured } from "./collaboration-cloud.js";
 
 const FILE_PREFIX = "book-file://";
 export const isStoredBookFile = (path) =>
@@ -39,6 +40,22 @@ export async function retainBookFile(source, previousPath) {
   return path;
 }
 
+export async function retainBookFileForAccount(source, previousPath) {
+  if (source instanceof Blob && !window.studyhubDesktop && collaborationCloudConfigured) {
+    const session = await collaborationCloud.getSession();
+    if (session?.user?.id) {
+      const cloudFile = await collaborationCloud.uploadAccountFile(source);
+      return {
+        filePath: `cloud-file://${cloudFile.objectPath}`,
+        cloudObjectPath: cloudFile.objectPath,
+        cloudFileObjectId: cloudFile.id || null,
+        mimeType: cloudFile.mimeType || source.type || "",
+      };
+    }
+  }
+  return { filePath: await retainBookFile(source, previousPath) };
+}
+
 // Directory handles use IndexedDB structured cloning, not JSON. The link is
 // device-specific and never becomes part of account/cloud snapshots.
 export const loadBookLibraryFolder = () => withBookFiles(store => store.get("library-folder"));
@@ -48,6 +65,13 @@ export const saveDriveLibrary = (library) => withBookFiles(store => store.put(li
 
 export async function readBookBytes(source) {
   if (source instanceof Blob) return new Uint8Array(await source.arrayBuffer());
+  if (String(source || "").startsWith("cloud-file://")) {
+    const objectPath = String(source).slice("cloud-file://".length);
+    const signedUrl = await collaborationCloud.createSignedFileUrl(objectPath);
+    const response = await fetch(signedUrl);
+    if (!response.ok) throw new Error("Não foi possível baixar este livro sincronizado.");
+    return new Uint8Array(await response.arrayBuffer());
+  }
   if (isStoredBookFile(source)) {
     const file = await withBookFiles((store) => store.get(source));
     if (!file)

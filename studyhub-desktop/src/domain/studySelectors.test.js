@@ -21,7 +21,7 @@ test("selectTodayData reúne tarefas urgentes, cartões vencidos e foco do dia",
 test("dueFlashcards e scheduleTaskSessions respeitam vencimento e capacidade diária", () => {
   const now = new Date("2026-07-20T12:00:00Z").getTime();
   assert.equal(dueFlashcards([{ id: "deck", cards: [{ id: "a", dueDate: now - 1 }, { id: "b", dueDate: now + 1000 }] }], now).length, 1);
-  const sessions = scheduleTaskSessions([{ id: "task", title: "Tarefa", status: "pending", dueDate: "2026-07-22", estimatedPomodoros: 3 }], { now, dailyPomodoros: 2 });
+  const sessions = scheduleTaskSessions([{ id: "task", title: "Tarefa", status: "pending", dueDate: "2026-07-22", estimatedMinutes: 75 }], { now, dailySessions: 2 });
   assert.equal(sessions.length, 3);
   assert.deepEqual(sessions.map((session) => session.date), ["2026-07-20", "2026-07-20", "2026-07-21"]);
 });

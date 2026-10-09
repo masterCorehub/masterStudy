@@ -11,31 +11,14 @@ struct CampusFlowTask: Codable, Identifiable {
     let overdue: Bool
 }
 
-struct CampusFlowPomodoro: Codable {
-    let mode: String
-    let isActive: Bool
-    let endTime: Double?
-    let remainingSeconds: Int
-    let taskTitle: String?
-    let completedCount: Int
-}
 
 struct CampusFlowWidgetState: Codable {
     let updatedAt: Double
     let tasks: [CampusFlowTask]
-    let pomodoro: CampusFlowPomodoro
 
     static let empty = CampusFlowWidgetState(
         updatedAt: Date().timeIntervalSince1970 * 1000,
-        tasks: [],
-        pomodoro: CampusFlowPomodoro(
-            mode: "focus",
-            isActive: false,
-            endTime: nil,
-            remainingSeconds: 25 * 60,
-            taskTitle: nil,
-            completedCount: 0
-        )
+        tasks: []
     )
 }
 

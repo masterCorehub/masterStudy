@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { Icon } from "../ui/Icon";
 import { SCREEN_IDS } from "../app/screenIds";
 import { useStudyStore } from "../store/useStore";
-import { usePomodoroStore } from "../store/usePomodoroStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { RichTextEditor } from "../components/RichTextEditor";
 import { AppSelect } from "../components/AppSelect";
@@ -21,8 +20,8 @@ const createEmptyTask = () => ({
   academicSemesterId: "",
   category: "",
   type: "task",
-  estimatedPomodoros: 1,
   estimatedMinutes: 25,
+
   actualMinutes: 0,
   activityWeight: "",
   scoreValue: "",
@@ -127,14 +126,7 @@ export function TasksScreen({ onNavigate }) {
     }
   };
 
-  const handleStartPomodoro = (taskId) => {
-    const store = usePomodoroStore.getState();
-    store.clearSelectedTasks();
-    store.toggleTaskSelection(taskId);
-    store.setMode("focus");
-    store.startTimer();
-    if (onNavigate) onNavigate(SCREEN_IDS.POMODORO);
-  };
+
 
   const pickTaskAttachments = async () => {
     const selected = await window.studyhubDesktop?.selectFile?.({
@@ -363,16 +355,7 @@ export function TasksScreen({ onNavigate }) {
             </h4>
           </div>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleStartPomodoro(task.id);
-              }}
-              className="text-[color:var(--primary)] hover:bg-[color:var(--primary)]/10 p-1 rounded-full transition-colors"
-              title="Iniciar Pomodoro"
-            >
-              <Icon name="timer" className="text-[14px]" />
-            </button>
+
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -438,15 +421,7 @@ export function TasksScreen({ onNavigate }) {
               {task.category}
             </span>
           )}
-          {task.estimatedPomodoros > 0 && (
-            <span
-              className="px-2 py-0.5 rounded text-[10px] font-bold text-[color:var(--error)] bg-[color:var(--error)]/10 flex items-center gap-1"
-              title="Pomodoros Estimados"
-            >
-              <Icon name="local_fire_department" className="text-[12px]" />
-              {task.estimatedPomodoros}
-            </span>
-          )}
+
           {task.courseId && (
             <span className="px-2 py-0.5 rounded text-[9px] font-bold text-[color:var(--tertiary)] bg-[color:var(--tertiary)]/10 uppercase line-clamp-1 border border-[color:var(--tertiary)]/20">
               {courses.find((c) => c.id === task.courseId)?.title || "Curso"}
@@ -670,30 +645,10 @@ export function TasksScreen({ onNavigate }) {
                           {task.category}
                         </span>
                       )}
-                      {task.estimatedPomodoros > 0 && (
-                        <span
-                          className="px-2 py-0.5 rounded text-[10px] font-bold text-[color:var(--error)] bg-[color:var(--error)]/10 flex items-center gap-1"
-                          title="Pomodoros Estimados"
-                        >
-                          <Icon
-                            name="local_fire_department"
-                            className="text-[12px]"
-                          />{" "}
-                          {task.estimatedPomodoros}
-                        </span>
-                      )}
+
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartPomodoro(task.id);
-                        }}
-                        className="text-[color:var(--primary)] transition-opacity p-2 hover:neo-pressed rounded-full"
-                        title="Iniciar Pomodoro"
-                      >
-                        <Icon name="timer" className="text-[16px]" />
-                      </button>
+
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1311,28 +1266,6 @@ export function TasksScreen({ onNavigate }) {
                     readOnly={!isTaskEditing}
                     className={`w-full neo-inset rounded-xl bg-[color:var(--background)] px-4 py-3 text-sm text-[color:var(--on-surface)] outline-none border-transparent focus:border-transparent focus:ring-2 focus:ring-[color:var(--primary)]/30 ${!isTaskEditing ? "opacity-70 cursor-default shadow-none" : ""}`}
                     placeholder="ex: Faculdade"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-[color:var(--on-surface-variant)] flex items-center gap-1 uppercase">
-                    <Icon
-                      name="local_fire_department"
-                      className="text-[12px] text-[color:var(--error)]"
-                    />{" "}
-                    Estimativa (Focos)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newTask.estimatedPomodoros}
-                    onChange={(e) =>
-                      setNewTask({
-                        ...newTask,
-                        estimatedPomodoros: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    readOnly={!isTaskEditing}
-                    className={`w-full neo-inset rounded-xl bg-[color:var(--background)] px-4 py-3 text-sm text-[color:var(--on-surface)] outline-none border-transparent focus:border-transparent focus:ring-2 focus:ring-[color:var(--primary)]/30 ${!isTaskEditing ? "opacity-70 cursor-default shadow-none" : ""}`}
                   />
                 </div>
               </div>

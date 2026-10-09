@@ -20,7 +20,7 @@ export function CalendarTaskModal({ initialDate, initialSubjectId, onClose, onCr
   const [dueTime, setDueTime] = useState("");
   const [priority, setPriority] = useState("medium");
   const [academicSubjectId, setAcademicSubjectId] = useState(initialSubjectId || "");
-  const [estimatedPomodoros, setEstimatedPomodoros] = useState(1);
+  const [estimatedMinutes, setEstimatedMinutes] = useState(25);
   const [description, setDescription] = useState("");
   const inputRef = useRef(null);
 
@@ -76,8 +76,7 @@ export function CalendarTaskModal({ initialDate, initialSubjectId, onClose, onCr
       subjectId: academicSubjectId || "",
       category: subject?.name || "",
       academicSemesterId: academic.activeSemesterId || null,
-      estimatedPomodoros: Number(estimatedPomodoros) || 1,
-      estimatedMinutes: (Number(estimatedPomodoros) || 1) * 25,
+      estimatedMinutes: Number(estimatedMinutes) || 25,
       description: description.trim(),
       subtasks: [],
       attachments: [],
@@ -232,24 +231,24 @@ export function CalendarTaskModal({ initialDate, initialSubjectId, onClose, onCr
             </div>
           </div>
 
-          {/* Pomodoros and Description */}
+          {/* Estimate and description */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[140px_1fr]">
             <div>
               <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-[color:var(--on-surface-variant)]">
-                Foco Estimado
+                Tempo estimado
               </label>
               <div className="flex items-center gap-2 rounded-xl border border-[color:var(--outline-variant)]/60 bg-[color:var(--surface-container-lowest)] px-3 py-2 text-xs font-bold text-[color:var(--on-surface)]">
-                <span>🍅</span>
+                <Icon name="schedule" />
                 <input
                   type="number"
                   min="1"
-                  max="16"
-                  value={estimatedPomodoros}
-                  onChange={(e) => setEstimatedPomodoros(Math.max(1, Number(e.target.value) || 1))}
+                  max="1440"
+                  value={estimatedMinutes}
+                  onChange={(e) => setEstimatedMinutes(Math.max(1, Number(e.target.value) || 1))}
                   className="w-12 bg-transparent text-center font-extrabold text-[color:var(--on-surface)] outline-none"
                 />
                 <span className="text-[10px] text-[color:var(--on-surface-variant)]">
-                  ({estimatedPomodoros * 25}m)
+                  min
                 </span>
               </div>
             </div>

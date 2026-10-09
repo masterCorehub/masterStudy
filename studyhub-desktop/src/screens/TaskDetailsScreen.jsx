@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { SCREEN_IDS } from "../app/screenIds";
 import { normalizeAcademicData } from "../domain/academic";
-import { usePomodoroStore } from "../store/usePomodoroStore";
+
 import { useStudyStore } from "../store/useStore";
 import { Icon } from "../ui/Icon";
 import { ShareModal } from "../components/ShareModal";
@@ -61,8 +61,7 @@ const formatDueDate = (dateValue, timeValue) => {
 
 const formatEstimate = (task) => {
   const minutes =
-    Number(task.estimatedMinutes || 0) ||
-    Number(task.estimatedPomodoros || 0) * 25;
+    Number(task.estimatedMinutes || 0);
   if (!minutes) return "Sem estimativa";
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
@@ -200,14 +199,7 @@ export function TaskDetailsScreen({ onNavigate }) {
     });
   };
 
-  const startPomodoro = () => {
-    const pomodoro = usePomodoroStore.getState();
-    pomodoro.clearSelectedTasks();
-    pomodoro.toggleTaskSelection(task.id);
-    pomodoro.setMode("focus");
-    pomodoro.startTimer();
-    onNavigate?.(SCREEN_IDS.POMODORO);
-  };
+
 
   const removeTask = () => {
     if (!window.confirm(`Excluir a tarefa "${task.title}"?`)) return;
@@ -290,14 +282,7 @@ export function TaskDetailsScreen({ onNavigate }) {
             </button> : null}
             </div></details>
 
-            {false && <button
-              className="campus-task-detail-dark-action"
-              type="button"
-              onClick={startPomodoro}
-            >
-              <Icon name="timer" />
-              Iniciar Pomodoro
-            </button>}
+
           </div>
         </header>
 

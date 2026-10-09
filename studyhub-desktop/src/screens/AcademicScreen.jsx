@@ -1338,7 +1338,7 @@ export function AcademicScreen({ onNavigate }) {
         academicSemesterId: academic.activeSemesterId,
         academicExamId: exam.id,
         academicPlanId: item.id,
-        estimatedPomodoros: item.kind === "mock" ? 2 : 1,
+        estimatedMinutes: item.kind === "mock" ? 50 : 25,
       });
     });
   };

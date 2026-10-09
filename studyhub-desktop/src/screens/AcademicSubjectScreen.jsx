@@ -9,7 +9,6 @@ import {
   redistributeMissedStudySessions,
   toAcademicDateKey,
 } from "../domain/academic";
-import { usePomodoroStore } from "../store/usePomodoroStore";
 import { useStudyStore } from "../store/useStore";
 import { Icon } from "../ui/Icon";
 import { markdownToNoteHtml } from "../domain/aiStudio";
@@ -557,7 +556,7 @@ export function AcademicSubjectScreen({ onNavigate }) {
       academicSubjectId: subject.id,
       academicSemesterId: subject.semesterId,
       courseId: subject.linkedCourseIds?.[0] || null,
-      estimatedPomodoros: Math.max(1, Math.ceil(sessionMinutes / 25)),
+      estimatedMinutes: sessionMinutes,
     });
     setTaskForm({
       title: "",
@@ -670,18 +669,11 @@ export function AcademicSubjectScreen({ onNavigate }) {
         academicStudySessionId: session.id,
         academicSubjectId: subject.id,
         academicSemesterId: subject.semesterId,
-        estimatedPomodoros: Math.max(
-          1,
-          Math.ceil(session.durationMinutes / 25),
-        ),
+        estimatedMinutes: session.durationMinutes,
       });
     }
-    const pomodoro = usePomodoroStore.getState();
-    pomodoro.clearSelectedTasks();
-    pomodoro.toggleTaskSelection(taskId);
-    pomodoro.updateSettings({ focusTime: session.durationMinutes });
-    pomodoro.setMode("focus");
-    onNavigate?.(SCREEN_IDS.POMODORO);
+    setActiveTask(taskId);
+    onNavigate?.(SCREEN_IDS.TASK_DETAILS);
   };
 
   const sourceCandidates = [
@@ -1672,20 +1664,7 @@ export function AcademicSubjectScreen({ onNavigate }) {
               ) : null}
 
               <div className="mt-4 flex items-center gap-2">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black text-[color:var(--primary)] neo-raised"
-                  onClick={() => {
-                    const pomodoro = usePomodoroStore.getState();
-                    pomodoro.clearSelectedTasks();
-                    pomodoro.toggleTaskSelection(task.id);
-                    pomodoro.setMode("focus");
-                    pomodoro.startTimer();
-                    onNavigate?.(SCREEN_IDS.POMODORO);
-                  }}
-                >
-                  <Icon name="timer" /> Iniciar foco
-                </button>
+
 
                 <button
                   type="button"

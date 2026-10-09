@@ -21,7 +21,6 @@ export const SCREEN_IDS = {
   TASK_DETAILS: "task_details",
   PROJECTS: "projects",
   PROJECT_DETAILS: "project_details",
-  POMODORO: "pomodoro",
   CODE_LAB: "code_lab",
   PROGRAMMING_PROJECT: "programming_project",
   ACADEMIC: "academic",

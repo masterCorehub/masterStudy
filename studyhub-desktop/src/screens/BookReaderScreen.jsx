@@ -23,7 +23,7 @@ import {
   SAVED_PASSAGE_COLOR,
 } from "./reader/readerAnnotations";
 import { BookFileImport } from "../components/books/BookFileImport";
-import { retainBookFile } from "../services/book-files";
+import { retainBookFileForAccount } from "../services/book-files";
 import { bookFileType, mergeBookMetadata } from "../domain/bookMetadata";
 import { FloatingStickyNote } from "./reader/FloatingStickyNote";
 
@@ -400,12 +400,12 @@ function BookReaderScreenInner({ onNavigate }) {
   // ---- HANDLERS ----
 
   const handleLinkFile = async ({ source, metadata }) => {
-    const filePath = await retainBookFile(source);
+    const storedFile = await retainBookFileForAccount(source);
     const current = useStudyStore
       .getState()
       .books.list.find((item) => item.id === book.id);
     if (!current) return;
-    updateBook(book.id, { ...mergeBookMetadata(current, metadata), filePath });
+    updateBook(book.id, { ...mergeBookMetadata(current, metadata), ...storedFile });
     setLinkingFile(false);
   };
 

@@ -13,7 +13,9 @@ import { markdownToNoteHtml } from "../domain/aiStudio";
 import { sanitizeGeneratedHtml } from "../utils/sanitizeHtml";
 import { getLocalDateKey } from "../utils/dateUtils";
 import { ShareModal } from "../components/ShareModal";
-import { askWithWebLLM, isWebLlmAvailable } from "../services/webllm";
+import { askWithWebLLM, initializeWebLLM, isWebLlmAvailable } from "../services/webllm";
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
   collaborationCloud,
   collaborationCloudConfigured,
@@ -31,6 +33,32 @@ const TABS = [
   "Plano de estudos",
   "Pessoas"
 ];
+
+GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+
+async function extractWebSourceText(file) {
+  const maxChars = 50_000;
+  const extension = String(file.name || "").split(".").pop()?.toLowerCase();
+  if (extension === "pdf") {
+    const pdf = await getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    const pages = [];
+    for (let pageNumber = 1; pageNumber <= pdf.numPages && pages.join("\n").length < maxChars; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const text = await page.getTextContent();
+      pages.push(`PÁGINA ${pageNumber}\n${text.items.map((item) => item.str || "").join(" ")}`);
+    }
+    await pdf.destroy();
+    const result = pages.join("\n\n").slice(0, maxChars).trim();
+    if (!result) throw new Error("O PDF não contém texto selecionável para a IA analisar.");
+    return result;
+  }
+  if (["txt", "md", "markdown", "csv"].includes(extension)) {
+    const result = (await file.text()).slice(0, maxChars).trim();
+    if (!result) throw new Error("O arquivo está vazio.");
+    return result;
+  }
+  throw new Error("Na versão web, envie PDFs com texto, TXT, Markdown ou CSV. Para outros formatos, use o app desktop.");
+}
 
 const sharingPermissionLabels = {
   viewer: "Leitor",
@@ -789,6 +817,19 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
 
   // Check Ollama connection & list models
   const checkOllamaConnection = async () => {
+    if (!window.studyhubDesktop?.academicAI) {
+      try {
+        const status = await initializeWebLLM();
+        setConfiguredAiProvider("api");
+        setAvailableModels([status.model || "MasterStudy AI"]);
+        setSelectedModel(status.model || "MasterStudy AI");
+      } catch {
+        setConfiguredAiProvider("api");
+        setAvailableModels([]);
+      }
+      setIsOllamaConnected(false);
+      return;
+    }
     try {
       if (window.studyhubDesktop?.academicAI?.status) {
         const status = await window.studyhubDesktop.academicAI.status();
@@ -827,7 +868,10 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
   const [newSourceForm, setNewSourceForm] = useState(() =>
     createAcademicResourceForm("file"),
   );
+  const browserSourceInput = useRef(null);
+  const [browserSourceFile, setBrowserSourceFile] = useState(null);
   const [sourceFormError, setSourceFormError] = useState("");
+  const [sourceUploading, setSourceUploading] = useState(false);
 
   // AI Chat State
   const [message, setMessage] = useState("");
@@ -995,20 +1039,47 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
     updateAcademicEntity("resources", id, { selected: !source.selected });
   };
 
-  const handleAddSource = (e) => {
+  const handleAddSource = async (e) => {
     e.preventDefault();
+    if (sourceUploading) return;
     const result = prepareAcademicResource({ form: newSourceForm, subject });
     if (!result.ok) {
       setSourceFormError(result.error);
       return;
     }
-    addAcademicEntity("resources", result.resource);
-    setNewSourceForm(createAcademicResourceForm("file"));
-    setSourceFormError("");
-    setShowAddSourceModal(false);
+    setSourceUploading(true);
+    try {
+      let resource = result.resource;
+      if (browserSourceFile && !window.studyhubDesktop) {
+        const session = await collaborationCloud.getSession();
+        if (!session?.user?.id) throw new Error("Entre na sua conta para sincronizar o arquivo e analisá-lo com a IA.");
+        const extractedText = await extractWebSourceText(browserSourceFile);
+        const stored = await collaborationCloud.uploadAccountFile(browserSourceFile);
+        resource = {
+          ...resource,
+          path: `cloud-file://${stored.objectPath}`,
+          cloudObjectPath: stored.objectPath,
+          cloudFileObjectId: stored.id || null,
+          extractedText,
+        };
+      }
+      addAcademicEntity("resources", resource);
+      setNewSourceForm(createAcademicResourceForm("file"));
+      setBrowserSourceFile(null);
+      setSourceFormError("");
+      setShowAddSourceModal(false);
+    } catch (error) {
+      setSourceFormError(error.message || "Não foi possível adicionar este material.");
+    } finally {
+      setSourceUploading(false);
+    }
   };
 
   const pickSourceFile = async () => {
+    if (!window.studyhubDesktop?.selectFile) {
+      browserSourceInput.current?.click();
+      return;
+    }
     const selected = await window.studyhubDesktop?.selectFile?.({
       properties: ["openFile"],
     });
@@ -1149,7 +1220,13 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
         window.open(source.url, "_blank", "noopener,noreferrer");
       }
     } else if (source.path) {
-      window.studyhubDesktop?.openPath?.(source.path);
+      if (source.path.startsWith("cloud-file://")) {
+        collaborationCloud.createSignedFileUrl(source.cloudObjectPath || source.path.slice("cloud-file://".length))
+          .then((url) => window.open(url, "_blank", "noopener,noreferrer"))
+          .catch(() => showToast("Não foi possível abrir o arquivo sincronizado."));
+      } else {
+        window.studyhubDesktop?.openPath?.(source.path);
+      }
     }
   };
 
@@ -1210,7 +1287,7 @@ export function AcademicSubjectScreenV2({ onNavigate }) {
     const targetResources = selectedSources.length ? selectedSources : sources;
     targetResources.forEach((src) => {
       contextParts.push(
-        `--- ARQUIVO/FONTE: "${src.name}" (${src.type}) ---\nCaminho/URL: ${src.path || src.url || "N/A"}`
+        `--- ARQUIVO/FONTE: "${src.name}" (${src.type}) ---\n${src.extractedText ? `CONTEÚDO EXTRAÍDO:\n${src.extractedText}` : `Caminho/URL: ${src.path || src.url || "N/A"}`}`
       );
     });
 
@@ -1562,20 +1639,21 @@ INSTRUÇÕES DE RESPOSTA:
             ) : null}
             {/* AI provider status & model selector */}
             <div className={`items-center gap-2 ${activeTab !== "Estúdio IA" ? "hidden" : "flex"}`}>
-              <button 
+              {!window.studyhubDesktop?.academicAI ? (
+                <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${availableModels.length ? 'bg-green-500/10 text-green-600 border-green-500/30' : 'bg-amber-500/10 text-amber-600 border-amber-500/30'}`}>
+                  <span className={`w-2 h-2 rounded-full ${availableModels.length ? 'bg-green-500' : 'bg-amber-500'}`} />
+                  {availableModels.length ? "IA MasterStudy conectada" : "IA MasterStudy indisponível"}
+                </span>
+              ) : <button
                 onClick={() => configuredAiProvider === "gemini" ? useStudyStore.getState().openSettingsModal?.("ai") : (setTempUrl(ollamaUrl), setShowOllamaConfigModal(true))}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                  isOllamaConnected 
-                    ? 'bg-green-500/10 text-green-600 border-green-500/30' 
-                    : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${isOllamaConnected ? 'bg-green-500/10 text-green-600 border-green-500/30' : 'bg-amber-500/10 text-amber-600 border-amber-500/30'}`}
                 title={configuredAiProvider === "gemini" ? "Configurar Google Gemini" : "Configurar conexão do Ollama local"}
               >
                 <div className={`w-2 h-2 rounded-full ${isOllamaConnected ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
                 {configuredAiProvider === "gemini" ? (isOllamaConnected ? "Gemini conectado" : "Gemini não configurado") : (isOllamaConnected ? "Ollama conectado" : "Ollama desconectado")}
-              </button>
+              </button>}
 
-              {isOllamaConnected && availableModels.length > 0 && (
+              {window.studyhubDesktop?.academicAI && isOllamaConnected && availableModels.length > 0 && (
                 <select 
                   value={selectedModel}
                   onChange={e => {
@@ -1677,9 +1755,10 @@ INSTRUÇÕES DE RESPOSTA:
                   <div>
                     <h2 className="text-base font-black text-[color:var(--on-surface)]">Conversa com suas fontes</h2>
                     <p className="text-xs text-[color:var(--on-surface-variant)]">
-                      {isOllamaConnected 
-                        ? `Modelo ativo: ${selectedModel || "Llama3"}` 
-                        : configuredAiProvider === "gemini" ? "Configure sua chave Gemini nas configurações de IA" : "Conecte a IA para conversar com os materiais da disciplina."}
+                      {configuredAiProvider === "api"
+                        ? (availableModels.length ? "IA do masterStudy pronta para usar suas fontes." : "Entre na sua conta para ativar a IA do masterStudy.")
+                        : isOllamaConnected ? `Modelo ativo: ${selectedModel || "Llama3"}`
+                          : configuredAiProvider === "gemini" ? "Configure o Gemini nas configurações de IA" : "Conecte o Ollama para conversar com os materiais da disciplina."}
                     </p>
                   </div>
                 </div>
@@ -3249,6 +3328,26 @@ INSTRUÇÕES DE RESPOSTA:
       {showAddSourceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <form onSubmit={handleAddSource} className="bg-[color:var(--surface)] w-full max-w-md rounded-3xl p-8 shadow-2xl relative">
+            {!window.studyhubDesktop?.selectFile ? (
+              <input
+                ref={browserSourceInput}
+                type="file"
+                accept=".pdf,.txt,.md,.markdown,.csv,text/plain,text/markdown,text/csv,application/pdf"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  setBrowserSourceFile(file);
+                  setNewSourceForm((current) => ({
+                    ...current,
+                    type: "file",
+                    path: file.name,
+                    title: current.title || file.name.replace(/\.[^.]+$/, ""),
+                  }));
+                  setSourceFormError("");
+                }}
+              />
+            ) : null}
             <button
               type="button"
               onClick={() => {
@@ -3322,7 +3421,9 @@ INSTRUÇÕES DE RESPOSTA:
                   <Icon name="upload_file" className="mr-2" />
                   {newSourceForm.path
                     ? resourceFileName(newSourceForm.path)
-                    : "Selecionar arquivo"}
+                    : window.studyhubDesktop?.selectFile
+                      ? "Selecionar arquivo"
+                      : "Selecionar PDF, texto ou CSV"}
                 </button>
               ) : (
                 <div>
@@ -3352,8 +3453,8 @@ INSTRUÇÕES DE RESPOSTA:
               ) : null}
             </div>
 
-            <button type="submit" className="w-full mt-8 bg-[color:var(--primary)] text-white font-bold py-3 rounded-xl shadow-md uppercase tracking-wider text-xs">
-              Salvar Fonte
+            <button disabled={sourceUploading} type="submit" className="w-full mt-8 bg-[color:var(--primary)] text-white font-bold py-3 rounded-xl shadow-md uppercase tracking-wider text-xs disabled:opacity-60">
+              {sourceUploading ? "Enviando e analisando…" : "Salvar Fonte"}
             </button>
           </form>
         </div>

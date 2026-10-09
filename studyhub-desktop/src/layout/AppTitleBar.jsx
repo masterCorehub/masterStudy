@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Icon } from "../ui/Icon";
-import { usePomodoroStore } from "../store/usePomodoroStore";
+
 import { SCREEN_IDS } from "../app/screenIds";
 import { shortcutLabel } from "../utils/keyboardShortcuts";
 
@@ -11,81 +11,7 @@ function getWindowControls() {
   return window.studyhubDesktop?.windowControls ?? null;
 }
 
-function TitleBarPomodoroWidget({ onNavigate }) {
-  const store = usePomodoroStore();
-  const [mounted, setMounted] = useState(false);
-  const [prevSound, setPrevSound] = useState("rain");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted || !store.isActive) return null;
-
-  const minutes = Math.floor(store.timeLeft / 60).toString().padStart(2, "0");
-  const seconds = (store.timeLeft % 60).toString().padStart(2, "0");
-  const modeIcon = store.mode === "focus" ? "local_fire_department" : "coffee";
-  const isFocus = store.mode === "focus";
-  const isMuted = !store.activeSound || store.activeSound === "none";
-
-  const handleToggleMute = () => {
-    if (isMuted) {
-      store.setActiveSound(prevSound || "rain");
-    } else {
-      if (store.activeSound && store.activeSound !== "none") {
-        setPrevSound(store.activeSound);
-      }
-      store.setActiveSound("none");
-    }
-  };
-
-  return (
-    <div 
-      className="flex items-center gap-2 rounded-full bg-[color:var(--surface-container-high)]/90 border border-[color:var(--outline-variant)]/40 px-3 py-1 shadow-sm transition-all shrink-0"
-      data-titlebar-control
-      style={{ WebkitAppRegion: "no-drag" }}
-    >
-      {/* Pomodoro Timer Text & Icon */}
-      <button
-        type="button"
-        onClick={() => onNavigate?.(SCREEN_IDS.POMODORO)}
-        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-        title="Abrir Pomodoro"
-      >
-        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${isFocus ? "bg-red-500/20 text-red-500" : "bg-green-500/20 text-green-500"}`}>
-          <Icon name={modeIcon} className={`text-[12px] ${store.isActive ? "animate-pulse" : ""}`} />
-        </div>
-        <span className="font-mono text-xs font-bold text-[color:var(--on-surface)] tracking-tight">
-          {minutes}:{seconds}
-        </span>
-      </button>
-
-      <div className="h-3 w-px bg-[color:var(--outline-variant)]/40" />
-
-      {/* Play / Pause Button */}
-      <button
-        type="button"
-        onClick={() => (store.isActive ? store.pauseTimer() : store.startTimer())}
-        className="w-5 h-5 rounded-full flex items-center justify-center text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)] transition-colors"
-        title={store.isActive ? "Pausar" : "Retomar"}
-      >
-        <Icon name={store.isActive ? "pause" : "play_arrow"} className="text-[14px]" />
-      </button>
-
-      {/* Mute / Unmute Audio Button */}
-      <button
-        type="button"
-        onClick={handleToggleMute}
-        className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-          isMuted ? "text-[color:var(--on-surface-variant)]/40 hover:text-[color:var(--on-surface)]" : "text-[color:var(--primary)] hover:opacity-80"
-        }`}
-        title={isMuted ? "Ativar som ambiente" : "Mutar som ambiente"}
-      >
-        <Icon name={isMuted ? "volume_off" : "volume_up"} className="text-[14px]" />
-      </button>
-    </div>
-  );
-}
 
 export function AppTitleBar({ onNavigate }) {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -129,7 +55,6 @@ export function AppTitleBar({ onNavigate }) {
         <span className="app-titlebar-title">masterStudy</span>
       </div>
 
-      {/* Center Container: Search Everything Button + Pomodoro Widget Side-by-Side */}
       <div className="app-titlebar-tools absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-3 z-10" data-titlebar-control style={{ WebkitAppRegion: "no-drag" }}>
         <button
           type="button"
@@ -146,7 +71,6 @@ export function AppTitleBar({ onNavigate }) {
           </span>
         </button>
 
-        {/* Pomodoro permanece implementado, mas está oculto até ser reativado. */}
       </div>
 
       {/* Right: Window Controls */}

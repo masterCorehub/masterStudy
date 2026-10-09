@@ -52,7 +52,7 @@ contextBridge.exposeInMainWorld("studyhubDesktop", {
     ipcRenderer.invoke("window:openNoteEditor", noteId),
   openBookReaderWindow: (bookId) =>
     ipcRenderer.invoke("window:openBookReader", bookId),
-  openPomodoroWidget: () => ipcRenderer.invoke("window:openPomodoroWidget"),
+
   stickyNotes: {
     open: (noteId, options = {}) =>
       ipcRenderer.invoke("sticky-notes:open", noteId, options),
@@ -66,24 +66,9 @@ contextBridge.exposeInMainWorld("studyhubDesktop", {
       return () => ipcRenderer.removeListener("sticky-notes:changed", listener);
     },
   },
-  pomodoroWidget: {
-    minimize: () => ipcRenderer.invoke("window:minimize"),
-    close: () => ipcRenderer.invoke("window:close"),
-    openMain: () => ipcRenderer.invoke("window:openMainWindow"),
-  },
+
   openExternal: (url) => ipcRenderer.invoke("app:openExternal", url),
-  spotify: {
-    status: () => ipcRenderer.invoke("spotify:status"),
-    login: () => ipcRenderer.invoke("spotify:login"),
-    logout: () => ipcRenderer.invoke("spotify:logout"),
-    search: (query) => ipcRenderer.invoke("spotify:search", query),
-    playback: () => ipcRenderer.invoke("spotify:playback"),
-    play: (payload) => ipcRenderer.invoke("spotify:play", payload),
-    pause: () => ipcRenderer.invoke("spotify:pause"),
-    next: () => ipcRenderer.invoke("spotify:next"),
-    previous: () => ipcRenderer.invoke("spotify:previous"),
-    volume: (value) => ipcRenderer.invoke("spotify:volume", value),
-  },
+
   openPath: (filePath) => ipcRenderer.invoke("app:openPath", filePath),
   readFileBinary: (filePath) => ipcRenderer.invoke("app:readFileBinary", filePath),
   saveNoteAsPdf: (payload) => ipcRenderer.invoke("note:save-as-pdf", payload),
@@ -100,8 +85,7 @@ contextBridge.exposeInMainWorld("studyhubDesktop", {
     export: () => ipcRenderer.invoke("study-db:export"),
     import: () => ipcRenderer.invoke("study-db:import"),
   },
-  notifyPomodoroCompletion: (completion) =>
-    ipcRenderer.invoke("pomodoro:completed", completion),
+
   codeLab: {
     getEnvironment: () => ipcRenderer.invoke("csharp:environment"),
     getCatalog: () => ipcRenderer.invoke("csharp:catalog"),

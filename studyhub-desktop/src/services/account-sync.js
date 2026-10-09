@@ -45,6 +45,80 @@ const itemTimestamp = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const deletionKey = (type, id, collection = "") => `${type}:${collection}:${id}`;
+
+function latestDeletionTombstones(...states) {
+  const latest = new Map();
+  for (const state of states) {
+    for (const tombstone of state?.entityDeletionTombstones || []) {
+      const key = deletionKey(tombstone.entityType, tombstone.entityId, tombstone.collection);
+      const previous = latest.get(key);
+      if (!previous || itemTimestamp(tombstone) >= itemTimestamp(previous)) latest.set(key, tombstone);
+    }
+    for (const item of state?.universalTrash || []) {
+      const key = deletionKey(item.entityType, item.entityId, item.metadata?.collection || "");
+      const previous = latest.get(key);
+      if (!previous || Number(item.deletedAt) > Number(previous.deletedAt || 0)) {
+        latest.set(key, {
+          id: key, entityType: item.entityType, entityId: item.entityId,
+          collection: item.metadata?.collection || "", deletedAt: Number(item.deletedAt) || 0,
+          restoredAt: Number(previous?.restoredAt) || 0, updatedAt: Number(item.deletedAt) || 0,
+        });
+      }
+    }
+    // Older app versions had no durable tombstones. Recover their latest
+    // delete/restore actions from the existing activity history.
+    for (const event of [...(state?.universalHistory || [])].sort((a, b) => Number(a.timestamp) - Number(b.timestamp))) {
+      if (!event?.entityType || !event?.entityId) continue;
+      if (!["deleted", "restored", "permanently_deleted"].includes(event.action)) continue;
+      const key = deletionKey(event.entityType, event.entityId, event.metadata?.collection || "");
+      const previous = latest.get(key) || {
+        id: key, entityType: event.entityType, entityId: event.entityId,
+        collection: event.metadata?.collection || "", deletedAt: 0, restoredAt: 0, updatedAt: 0,
+      };
+      const eventAt = Number(event.timestamp) || 0;
+      if (eventAt < Number(previous.updatedAt || 0)) continue;
+      if (event.action === "restored") previous.restoredAt = eventAt;
+      else previous.deletedAt = eventAt;
+      previous.updatedAt = Number(event.timestamp) || 0;
+      latest.set(key, previous);
+    }
+  }
+  return [...latest.values()];
+}
+
+export function applyEntityDeletionTombstones(state = {}, ...otherStates) {
+  const latestTombstones = latestDeletionTombstones(state, ...otherStates);
+  if (!latestTombstones.length) return state;
+  const result = { ...state, entityDeletionTombstones: latestTombstones };
+  const deleted = new Set(latestTombstones
+    .filter((item) => item.deletedAt > 0 && item.deletedAt > Number(item.restoredAt || 0))
+    .map((item) => deletionKey(item.entityType, item.entityId, item.collection || "")));
+  if (!deleted.size) return result;
+  const remove = (type, collection = "") => (item) => !deleted.has(deletionKey(type, item.id, collection));
+  if (state.tasks?.list) result.tasks = { ...state.tasks, list: state.tasks.list.filter(remove("task")) };
+  if (state.habits?.list) result.habits = { ...state.habits, list: state.habits.list.filter(remove("habit")) };
+  if (state.books?.list) result.books = { ...state.books, list: state.books.list.filter(remove("book")) };
+  if (state.studyItems) result.studyItems = state.studyItems.filter(remove("study_item"));
+  if (state.notes?.list) result.notes = { ...state.notes, list: state.notes.list.filter(remove("study_item")) };
+  if (state.dashboardQuickNotes) result.dashboardQuickNotes = state.dashboardQuickNotes.filter(remove("quick_note"));
+  if (state.stickyNotes) result.stickyNotes = state.stickyNotes.filter(remove("sticky_note"));
+  if (state.knowledgeItems) result.knowledgeItems = state.knowledgeItems.filter(remove("knowledge"));
+  if (state.flashcardDecks) result.flashcardDecks = state.flashcardDecks.filter(remove("flashcard_deck"));
+  if (state.journalEntries) result.journalEntries = state.journalEntries.filter(remove("journal"));
+  if (state.academic) {
+    result.academic = { ...state.academic };
+    for (const tombstone of latestTombstones.filter((item) =>
+      item.entityType === "academic" && item.collection &&
+      item.deletedAt > 0 && item.deletedAt > Number(item.restoredAt || 0)
+    )) {
+      const value = state.academic[tombstone.collection];
+      if (Array.isArray(value)) result.academic[tombstone.collection] = value.filter((item) => String(item.id) !== String(tombstone.entityId));
+    }
+  }
+  return result;
+}
+
 function mergeNode(base, local, remote, path, report) {
   if (equal(local, remote)) return clone(local);
   if (equal(local, base)) return clone(remote);
@@ -192,6 +266,7 @@ export function mergeStudyStates(base = {}, local = {}, remote = {}) {
     // Intake from another device must not carry an older goal over a new setting.
     state.waterTracker = mergeWaterTrackers(local.waterTracker, remote.waterTracker);
   }
+  Object.assign(state, applyEntityDeletionTombstones(state, base, local, remote));
   // Cloud snapshots omit device files and embedded covers. Absence there is
   // not deletion: retain these fields on surviving books, matched by ID.
   const localBooks = new Map((local.books?.list || []).map(book => [String(book.id), book]));

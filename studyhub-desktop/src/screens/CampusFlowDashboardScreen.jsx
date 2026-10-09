@@ -6,7 +6,7 @@ import { selectTodayTasks } from "../domain/taskDates";
 import { SCREEN_IDS } from "../app/screenIds";
 import { getAcademicSemesterData } from "../domain/academic";
 import { dueFlashcards } from "../domain/studySelectors";
-import { usePomodoroStore } from "../store/usePomodoroStore";
+
 import { useStudyStore } from "../store/useStore";
 import { Icon } from "../ui/Icon";
 import { getLocalDateKey } from "../utils/dateUtils";
@@ -273,7 +273,6 @@ function QuickNoteWidgetCard({
 const DASHBOARD_WIDGET_META = {
   schedule: { label: "Agenda da semana", icon: "calendar_today" },
   summary: { label: "Resumo do dia", icon: "insights" },
-  focus: { label: "Foco rápido", icon: "timer" },
   deadlines: { label: "Próximos prazos", icon: "event_upcoming" },
   habits: { label: "Hábitos", icon: "task_alt" },
   water: { label: "Hidratação", icon: "water_drop" },
@@ -913,13 +912,7 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
     });
   };
 
-  const startQuickFocus = (minutes = 25) => {
-    const pomodoro = usePomodoroStore.getState();
-    pomodoro.updateSettings?.({ focusTime: minutes });
-    pomodoro.setMode?.("focus");
-    pomodoro.startTimer();
-    onNavigate?.(SCREEN_IDS.POMODORO);
-  };
+
 
   const widgetContent = {
     summary: (
@@ -954,26 +947,6 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
               <span>Hábitos feitos</span>
             </div>
           </div>
-        </WidgetPanel>
-      </>
-    ),
-    focus: (
-      <>
-        <WidgetPanel className="today-focus">
-          <div>
-            <span className="today-caption">
-              <Icon name="timer" /> Hora de focar
-            </span>
-            <strong>25 minutos, uma coisa.</strong>
-          </div>
-          <button
-            type="button"
-            className="today-start"
-            aria-label="Iniciar foco de 25 minutos"
-            onClick={() => startQuickFocus(25)}
-          >
-            <Icon name="play_arrow" />
-          </button>
         </WidgetPanel>
       </>
     ),

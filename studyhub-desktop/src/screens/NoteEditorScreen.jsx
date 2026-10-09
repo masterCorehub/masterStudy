@@ -201,8 +201,7 @@ export function NoteEditorScreen({ onNavigate }) {
     ),
   ];
   const webAiModelOptions = [
-    { value: WEBLLM_DEFAULT_MODEL, label: "⚡ Qwen 0.5B (leve)" },
-    { value: "Llama-3.2-1B-Instruct-q4f16_1-MLC", label: "🧠 Llama 3.2 1B (melhor qualidade)" },
+    { value: WEBLLM_DEFAULT_MODEL, label: "IA MasterStudy (servidor)" },
   ];
   const visibleAiModelOptions = window.studyhubDesktop?.academicAI
     ? aiModelOptions
@@ -267,16 +266,11 @@ export function NoteEditorScreen({ onNavigate }) {
   useEffect(() => {
     if (isQuickNoteWindow) return;
     if (!window.studyhubDesktop?.academicAI) {
-      setNoteAiStatus({
-        available: false,
-        provider: "webllm",
-        supported: isWebLlmAvailable(),
-        message: isWebLlmAvailable()
-          ? "IA no navegador pronta para ser carregada."
-          : "Este navegador não oferece WebGPU.",
-        models: [{ name: WEBLLM_DEFAULT_MODEL }],
-      });
-      return;
+      let active = true;
+      initializeWebLLM()
+        .then((status) => active && setNoteAiStatus({ ...status, available: true, supported: true, models: [{ name: status.model || WEBLLM_DEFAULT_MODEL }] }))
+        .catch((error) => active && setNoteAiStatus({ available: false, provider: "masterStudy", supported: isWebLlmAvailable(), message: error.message, models: [] }));
+      return () => { active = false; };
     }
     let active = true;
     window.studyhubDesktop.academicAI
@@ -680,17 +674,18 @@ export function NoteEditorScreen({ onNavigate }) {
     setNoteAiError("");
     try {
       if (!window.studyhubDesktop?.academicAI) {
-        await initializeWebLLM((progress) => {
+        const status = await initializeWebLLM((progress) => {
           const percent = Math.round((progress?.progress || 0) * 100);
           setCurrentAiActionLabel(
-            progress?.text || `Carregando IA no navegador${percent ? ` (${percent}%)` : ""}...`,
+            progress?.text || `Conectando à IA MasterStudy${percent ? ` (${percent}%)` : ""}...`,
           );
         });
         setNoteAiStatus({
           available: true,
-          provider: "webllm",
+          provider: "masterStudy",
           supported: true,
-          models: [{ name: WEBLLM_DEFAULT_MODEL }],
+          model: status.model,
+          models: [{ name: status.model || WEBLLM_DEFAULT_MODEL }],
         });
         return;
       }
@@ -709,7 +704,7 @@ export function NoteEditorScreen({ onNavigate }) {
   const runNoteAi = async (kind) => {
     const desktopAi = window.studyhubDesktop?.academicAI;
     if (!desktopAi && !isWebLlmAvailable()) {
-      setNoteAiError("Este navegador não oferece WebGPU para executar a IA local.");
+      setNoteAiError("A IA web está indisponível. Entre na sua conta e tente novamente.");
       return;
     }
     const hasAttachments = data.attachments && data.attachments.length > 0;
@@ -777,7 +772,7 @@ export function NoteEditorScreen({ onNavigate }) {
         const raw = await askWithWebLLM({
           system: "Você é um assistente acadêmico. Use somente o conteúdo fornecido e responda em português do Brasil.",
           prompt: `${instructions[effectiveKind] || instructions.summary}\n\nTÍTULO: ${localTitle}\n\nCONTEÚDO:\n${htmlToPlainText(localContent)}${selectedNoteText ? `\n\nTRECHO SELECIONADO:\n${selectedNoteText}` : ""}`,
-          onProgress: (progress) => setCurrentAiActionLabel(progress?.text || "Carregando IA no navegador..."),
+          onProgress: (progress) => setCurrentAiActionLabel(progress?.text || "Conectando à IA MasterStudy..."),
         });
         let parsed = null;
         if (effectiveKind === "flashcards" || effectiveKind === "concepts") {
@@ -1905,16 +1900,16 @@ export function NoteEditorScreen({ onNavigate }) {
               {!noteAiStatus?.available ? (
                 <div className="campus-note-ai-offline">
                   <p className="text-sm font-extrabold text-amber-800">
-                    {noteAiStatus?.provider === "gemini" ? "Google Gemini não configurado" : "IA local desconectada"}
+                    {noteAiStatus?.provider === "gemini" ? "Google Gemini não configurado" : "IA MasterStudy indisponível"}
                   </p>
                   <p className="mt-1 text-xs leading-5 text-amber-700">
                     {window.studyhubDesktop?.academicAI
                       ? noteAiStatus?.provider === "gemini"
-                        ? "Configure sua chave Gemini nas Configurações de IA para analisar esta nota."
+                        ? "A IA usa a chave protegida do servidor masterStudy."
                         : "Inicie o Ollama para analisar esta nota sem enviar o conteúdo para a nuvem."
                       : noteAiStatus?.supported
-                        ? "Carregue a IA diretamente no navegador. O modelo será baixado somente na primeira utilização."
-                        : "Seu navegador precisa oferecer WebGPU para executar a IA local."}
+                        ? "Entre na sua conta; o masterStudy processa a solicitação com segurança no servidor."
+                        : "A IA MasterStudy está indisponível no momento."}
                   </p>
                   <button
                     className="mt-3 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
@@ -1926,7 +1921,7 @@ export function NoteEditorScreen({ onNavigate }) {
                       ? "Carregando..."
                       : window.studyhubDesktop?.academicAI
                         ? noteAiStatus?.provider === "gemini" ? "Configurar Gemini" : "Iniciar Ollama"
-                        : "Iniciar IA no navegador"}
+                        : "Conectar IA MasterStudy"}
                   </button>
                 </div>
               ) : (

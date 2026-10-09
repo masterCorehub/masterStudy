@@ -38,7 +38,7 @@ const { promisify } = require("node:util");
 const { pathToFileURL } = require("node:url");
 const { registerCodeLabIpc } = require("./code-lab/index.cjs");
 const { registerAcademicAiIpc } = require("./academic-ai/index.cjs");
-const { createSpotifyService } = require("./spotify.cjs");
+
 const { createTranslatorService } = require("./translator/index.cjs");
 const {
   saveState,
@@ -51,7 +51,7 @@ const {
   registerLanguageLabIpc,
 } = require("./language-lab/index.cjs");
 
-const spotify = createSpotifyService({ app, shell, BrowserWindow });
+
 
 // Native Wayland only exposes system-wide shortcuts through the XDG Desktop
 // Portal. Do not enable the portal when the user explicitly selects X11: in
@@ -135,12 +135,12 @@ const stickyNoteWindows = new Map();
 let translatorWindow = null;
 let translatorCaptureWindow = null;
 let mainWindow = null;
-let pomodoroWidgetWindow = null;
+
 let trayPopoverWindow = null;
 const internalBrowserWindows = new Set();
 let tray = null;
 let isQuitting = false;
-let lastPomodoroNotificationId = null;
+
 let quickNoteShortcut = DEFAULT_QUICK_NOTE_SHORTCUT;
 let quickDrawShortcut = DEFAULT_QUICK_DRAW_SHORTCUT;
 let translatorTextShortcut = DEFAULT_TRANSLATOR_TEXT_SHORTCUT;
@@ -417,16 +417,16 @@ for (const [action, signal, paused] of [["pause", "SIGSTOP", true], ["resume", "
   });
 }
 
-ipcMain.handle("spotify:status", () => spotify.status());
-ipcMain.handle("spotify:login", () => spotify.login());
-ipcMain.handle("spotify:logout", () => spotify.logout());
-ipcMain.handle("spotify:search", (event, query) => spotify.search(query));
-ipcMain.handle("spotify:playback", () => spotify.playback());
-ipcMain.handle("spotify:play", (event, payload) => spotify.play(payload));
-ipcMain.handle("spotify:pause", () => spotify.pause());
-ipcMain.handle("spotify:next", () => spotify.next());
-ipcMain.handle("spotify:previous", () => spotify.previous());
-ipcMain.handle("spotify:volume", (event, volume) => spotify.volume(volume));
+
+
+
+
+
+
+
+
+
+
 
 ipcMain.handle("app:openPath", async (event, filePath) => {
   assertTrustedRenderer(event);
@@ -556,29 +556,13 @@ ipcMain.handle("study-db:import", async (event) => {
   return { canceled: false, state: payload.state };
 });
 
-ipcMain.handle("pomodoro:completed", (event, completion) => {
-  assertTrustedRenderer(event);
-  if (!completion?.id || completion.id === lastPomodoroNotificationId) return;
-  lastPomodoroNotificationId = completion.id;
 
-  if (mainWindow?.isVisible()) return;
-
-  const focusFinished = completion.phase === "focus";
-  new Notification({
-    title: focusFinished ? "Foco concluido" : "Descanso concluido",
-    body: focusFinished
-      ? "Otimo trabalho. Seu descanso comecou."
-      : "Hora de voltar para o proximo bloco de foco.",
-    icon: APP_ICON_PATH,
-  }).show();
-});
 
 const SYSTEM_NOTIFICATION_SCREENS = new Set([
   "today",
   "tasks",
   "flashcards",
   "academic",
-  "pomodoro",
 ]);
 
 ipcMain.handle("notifications:show", (event, payload = {}) => {
@@ -635,10 +619,7 @@ ipcMain.handle("tray-popover:action", (event, action) => {
     startTranslatorCapture();
     return true;
   }
-  if (action === "pomodoro-widget") {
-    openPomodoroWidgetWindow(event);
-    return true;
-  }
+
   const win = showMainWindow();
   if (action === "search") {
     win?.webContents.send("command-palette:open");
@@ -2261,72 +2242,9 @@ ipcMain.handle("window:openBookReader", async (event, bookId) => {
   loadStudyHubWindow(readerWin, query);
 });
 
-async function openPomodoroWidgetWindow(event) {
-  assertTrustedRenderer(event);
-  if (pomodoroWidgetWindow && !pomodoroWidgetWindow.isDestroyed()) {
-    pomodoroWidgetWindow.setAlwaysOnTop(true, "screen-saver", 1);
-    pomodoroWidgetWindow.showInactive();
-    pomodoroWidgetWindow.moveTop();
-    return;
-  }
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const workArea = primaryDisplay?.workArea || {
-    x: 0,
-    y: 0,
-    width: 1280,
-    height: 720,
-  };
-  const widgetWidth = 350;
-  const widgetHeight = 500;
-  const widgetWin = new BrowserWindow({
-    width: widgetWidth,
-    height: widgetHeight,
-    x: Math.round(workArea.x + (workArea.width - widgetWidth) / 2),
-    y: Math.max(workArea.y + 12, 0),
-    alwaysOnTop: true,
-    frame: false,
-    transparent: true,
-    backgroundColor: "#00000000",
-    icon: APP_ICON_PATH,
-    minWidth: 260,
-    minHeight: 360,
-    resizable: true,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.cjs"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-      webSecurity: true,
-    },
-  });
 
-  widgetWin.setAlwaysOnTop(true, "screen-saver");
-  widgetWin.setVisibleOnAllWorkspaces(true, {
-    visibleOnFullScreen: true,
-  });
-  widgetWin.setAlwaysOnTop(true, "screen-saver", 1);
 
-  pomodoroWidgetWindow = widgetWin;
-  widgetWin.on("show", () => {
-    if (!widgetWin.isDestroyed()) {
-      widgetWin.setAlwaysOnTop(true, "screen-saver", 1);
-      widgetWin.moveTop();
-    }
-  });
-  widgetWin.on("blur", () => {
-    if (!widgetWin.isDestroyed()) {
-      widgetWin.setAlwaysOnTop(true, "screen-saver", 1);
-      widgetWin.moveTop();
-    }
-  });
-  widgetWin.on("closed", () => {
-    if (pomodoroWidgetWindow === widgetWin) pomodoroWidgetWindow = null;
-  });
 
-  loadStudyHubWindow(widgetWin, "screen=pomodoro_widget");
-}
-
-ipcMain.handle("window:openPomodoroWidget", (event) => openPomodoroWidgetWindow(event));
 
 function normalizeStickyNoteId(value) {
   const noteId = String(value || "").trim();
@@ -2815,7 +2733,7 @@ function openCampusFlowUrl(rawUrl) {
     const parsed = new URL(rawUrl);
     const destination = `${parsed.hostname || parsed.pathname}`.replace(/^\//, "");
     if (destination === "tasks") targetScreen = "tasks";
-    if (destination === "pomodoro") targetScreen = "pomodoro";
+
   } catch {
     return false;
   }
@@ -2987,7 +2905,6 @@ function createWindow() {
   }
 
   // The close control sends the app to the tray. Utility windows and the
-  // Pomodoro widget remain independent, and global shortcuts keep working.
   win.on("close", (event) => {
     if (!isQuitting) {
       event.preventDefault();
@@ -3211,7 +3128,6 @@ app.on("before-quit", () => {
 
 app.on("window-all-closed", () => {
   // The application intentionally remains alive in the tray so shortcuts,
-  // quick tools and the Pomodoro widget continue to work.
   if (isQuitting) {
     app.quit();
   }

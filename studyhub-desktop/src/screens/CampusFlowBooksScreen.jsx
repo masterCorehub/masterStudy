@@ -8,7 +8,7 @@ import { BookImportDialog } from "../components/books/BookImportDialog";
 import { BookCategoryControls } from "../components/books/BookCategoryControls";
 import { BookAiCategorizer } from "../components/books/BookAiCategorizer";
 import { allBookCategories, booksInCategory } from "../domain/bookCategories";
-import { retainBookFile } from "../services/book-files";
+import { retainBookFileForAccount } from "../services/book-files";
 import {
   mergeBookMetadata,
   bookProgress,
@@ -95,9 +95,9 @@ export function CampusFlowBooksScreen({ onNavigate }) {
     setSaveError("");
     try {
       // Commit the browser file only when the user saves the book.
-      const filePath = selectedFile.current
-        ? await retainBookFile(selectedFile.current)
-        : null;
+      const storedFile = selectedFile.current
+        ? await retainBookFileForAccount(selectedFile.current)
+        : {};
       addBook({
         ...newBook,
         title: newBook.title.trim(),
@@ -107,7 +107,7 @@ export function CampusFlowBooksScreen({ onNavigate }) {
           .map((tag) => tag.trim())
           .filter(Boolean),
         totalPages: Number(newBook.totalPages) || 0,
-        filePath,
+        ...storedFile,
         status: "TO READ",
         categoryId: targetCategory?.id || null,
         categoryAssignmentSource: "manual",

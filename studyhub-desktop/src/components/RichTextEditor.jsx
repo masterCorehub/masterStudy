@@ -2265,8 +2265,13 @@ export const RichTextEditor = forwardRef(({
       run: async (ed, range) => {
         const title = nestedNoteTitle || 'Nova nota interna';
         let childId;
+        let childTitle = title;
         if (onCreateNestedNote) {
-          childId = await onCreateNestedNote(title);
+          const created = await onCreateNestedNote(title);
+          if (created && typeof created === "object") {
+            childId = created.id;
+            childTitle = created.title || title;
+          } else childId = created;
         }
         if (childId) {
           ed.chain().focus().deleteRange(range).insertContent({
@@ -2274,7 +2279,7 @@ export const RichTextEditor = forwardRef(({
             content: [
               {
                 type: 'text',
-                text: `↳ ${title}`,
+                text: `↳ ${childTitle}`,
                 marks: [{ type: 'link', attrs: { href: `#nested-note=${childId}` } }],
               },
             ],
