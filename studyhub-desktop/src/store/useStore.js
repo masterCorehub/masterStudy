@@ -1,7 +1,8 @@
 import { organizeLessonNote } from "../domain/lessonNoteOrganization";
 import { applyStickyUpdate } from "../domain/stickySync";
 import { retireStudyTimer } from "../domain/retiredStudyFeatures";
-import { applyEntityDeletionTombstones } from "../services/account-sync";
+import { applyEntityDeletionTombstones, reconcilePersistedEntities } from "../services/account-sync";
+import { toggleHabitDate } from "../domain/habitSync";
 import { allBookCategories, validateBookCategoryName, removeBookCategory, migrateBookCategories } from "../domain/bookCategories";
 import { repairNestedNotes } from "../domain/nestedNotes";
 import { collectVaultDeletion } from "../domain/vaultTree";
@@ -2608,14 +2609,7 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
           habits: {
             list: (state.habits?.list || []).map((h) => {
               if (h.id !== habitId) return h;
-              const completed = h.completedDates || [];
-              const isDone = completed.includes(dateStr);
-              return {
-                ...h,
-                completedDates: isDone
-                  ? completed.filter((d) => d !== dateStr)
-                  : [...completed, dateStr],
-              };
+              return toggleHabitDate(h, dateStr);
             }),
           },
         })),
@@ -3741,7 +3735,9 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
       version: 27,
       merge: (persistedState, currentState) => ({
         ...currentState,
-        ...retireStudyTimer(persistedState),
+        // Rehydration can arrive late from another window: reconcile rather
+        // than replacing durable deletions and newer habit checkmarks.
+        ...reconcilePersistedEntities(currentState, retireStudyTimer(persistedState)),
         waterTracker: mergeWaterTrackers(currentState.waterTracker, persistedState?.waterTracker),
       }),
       migrate: (persistedState, version) => {
