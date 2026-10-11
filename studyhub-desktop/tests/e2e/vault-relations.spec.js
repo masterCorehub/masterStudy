@@ -181,7 +181,9 @@ test("Vault creates nested notes in context and connects inline tags", async ({
     .click();
   await page.getByText("Principal", { exact: true }).first().click();
   await expect(
-    page.getByRole("button", { name: "Mostrar notas internas de Principal" }),
+    // Selecting a parent can expand its children automatically; both states
+    // expose the same control for navigating nested notes.
+    page.getByRole("button", { name: /^(Mostrar|Ocultar) notas internas de Principal$/ }),
   ).toBeVisible();
   const editor = page.locator(".tiptap[contenteditable=true]").first();
   await editor.click();

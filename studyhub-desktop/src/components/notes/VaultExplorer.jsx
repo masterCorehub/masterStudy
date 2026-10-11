@@ -124,7 +124,9 @@ const TreeItem = ({
           {(isFolder || hasChildren) && <button
             type="button"
             tabIndex={-1}
-            aria-label={`${isExpanded ? 'Recolher' : 'Expandir'} ${item.name || item.title}`}
+            aria-label={isFolder
+              ? `${isExpanded ? 'Recolher' : 'Expandir'} ${item.name}`
+              : `${isExpanded ? 'Ocultar' : 'Mostrar'} notas internas de ${item.title}`}
             aria-expanded={isExpanded}
             onClick={event => { event.stopPropagation(); setIsExpanded(value => !value); }}
             className="w-5 h-5 rounded hover:bg-[var(--surface-highest)] flex items-center justify-center"
