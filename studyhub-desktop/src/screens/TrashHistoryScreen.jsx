@@ -4,6 +4,7 @@ import { useStudyStore } from "../store/useStore";
 
 const TYPE_META = {
   study_item: ["Nota ou material", "description"],
+  vault_folder: ["Pasta do Vault", "folder"],
   task: ["Tarefa", "task_alt"],
   book: ["Livro", "menu_book"],
   habit: ["Hábito", "repeat"],

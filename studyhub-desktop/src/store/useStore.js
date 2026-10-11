@@ -4,6 +4,7 @@ import { retireStudyTimer } from "../domain/retiredStudyFeatures";
 import { applyEntityDeletionTombstones } from "../services/account-sync";
 import { allBookCategories, validateBookCategoryName, removeBookCategory, migrateBookCategories } from "../domain/bookCategories";
 import { repairNestedNotes } from "../domain/nestedNotes";
+import { collectVaultDeletion } from "../domain/vaultTree";
 import { mergeMigratedStickyNotes } from "../domain/stickyNoteMigration";
 import { create } from "zustand";
 import { reorderDashboardFlow, stepDashboardFlow } from "../domain/dashboardFlow";
@@ -662,6 +663,34 @@ const deriveLegacyNotes = (studyItems = []) => {
     totalNotes: list.length,
     totalModules: 1,
     list,
+  };
+};
+
+const deleteVaultItems = (state, targets) => {
+  const visibleNotes = repairNestedNotes(state.studyItems
+    .filter(item => STUDY_ITEM_NOTE_TYPES.has(item.itemType))
+    .map(note => organizeLessonNote(note, state.courses)));
+  const { noteIds, folderIds } = collectVaultDeletion({
+    notes: visibleNotes, folders: state.vaultFolders, targets,
+    activeVaultId: state.activeVaultId,
+  });
+  const deletedNotes = state.studyItems.filter(item => noteIds.has(item.id));
+  if (deletedNotes.some(isReadOnlySharedItem)) return state;
+  let trashPatch = {};
+  for (const item of deletedNotes) {
+    trashPatch = moveToUniversalTrash({ ...state, ...trashPatch }, 'study_item', item);
+  }
+  for (const folder of (state.vaultFolders || []).filter(item => folderIds.has(item.id))) {
+    trashPatch = moveToUniversalTrash({ ...state, ...trashPatch }, 'vault_folder', folder);
+  }
+  const studyItems = sortStudyItems(state.studyItems.filter(item => !noteIds.has(item.id)));
+  const openTabs = (state.openTabs || []).filter(tab => !noteIds.has(tab.id));
+  const fallbackId = openTabs.at(-1)?.id || null;
+  return {
+    ...trashPatch, studyItems, notes: deriveLegacyNotes(studyItems), openTabs,
+    vaultFolders: (state.vaultFolders || []).filter(folder => !folderIds.has(folder.id)),
+    activeTabId: noteIds.has(state.activeTabId) ? fallbackId : state.activeTabId,
+    activeNoteId: noteIds.has(state.activeNoteId) ? fallbackId : state.activeNoteId,
   };
 };
 
@@ -2126,64 +2155,15 @@ export const useStudyStore = create(
           };
         }),
 
-      deleteNote: (noteId) =>
-        set((state) => {
-          const current = state.studyItems.find((item) => item.id === noteId);
-          if (isReadOnlySharedItem(current)) return state;
-          const nextItems = sortStudyItems(
-            state.studyItems.filter((item) => item.id !== noteId),
-          );
+      deleteNote: (noteId) => set((state) =>
+        deleteVaultItems(state, [{ id: noteId, type: 'note' }])
+      ),
 
-          return {
-            ...moveToUniversalTrash(state, "study_item", current),
-            studyItems: nextItems,
-            notes: deriveLegacyNotes(nextItems),
-            activeNoteId:
-              state.activeNoteId === noteId ? null : state.activeNoteId,
-          };
-        }),
-
-      deleteMultipleItems: (ids, types) =>
-        set((state) => {
-          // Types array corresponds to ids array. We handle 'note' and 'folder' types.
-          const idsToDelete = new Set(ids);
-          const folderIdsToDelete = new Set(
-            ids.filter((_, idx) => types[idx] === 'folder')
-          );
-          const itemIdsToDelete = new Set(
-            ids.filter((_, idx) => types[idx] === 'note')
-          );
-
-          let nextState = {};
-
-          if (itemIdsToDelete.size > 0) {
-            let trashPatch = {};
-            state.studyItems
-              .filter((item) => itemIdsToDelete.has(item.id) && !isReadOnlySharedItem(item))
-              .forEach((item) => {
-                trashPatch = moveToUniversalTrash({ ...state, ...trashPatch }, "study_item", item);
-              });
-            const nextItems = sortStudyItems(
-              state.studyItems.filter(
-                (item) => !itemIdsToDelete.has(item.id) || isReadOnlySharedItem(item),
-              )
-            );
-            nextState = { ...nextState, ...trashPatch };
-            nextState.studyItems = nextItems;
-            nextState.notes = deriveLegacyNotes(nextItems);
-            if (itemIdsToDelete.has(state.activeNoteId)) {
-              nextState.activeNoteId = null;
-            }
-          }
-
-          if (folderIdsToDelete.size > 0) {
-            nextState.vaultFolders = (state.vaultFolders || []).filter(
-              (folder) => !folderIdsToDelete.has(folder.id)
-            );
-          }
-
-          return nextState;
-        }),
+      deleteMultipleItems: (ids, types, contexts = []) => set((state) =>
+        deleteVaultItems(state, ids.map((id, index) => ({
+          ...contexts[index], id, type: types[index],
+        })))
+      ),
 
       // ─── Vault / Folder Management ──────────────────────────────
 
@@ -2236,9 +2216,9 @@ export const useStudyStore = create(
         ),
       })),
 
-      deleteVaultFolder: (folderId) => set((state) => ({
-        vaultFolders: (state.vaultFolders || []).filter((f) => f.id !== folderId),
-      })),
+      deleteVaultFolder: (folderId, context = {}) => set((state) =>
+        deleteVaultItems(state, [{ ...context, id: folderId, type: 'folder' }])
+      ),
 
       moveNoteToFolder: (noteId, folderPath) => set((state) => {
         const nextItems = state.studyItems.map((item) =>
@@ -3538,6 +3518,9 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
           const patch = {};
           const prependUnique = (list) => [payload, ...(list || []).filter((item) => item.id !== payload.id)];
           switch (trashItem.entityType) {
+            case "vault_folder":
+              patch.vaultFolders = prependUnique(state.vaultFolders);
+              break;
             case "course":
               patch.courses = prependUnique(state.courses);
               break;

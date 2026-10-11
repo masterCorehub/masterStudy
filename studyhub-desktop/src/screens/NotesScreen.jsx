@@ -1,5 +1,6 @@
 import { organizeLessonNote, isClassNote } from "../domain/lessonNoteOrganization";
 import { nestedNoteContext, repairNestedNotes } from "../domain/nestedNotes";
+import { collectVaultDeletion } from "../domain/vaultTree";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStudyStore } from "../store/useStore";
@@ -354,10 +355,10 @@ export function NotesScreen({ onNavigate }) {
 
   const [dontAskDeleteAgain, setDontAskDeleteAgain] = useState(false);
 
-  const handleDeleteItem = useCallback((id, type) => {
+  const handleDeleteItem = useCallback((id, type, context = {}) => {
     const executeDelete = () => {
       if (type === "folder") {
-        store.deleteVaultFolder(id);
+        store.deleteVaultFolder(id, context);
       } else {
         store.deleteNote(id);
         store.closeTab(id);
@@ -369,15 +370,15 @@ export function NotesScreen({ onNavigate }) {
       return;
     }
 
+    const affected = collectVaultDeletion({ notes: allNotes, folders: vaultFolders,
+      targets: [{ ...context, id, type }], activeVaultId });
     setDontAskDeleteAgain(false);
     setConfirmDialog({
       title: "Confirmar Exclusão",
-      message: type === "folder"
-        ? "Tem certeza que deseja excluir esta pasta e suas notas?"
-        : "Tem certeza que deseja excluir esta nota?",
+      message: `Excluir ${type === 'folder' ? 'esta pasta e todo o conteúdo dentro dela' : 'esta nota e suas notas internas'}? ${affected.noteIds.size} nota(s) e ${affected.folderIds.size} pasta(s) serão movidas para a lixeira.`,
       onConfirm: executeDelete,
     });
-  }, [store]);
+  }, [store, allNotes, vaultFolders, activeVaultId]);
 
   const handleDeleteMultipleItems = useCallback((items) => {
     // items is an array of { id, type }
@@ -386,7 +387,7 @@ export function NotesScreen({ onNavigate }) {
     const executeDelete = () => {
       const ids = items.map(i => i.id);
       const types = items.map(i => i.type);
-      store.deleteMultipleItems(ids, types);
+      store.deleteMultipleItems(ids, types, items);
       items.forEach((item) => {
         if (item.type !== "folder") {
           store.closeTab(item.id);
@@ -399,13 +400,15 @@ export function NotesScreen({ onNavigate }) {
       return;
     }
 
+    const affected = collectVaultDeletion({ notes: allNotes, folders: vaultFolders,
+      targets: items, activeVaultId });
     setDontAskDeleteAgain(false);
     setConfirmDialog({
       title: "Excluir Múltiplos",
-      message: `Tem certeza que deseja excluir os ${items.length} itens selecionados?`,
+      message: `Excluir os itens selecionados e todo o conteúdo dentro deles? ${affected.noteIds.size} nota(s) e ${affected.folderIds.size} pasta(s) serão movidas para a lixeira.`,
       onConfirm: executeDelete,
     });
-  }, [store]);
+  }, [store, allNotes, vaultFolders, activeVaultId]);
 
   const handleWikilinkClick = useCallback((targetTitle) => {
     // Busca a nota pelo título (case insensitive)
