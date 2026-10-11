@@ -175,6 +175,11 @@ for (const platform of ['web', 'darwin', 'win32']) test("Sidebar, platform chrom
   await page.getByRole('button', { name: 'Editar Markdown' }).click();
   await expect(page.getByRole('textbox', { name: 'Conteúdo da nota' })).toHaveValue(source);
   await page.getByRole('button', { name: 'Visualizar Markdown' }).click();
+  // The standalone sticky-note window is an Electron-only surface. Simulate
+  // the desktop bridge before navigation so AppShell does not route to Today.
+  await page.addInitScript(() => {
+    window.studyhubDesktop ||= { platform: 'darwin' };
+  });
   await page.goto('http://studyhub.test/?screen=sticky_note_widget&standalone=1&noteId=resize-note');
   await expect(page.getByRole('heading', { name: 'Plano de estudo' })).toBeVisible();
   await page.getByRole('button', { name: 'Editar Markdown' }).click();

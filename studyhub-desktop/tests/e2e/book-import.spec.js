@@ -12,6 +12,12 @@ async function library(page) {
   await preparePreview(page, {
     state: { ...previewState, books: { list: [] } },
   });
+  // This suite validates browser-local file retention. The hosted CI build
+  // enables cloud sync, so a minimal desktop bridge keeps these tests isolated
+  // from the mocked account-storage API.
+  await page.addInitScript(() => {
+    window.studyhubDesktop = {};
+  });
   await page.goto("/");
   await page.getByRole("button", { name: "Livros", exact: true }).click();
   await page
@@ -189,7 +195,8 @@ test("Broken PDF fails visibly and a manual book needs no uploaded file", async 
   await form.getByLabel("Total de páginas (opcional)").fill("230");
   await form.getByRole("button", { name: "Salvar Livro" }).click();
   const book = (await storedState(page)).books.list[0];
-  assert.equal(book.filePath, null);
+  // Optional file paths are omitted from serialized manual-book records.
+  assert.equal(book.filePath ?? null, null);
   assert.equal(book.totalPages, 230);
 });
 

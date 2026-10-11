@@ -143,7 +143,8 @@ test("Journal inherits app palettes and preserves saved entries across themes", 
     await page.getByRole("button", { name: "Diário", exact: true }).click();
     await page.getByRole("textbox", { name: "Senha da conta" }).fill("preview-password");
     await page.getByRole("button", { name: "Abrir diário" }).click();
-    await expect(page.getByRole("heading", { name: "Meu diário" })).toBeVisible();
+    // The redesigned journal uses the concise product name in its page header.
+    await expect(page.getByRole("heading", { name: "Diário", exact: true })).toBeVisible();
   };
   const checkPalette = async () => {
     const colors = await page.locator(".journal-screen").evaluate((node) => {

@@ -189,6 +189,9 @@ test("Vault creates nested notes in context and connects inline tags", async ({
   await editor.press("Enter");
   await editor.pressSequentially("/");
   await page.getByText("Nota Interna", { exact: true }).click();
+  // Creating a nested note intentionally asks for confirmation of its
+  // inherited title; complete that user-facing step before checking the tree.
+  await page.getByRole("button", { name: "Confirmar", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "↳ Nota interna — Principal", exact: true }),
   ).toBeVisible();
