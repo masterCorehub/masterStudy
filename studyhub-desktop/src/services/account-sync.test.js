@@ -136,3 +136,14 @@ test("mescla inicial e concorrente mantêm capas locais sem recriar livros exclu
   remote.books.list[0].coverSource = "manual";
   assert.equal(mergeStudyStates(local, local, remote).state.books.list[0].coverUrl, "");
 });
+
+test('curso excluído não reaparece na chegada de snapshot antigo', () => {
+ const local={courses:[],entityDeletionTombstones:[{id:'course::c',entityType:'course',entityId:'c',deletedAt:200,restoredAt:0,updatedAt:200}]};
+ const remote={courses:[{id:'c',title:'Excluído',updatedAt:100}]};
+ assert.deepEqual(mergeStudyStates({},local,remote).state.courses,[]);
+});
+test('snapshot atrasado não reverte sticky mesmo quando local equivale à base', () => {
+ const local={stickyNotes:[{id:'n',content:'Atual',updatedAt:200}]};
+ const remote={stickyNotes:[{id:'n',content:'Antigo',updatedAt:100}]};
+ assert.equal(mergeStudyStates(local,local,remote).state.stickyNotes[0].content,'Atual');
+});

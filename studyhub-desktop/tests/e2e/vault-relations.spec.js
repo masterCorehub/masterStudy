@@ -189,6 +189,9 @@ test("Vault creates nested notes in context and connects inline tags", async ({
   await editor.press("Enter");
   await editor.pressSequentially("/");
   await page.getByText("Nota Interna", { exact: true }).click();
+  // Creating a nested note intentionally asks for confirmation of its
+  // inherited title; complete that user-facing step before checking the tree.
+  await page.getByRole("button", { name: "Confirmar", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "↳ Nota interna — Principal", exact: true }),
   ).toBeVisible();
@@ -246,6 +249,11 @@ test("Vault creates nested notes in context and connects inline tags", async ({
     restored.find((note) => note.id === "old-child").parentNoteId,
     "parent",
   );
+  // Standalone sticky-note windows are Electron-only; simulate that bridge
+  // for this browser test so AppShell opens the intended widget screen.
+  await page.addInitScript(() => {
+    window.studyhubDesktop ||= { platform: "darwin" };
+  });
   await page.goto(
     "http://studyhub.test/?screen=sticky_note_widget&standalone=1&noteId=resize-note",
   );

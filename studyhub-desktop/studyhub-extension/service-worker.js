@@ -25,7 +25,8 @@ flushPendingCaptures().catch(() => {});
 
 // Abre o painel lateral automaticamente no Chrome se sidePanel for suportado
 if (typeof chrome !== "undefined" && chrome.sidePanel?.setPanelBehavior) {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+  // O listener abaixo escolhe um único painel, evitando abertura duplicada.
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
 }
 
 // Ao clicar no ícone da extensão na barra de ferramentas
@@ -48,6 +49,31 @@ if (browserAPI.action?.onClicked) {
 
 // Mensagens internas e proxy de rede (para evitar bloqueios de Mixed Content HTTPS na página)
 browserAPI.runtime?.onMessage?.addListener((message, sender, sendResponse) => {
+  if (message.type === "GENERATE_CONTENT_AI") {
+    fetch("http://127.0.0.1:47820/api/ai", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: message.messages, format: message.format }),
+    }).then(async response => {
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "IA indisponível.");
+      sendResponse({ success: true, result });
+    }).catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+  if (message.type === "CLOSE_NATIVE_PANEL") {
+    const closePanel = typeof chrome !== "undefined" && chrome.sidePanel?.close
+      ? () => chrome.sidePanel.close({ windowId: message.windowId })
+      : typeof browser !== "undefined" && browser.sidebarAction?.close
+        ? () => browser.sidebarAction.close()
+        : null;
+    if (!closePanel) {
+      sendResponse({ success: false });
+      return false;
+    }
+    Promise.resolve().then(closePanel).then(() => sendResponse({ success: true }))
+      .catch(() => sendResponse({ success: false }));
+    return true;
+  }
   if (message.type === "SAVE_KNOWLEDGE_CAPTURE") {
     flushPendingCaptures().catch(() => {});
     fetch("http://127.0.0.1:47820/api/capture", {

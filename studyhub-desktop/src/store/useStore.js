@@ -1,3 +1,5 @@
+import { organizeLessonNote } from "../domain/lessonNoteOrganization";
+import { applyStickyUpdate } from "../domain/stickySync";
 import { retireStudyTimer } from "../domain/retiredStudyFeatures";
 import { applyEntityDeletionTombstones } from "../services/account-sync";
 import { allBookCategories, validateBookCategoryName, removeBookCategory, migrateBookCategories } from "../domain/bookCategories";
@@ -100,6 +102,7 @@ const STICKY_NOTE_COLORS = new Set(["yellow", "rose", "blue", "green", "purple",
 const normalizeStickyNotes = (notes) =>
   (Array.isArray(notes) ? notes : []).map((note, index) => ({
     id: note?.id || `sticky-note-${Date.now()}-${index}`,
+    fieldUpdatedAt: note?.fieldUpdatedAt || {},
     title: String(note?.title || ""),
     content: String(note?.content || ""),
     color: STICKY_NOTE_COLORS.has(note?.color) ? note.color : "yellow",
@@ -1035,13 +1038,10 @@ export const useStudyStore = create(
         set((state) => {
           const stickyNotes = normalizeStickyNotes(state.stickyNotes).map((note) =>
             note.id === noteId
-              ? {
-                  ...note,
+              ? applyStickyUpdate(note, {
                   ...updates,
-                  id: note.id,
                   color: STICKY_NOTE_COLORS.has(updates.color) ? updates.color : note.color,
-                  updatedAt: Date.now(),
-                }
+                })
               : note,
           );
           return {
@@ -2074,7 +2074,7 @@ export const useStudyStore = create(
       addNote: (noteData) =>
         set((state) => {
           const nextItems = sortStudyItems([
-            normalizeStudyItem(noteData),
+            normalizeStudyItem(organizeLessonNote(noteData, state.courses)),
             ...state.studyItems,
           ]);
 
@@ -2378,6 +2378,8 @@ export const useStudyStore = create(
           rawContent: item.rawContent || "",
           summaryConcise: item.summaryConcise || "",
           summaryDetailed: item.summaryDetailed || "",
+          contentFolder: item.contentFolder || "",
+          videoPositionSeconds: Number.isFinite(item.videoPositionSeconds) ? Math.max(0, Math.floor(item.videoPositionSeconds)) : null,
           timestamps: item.timestamps || [],
           markdownNotes: item.markdownNotes || "",
           tags: Array.isArray(item.tags) ? item.tags : [],
@@ -3253,7 +3255,20 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
           const nextDecks = filterOutLinkedItems(state.flashcardDecks, { courseIds, moduleIds, lessonIds });
           const nextTaskList = filterOutLinkedItems(state.tasks?.list || [], { courseIds, moduleIds, lessonIds });
 
+          let trashPatch = moveToUniversalTrash(state, "course", course);
+          // Registre também as exclusões dependentes, impedindo notas órfãs na nuvem.
+          for (const [type, previous, remaining] of [
+            ['study_item', state.studyItems, nextStudyItems],
+            ['flashcard_deck', state.flashcardDecks, nextDecks],
+            ['task', state.tasks?.list || [], nextTaskList],
+          ]) {
+            const surviving = new Set(remaining.map(item => item.id));
+            for (const item of previous || []) {
+              if (!surviving.has(item.id)) trashPatch = { ...trashPatch, ...moveToUniversalTrash({ ...state, ...trashPatch }, type, item) };
+            }
+          }
           return {
+            ...trashPatch,
             courses: state.courses.filter((candidate) => candidate.id !== courseId),
             studyItems: nextStudyItems,
             notes: deriveLegacyNotes(nextStudyItems),
@@ -3523,6 +3538,9 @@ ${item.markdownNotes || '*(Sem anotações adicionais)*'}
           const patch = {};
           const prependUnique = (list) => [payload, ...(list || []).filter((item) => item.id !== payload.id)];
           switch (trashItem.entityType) {
+            case "course":
+              patch.courses = prependUnique(state.courses);
+              break;
             case "study_item": {
               const studyItems = sortStudyItems(prependUnique(state.studyItems));
               patch.studyItems = studyItems;

@@ -57,6 +57,7 @@ export function StickyNoteWidgetScreen({ noteId }) {
 
   const theme = NOTE_THEMES[note.color] || NOTE_THEMES.yellow;
   const commitUpdate = (updates) => {
+    updates = { ...updates, updatedAt: Date.now() };
     updateNote(note.id, updates);
     window.studyhubDesktop?.stickyNotes?.broadcastChange?.({
       type: "updated",

@@ -1,3 +1,4 @@
+import { organizeLessonNote, isClassNote } from "../domain/lessonNoteOrganization";
 import { nestedNoteContext, repairNestedNotes } from "../domain/nestedNotes";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,6 +35,7 @@ import { markdownToHtml, htmlToMarkdown } from "../domain/markdownUtils";
 
 export function NotesScreen({ onNavigate }) {
   const store = useStudyStore();
+  const [noteSection, setNoteSection] = useState("all");
   const [editorView, setEditorView] = useState(null);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
   const [isVaultSwitcherOpen, setIsVaultSwitcherOpen] = useState(false);
@@ -90,8 +92,8 @@ export function NotesScreen({ onNavigate }) {
   const allNotes = useMemo(() => {
     return repairNestedNotes(studyItems.filter(
       (item) => item.itemType === "note" || item.itemType === "drawing" || item.type === "note"
-    ));
-  }, [studyItems]);
+    ).map(note => organizeLessonNote(note, courses)));
+  }, [studyItems, courses]);
 
   // Filtra apenas as notas pertencentes ao vault ativo
   const vaultNotes = useMemo(() => {
@@ -533,9 +535,12 @@ export function NotesScreen({ onNavigate }) {
             </button>
           </div>
         
+        <nav className="vault-note-sections" aria-label="Tipo de anotação">
+          {[['all', 'Todas'], ['class', 'Notas de aula'], ['common', 'Anotações']].map(([id, label]) => <button key={id} aria-pressed={noteSection === id} onClick={() => setNoteSection(id)}>{label}</button>)}
+        </nav>
         <div className="flex-1 overflow-hidden">
           <VaultExplorer
-            notes={vaultNotes}
+            notes={vaultNotes.filter(note => noteSection === 'all' || (noteSection === 'class' ? isClassNote(note) : !isClassNote(note)))}
             folders={displayedVaultFolders}
             activeNoteId={activeTabId}
             activeTag={activeTag}

@@ -1,3 +1,4 @@
+import { rollingAgendaDays } from "../domain/rollingAgenda";
 import { StickyMarkdown } from "../components/StickyMarkdown";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { dashboardFlowLanes } from "../domain/dashboardFlow";
@@ -271,7 +272,7 @@ function QuickNoteWidgetCard({
 }
 
 const DASHBOARD_WIDGET_META = {
-  schedule: { label: "Agenda da semana", icon: "calendar_today" },
+  schedule: { label: "Agenda · próximos dias", icon: "calendar_today" },
   summary: { label: "Resumo do dia", icon: "insights" },
   deadlines: { label: "Próximos prazos", icon: "event_upcoming" },
   habits: { label: "Hábitos", icon: "task_alt" },
@@ -549,8 +550,7 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
   const [newHabitTitle, setNewHabitTitle] = useState("");
   const [showWaterSettingsModal, setShowWaterSettingsModal] = useState(false);
   const [selectedWeekday, setSelectedWeekday] = useState(() => {
-    const day = new Date().getDay();
-    return day >= 1 && day <= 5 ? day : 1;
+    return new Date().getDay();
   });
   const [editingWidgets, setEditingWidgets] = useState(false);
   const [showWidgetCatalog, setShowWidgetCatalog] = useState(false);
@@ -651,8 +651,8 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
   const currentDate = useCurrentDate();
   const todayWeekday = currentDate.getDay();
 
-  const weekDays = [1, 2, 3, 4, 5]; // Segunda a Sexta
-  const weekClasses = weekDays.map((dayIndex) => {
+  // Janela móvel inclui fins de semana e cruza meses sem perder datas.
+  const weekClasses = rollingAgendaDays(currentDate).map(({ offset, date, dayIndex }) => {
     const classes = academic.subjects
       .filter(
         (subject) =>
@@ -666,10 +666,11 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
           String(b.schedule?.startTime || "99:99"),
         ),
       );
-    return { dayIndex, classes };
+    return { dayIndex, date, classes, offset };
   });
 
   const todayKey = getLocalDateKey(currentDate);
+  useEffect(() => setSelectedWeekday(currentDate.getDay()), [todayKey]);
   const todayIso = getLocalDateKey(currentDate);
   const waterTracker = waterTrackerForDate(waterTrackerState, todayIso);
   const waterTarget = waterTracker.targetMl || 2000;
@@ -828,10 +829,7 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
   ).length;
   const selectedClasses =
     weekClasses.find((day) => day.dayIndex === selectedWeekday)?.classes || [];
-  const selectedDate = new Date(currentDate);
-  selectedDate.setDate(
-    currentDate.getDate() - ((todayWeekday + 6) % 7) + selectedWeekday - 1,
-  );
+  const selectedDate = weekClasses.find(day => day.dayIndex === selectedWeekday)?.date || currentDate;
   const selectedDateKey = getLocalDateKey(selectedDate);
   const habitWeek = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(currentDate);
@@ -893,6 +891,7 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
   };
 
   const updateDashboardStickyNote = (noteId, updates) => {
+    updates = { ...updates, updatedAt: Date.now() };
     updateStickyNote(noteId, updates);
     window.studyhubDesktop?.stickyNotes?.broadcastChange?.({
       type: "updated",
@@ -970,14 +969,14 @@ export function CampusFlowDashboardScreen({ onNavigate }) {
             role="group"
             aria-label="Dia da agenda"
           >
-            {weekClasses.map(({ dayIndex, classes }) => (
+            {weekClasses.map(({ dayIndex, classes, date, offset }) => (
               <button
                 key={dayIndex}
                 type="button"
                 aria-pressed={selectedWeekday === dayIndex}
                 onClick={() => setSelectedWeekday(dayIndex)}
               >
-                <span>{["", "Seg", "Ter", "Qua", "Qui", "Sex"][dayIndex]}</span>
+                <span>{offset === 0 ? 'Hoje' : ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dayIndex]} · {date.getDate()}</span>
                 <small>
                   {classes.length
                     ? `${classes.length} aula${classes.length > 1 ? "s" : ""}`

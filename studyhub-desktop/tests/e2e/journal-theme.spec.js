@@ -143,7 +143,8 @@ test("Journal inherits app palettes and preserves saved entries across themes", 
     await page.getByRole("button", { name: "Diário", exact: true }).click();
     await page.getByRole("textbox", { name: "Senha da conta" }).fill("preview-password");
     await page.getByRole("button", { name: "Abrir diário" }).click();
-    await expect(page.getByRole("heading", { name: "Meu diário" })).toBeVisible();
+    // The redesigned journal uses the concise product name in its page header.
+    await expect(page.getByRole("heading", { name: "Diário", exact: true })).toBeVisible();
   };
   const checkPalette = async () => {
     const colors = await page.locator(".journal-screen").evaluate((node) => {
@@ -159,7 +160,9 @@ test("Journal inherits app palettes and preserves saved entries across themes", 
       return {
         ink: style.color, appInk: resolved("--on-surface"),
         accent: resolved("--journal-accent"), appAccent: resolved("--primary"),
-        paper: getComputedStyle(node.querySelector(".journal-paper")).backgroundColor,
+        // In the redesigned editor the writing sheet is transparent by design;
+        // the adjacent history surface is the token-backed paper surface.
+        paper: getComputedStyle(node.querySelector(".journal-history-column")).backgroundColor,
         appPaper: resolved("--surface-container-low"),
         button: getComputedStyle(node.querySelector(".journal-primary-button")).color,
         appButton: resolved("--on-primary"),
@@ -172,9 +175,9 @@ test("Journal inherits app palettes and preserves saved entries across themes", 
   };
   await openJournal();
   await checkPalette();
-  await page.getByPlaceholder("Dê um título a este momento...").fill("Um dia de estudo");
-  await page.getByPlaceholder("Respire fundo e escreva sem se julgar. Este espaço é só seu...").fill("Hoje organizei minhas ideias e avancei com calma.");
-  await page.getByRole("button", { name: "Salvar", exact: true }).first().click();
+  await page.getByRole("textbox", { name: "Título da entrada" }).fill("Um dia de estudo");
+  await page.getByRole("textbox", { name: "Texto da entrada" }).fill("Hoje organizei minhas ideias e avancei com calma.");
+  await page.getByRole("button", { name: "Salvar agora", exact: true }).click();
   await expect(page.locator(".journal-history-column")).toContainText("Um dia de estudo");
   fs.mkdirSync("qa/journal-theme", { recursive: true });
   await page.screenshot({ path: "qa/journal-theme/brisa.png" });

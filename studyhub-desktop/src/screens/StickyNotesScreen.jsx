@@ -81,6 +81,7 @@ function StickyCard({ note, autoFocus, onDelete }) {
   const color = COLOR_BY_ID[note.color] || COLOR_BY_ID.yellow;
 
   const commitUpdate = (updates) => {
+    updates = { ...updates, updatedAt: Date.now() };
     updateNote(note.id, updates);
     window.studyhubDesktop?.stickyNotes?.broadcastChange?.({
       type: "updated",

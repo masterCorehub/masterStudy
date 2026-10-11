@@ -150,6 +150,12 @@ export const EpubReaderEngine = forwardRef(function EpubReaderEngine(props, ref)
           positionRef.current = loc.start.cfi;
           callbacks.current.onCfiChanged?.(loc.start.cfi);
           const index = instance.locations.locationFromCfi(loc.start.cfi);
+          // O CFI identifica o trecho mesmo após mudar a fonte ou o tamanho da janela.
+          callbacks.current.onPositionChanged?.({
+            cfi: loc.start.cfi,
+            page: typeof index === "number" && index >= 0 ? index + 1 : null,
+            total: instance.locations.length(),
+          });
           if (typeof index === "number" && index >= 0) callbacks.current.onPageChange?.(index + 1, true);
         };
         rendition.on("relocated", report);

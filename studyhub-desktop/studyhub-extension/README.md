@@ -20,3 +20,19 @@ O desktop mantém sua própria fila em disco e só remove uma entrega quando a i
 ## Limites
 
 A versão web não oferece a ponte local do desktop. Não há validação de instalação real para esta versão no Firefox; seu manifesto usa service worker do Chrome. Os testes automatizados validam o reenvio com rede simulada. Confirme a instalação no navegador, selecione um texto, salve e verifique o conteúdo no Hub antes de depender da extensão para seu fluxo diário.
+
+## Ações sob demanda
+
+Abrir o painel não gera resumo nem chama IA. O painel oferece resumo, perguntas,
+transcrição disponível de vídeos, tags manuais ou sugeridas por IA e uma pasta de
+conteúdos. O conteúdo original pode ser salvo sem gerar nada.
+
+As ações de IA requerem o masterStudy Desktop atualizado e aberto, com Ollama ou
+Gemini configurado em Configurações. A extensão usa o provedor do app pela ponte
+local; não guarda chaves. Falhas são exibidas sem substituir a resposta por um
+texto simulado. Transcrições dependem da disponibilidade de legendas na página.
+
+No Hub, use Organizar com IA para revisar e editar os tópicos antes de aplicar.
+As pastas aparecem como filtro. Os conteúdos podem ser excluídos pela lista
+lateral e seguem para a lixeira do app. Recarregue a extensão em
+chrome://extensions após atualizar os arquivos.

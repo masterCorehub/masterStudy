@@ -207,6 +207,7 @@ export function KnowledgeItemDetailScreen({ onNavigate }) {
   const setActiveKnowledgeItemId = useStudyStore((state) => state.setActiveKnowledgeItemId);
   const knowledgeItems = useStudyStore((state) => state.knowledgeItems || []);
   const updateKnowledgeItem = useStudyStore((state) => state.updateKnowledgeItem);
+  const deleteKnowledgeItem = useStudyStore((state) => state.deleteKnowledgeItem);
   const addQuizToKnowledgeItem = useStudyStore((state) => state.addQuizToKnowledgeItem);
   const deleteQuizFromKnowledgeItem = useStudyStore((state) => state.deleteQuizFromKnowledgeItem);
   const answerKnowledgeQuiz = useStudyStore((state) => state.answerKnowledgeQuiz);
@@ -489,7 +490,7 @@ Responda de forma didática, clara e objetiva com exemplos práticos em Markdown
           {knowledgeItems.map((k) => {
             const isSelected = k.id === item.id;
             return (
-              <button
+              <div className="flex items-center" key={k.id}><button
                 key={k.id}
                 onClick={() => {
                   setActiveKnowledgeItemId(k.id);
@@ -506,6 +507,7 @@ Responda de forma didática, clara e objetiva com exemplos práticos em Markdown
                 </span>
                 <span className="truncate flex-1">{k.title}</span>
               </button>
+              <button aria-label={`Excluir ${k.title}`} title="Excluir conteúdo" className="p-2 text-[color:var(--on-surface-variant)]" onClick={() => { if (window.confirm(`Excluir “${k.title}”?`)) deleteKnowledgeItem(k.id); }}><Icon name="delete" className="text-base" /></button></div>
             );
           })}
         </div>
@@ -849,7 +851,7 @@ Responda de forma didática, clara e objetiva com exemplos práticos em Markdown
                   <div className="aspect-video w-full rounded-3xl overflow-hidden shadow-xl border border-[color:var(--outline-variant)]/30 bg-black">
                     <iframe
                       id="yt-player-frame"
-                      src={`https://www.youtube.com/embed/${ytVideoId}?enablejsapi=1`}
+                      src={`https://www.youtube.com/embed/${ytVideoId}?enablejsapi=1&start=${Math.max(0, Math.floor(item.videoPositionSeconds || 0))}`}
                       title={item.title}
                       className="w-full h-full"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
