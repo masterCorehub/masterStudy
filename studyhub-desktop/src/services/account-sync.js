@@ -1,5 +1,6 @@
 import { mergeStickyNote } from "../domain/stickySync.js";
 import { mergeWaterTrackers } from "../domain/waterTracker.js";
+import { mergeHabitCompletion } from "../domain/habitSync.js";
 
 export const STUDY_STATE_SCHEMA_VERSION = 15;
 
@@ -209,6 +210,13 @@ export function serializeStudyState(state = {}) {
   );
 }
 
+export function reconcilePersistedEntities(current = {}, persisted = {}) {
+  const keys = ['courses', 'habits', 'entityDeletionTombstones', 'universalTrash', 'universalHistory'];
+  const select = value => Object.fromEntries(keys.filter(key => value[key] !== undefined).map(key => [key, value[key]]));
+  // UI defaults must not override persisted navigation during initial hydration.
+  return { ...persisted, ...select(mergeStudyStates({}, select(current), select(persisted)).state) };
+}
+
 const LOCAL_PATH_KEYS = new Set([
   "filePath",
   "localPath",
@@ -276,6 +284,13 @@ export function mergeStudyStates(base = {}, local = {}, remote = {}) {
     return current ? mergeStickyNote(current, note) : note;
   });
   Object.assign(state, applyEntityDeletionTombstones(state, base, local, remote));
+  const localHabits = keyed(local.habits?.list || []);
+  const remoteHabits = keyed(remote.habits?.list || []);
+  if (state.habits?.list) state.habits.list = state.habits.list.map(habit => {
+    const left = localHabits.get(String(habit.id));
+    const right = remoteHabits.get(String(habit.id));
+    return left && right ? mergeHabitCompletion(left, right, habit) : habit;
+  });
   // Cloud snapshots omit device files and embedded covers. Absence there is
   // not deletion: retain these fields on surviving books, matched by ID.
   const localBooks = new Map((local.books?.list || []).map(book => [String(book.id), book]));
