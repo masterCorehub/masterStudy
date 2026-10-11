@@ -16,7 +16,6 @@ export function KnowledgeHubScreen({ onNavigate }) {
   const store = useStudyStore();
   const knowledgeItems = useStudyStore((state) => state.knowledgeItems || []);
   const addKnowledgeItem = useStudyStore((state) => state.addKnowledgeItem);
-  const deleteKnowledgeItem = useStudyStore((state) => state.deleteKnowledgeItem);
   const setActiveKnowledgeItemId = useStudyStore((state) => state.setActiveKnowledgeItemId);
   const courses = useStudyStore((state) => state.courses || []);
 
@@ -287,8 +286,9 @@ export function KnowledgeHubScreen({ onNavigate }) {
             const isSelected = selectedTag === tag;
             const count = tagCounts[tag];
             return (
-              <div key={tag} className="space-y-0.5">
+              <div key={tag}>
                 <button
+                  aria-pressed={isSelected}
                   onClick={() => { setSelectedTag(isSelected ? "ALL" : tag); setSelectedFolder(""); }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                     isSelected
@@ -304,27 +304,6 @@ export function KnowledgeHubScreen({ onNavigate }) {
                     {count}
                   </span>
                 </button>
-
-                {/* Sub-itens quando a tag está ativa */}
-                {isSelected && (
-                  <div className="pl-4 pr-1 py-1 space-y-1">
-                    {knowledgeItems
-                      .filter((item) => (item.tags || []).map(t => t.toLowerCase()).includes(tag))
-                      .map((item) => (
-                        <div key={item.id} className="flex items-center"><button
-                          key={item.id}
-                          onClick={() => handleOpenItem(item.id)}
-                          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-highest)] hover:text-[color:var(--on-surface)] truncate text-left transition-colors"
-                        >
-                          <span className="w-4 h-4 rounded-full bg-[color:var(--primary)]/10 text-[color:var(--primary)] flex items-center justify-center text-[9px] font-bold shrink-0">
-                            {item.title.charAt(0).toUpperCase()}
-                          </span>
-                          <span className="truncate">{item.title}</span>
-                        </button>
-                        <button aria-label={`Excluir ${item.title}`} className="p-1" onClick={() => { if (window.confirm(`Excluir “${item.title}”?`)) deleteKnowledgeItem(item.id); }}><Icon name="delete" className="text-sm" /></button></div>
-                      ))}
-                  </div>
-                )}
               </div>
             );
           })}

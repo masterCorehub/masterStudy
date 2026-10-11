@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '../../ui/Icon';
 import { getNoteTags } from '../../domain/frontmatter';
+import { buildVaultTree } from '../../domain/vaultTree';
 
 const TreeItem = ({ 
   item, 
@@ -18,13 +19,17 @@ const TreeItem = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const isFolder = item.type === 'folder';
   const hasChildren = Boolean(item.children?.length);
+  const lastActiveNote = useRef();
   useEffect(() => {
+    // A manually collapsed branch stays collapsed during autosave updates.
+    if (lastActiveNote.current === activeNoteId) return;
+    lastActiveNote.current = activeNoteId;
     const containsActive = children => children?.some(child => child.id === activeNoteId || containsActive(child.children));
     if (containsActive(item.children)) setIsExpanded(true);
   }, [activeNoteId, item.children]);
   const isActive = !isFolder && item.id === activeNoteId;
   const isSelected = selectedIds?.has(item.id);
-  const paddingLeft = `${level * 12 + 12}px`;
+  const paddingLeft = `${level * 16 + 8}px`;
 
   const handleClick = (e) => {
     if (e.ctrlKey || e.metaKey) {
@@ -45,6 +50,7 @@ const TreeItem = ({
 
   const handleContextMenu = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     onContextMenu(e, item);
   };
 
@@ -86,53 +92,54 @@ const TreeItem = ({
     <div>
       <div
         draggable
+        role="treeitem"
+        aria-level={level + 1}
+        aria-expanded={isFolder || hasChildren ? isExpanded : undefined}
+        aria-selected={Boolean(isActive || isSelected)}
+        tabIndex={0}
+        title={item.path ? `${item.path}${isFolder ? '' : `/${item.title || ''}`}` : item.title || item.name}
+        onKeyDown={event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleClick(event); }
+          if (event.key === 'ArrowRight' && (isFolder || hasChildren)) { event.preventDefault(); setIsExpanded(true); }
+          if (event.key === 'ArrowLeft' && (isFolder || hasChildren)) { event.preventDefault(); setIsExpanded(false); }
+        }}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`flex items-center w-full py-1.5 pr-2 group cursor-pointer select-none transition-colors ${
-          isActive 
-            ? 'bg-[var(--primary)]/10 text-[var(--primary)]' 
-            : isSelected
-            ? 'bg-[var(--primary)]/20 text-[var(--primary)]'
-            : isDragOver
-            ? 'bg-[var(--primary)]/30 text-[var(--primary)]'
-            : 'text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]'
+        className={`relative mx-1 flex items-center min-h-8 py-1 pr-2 rounded-lg group cursor-pointer select-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/50 ${
+          isActive ? 'bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] text-[var(--primary)]'
+          : isSelected || isDragOver ? 'bg-[color-mix(in_srgb,var(--primary)_20%,transparent)] text-[var(--primary)]'
+          : 'text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]'
         }`}
         style={{ paddingLeft }}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
       >
-        <div className="flex items-center justify-center w-5 h-5 mr-1 shrink-0">
-          {isSelected ? (
-            <Icon name="check_circle" className="w-4 h-4 text-[var(--primary)]" />
-          ) : isFolder ? (
-            <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.15 }}>
-              <Icon name="chevron_right" className="w-4 h-4 opacity-70" />
-            </motion.div>
-          ) : (
-            <Icon 
-              name={item.itemType === 'drawing' ? 'draw' : 'description'} 
-              className={`w-4 h-4 ${isActive ? 'text-[var(--primary)]' : 'opacity-70 group-hover:opacity-100'}`} 
-            />
-          )}
-        </div>
-        
-        {isFolder && (
-          <Icon 
-            name={isExpanded ? 'folder_open' : 'folder'} 
-            className="w-4 h-4 mr-2 text-[var(--tertiary)] opacity-80" 
-          />
-        )}
-        
-        {!isFolder && hasChildren && <button type="button" aria-label={`Mostrar notas internas de ${item.title}`} aria-expanded={isExpanded} onClick={event => { event.stopPropagation(); setIsExpanded(value => !value); }} className="mr-1"><Icon name={isExpanded ? 'expand_more' : 'chevron_right'} /></button>}
-        <span className={`text-sm truncate flex-1 ${isActive ? 'font-medium' : ''}`}>
-          {item.name || item.title}
+        {/* Shared guide positions make parent/child relationships readable. */}
+        {Array.from({ length: level }, (_, index) => (
+          <span key={index} aria-hidden="true" className="absolute top-0 bottom-0 border-l border-[var(--outline-variant)]/40 pointer-events-none" style={{ left: 18 + index * 16 }} />
+        ))}
+        <span className="w-5 h-5 flex items-center justify-center shrink-0">
+          {(isFolder || hasChildren) && <button
+            type="button"
+            tabIndex={-1}
+            aria-label={`${isExpanded ? 'Recolher' : 'Expandir'} ${item.name || item.title}`}
+            aria-expanded={isExpanded}
+            onClick={event => { event.stopPropagation(); setIsExpanded(value => !value); }}
+            className="w-5 h-5 rounded hover:bg-[var(--surface-highest)] flex items-center justify-center"
+          >
+            <Icon name={isExpanded ? 'expand_more' : 'chevron_right'} className="text-[16px] opacity-70" />
+          </button>}
         </span>
-
-        {!isFolder && item.pinned && (
-          <Icon name="keep" className="w-3.5 h-3.5 opacity-50 ml-2 shrink-0" />
-        )}
+        <Icon
+          name={isFolder ? (isExpanded ? 'folder_open' : 'folder') : item.itemType === 'drawing' ? 'draw' : hasChildren ? 'description' : 'draft'}
+          className={`text-[17px] mx-1.5 shrink-0 ${isFolder ? 'text-[var(--primary)] opacity-80' : 'opacity-70'}`}
+        />
+        <span className={`text-xs truncate flex-1 leading-5 ${isFolder || isActive ? 'font-semibold' : 'font-normal'}`}>{item.name || item.title || 'Sem título'}</span>
+        {isSelected && <Icon name="check_circle" className="text-[14px] ml-1 text-[var(--primary)] shrink-0" />}
+        {hasChildren && <span className="ml-2 text-[10px] tabular-nums opacity-50 shrink-0">{item.children.length}</span>}
+        {!isFolder && item.pinned && <Icon name="keep" className="text-[13px] opacity-50 ml-1 shrink-0" />}
       </div>
 
       <AnimatePresence initial={false}>
@@ -143,7 +150,9 @@ const TreeItem = ({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
+            role="group"
           >
+            {isFolder && !hasChildren && <p className="py-1.5 text-[11px] text-[var(--on-surface-variant)] opacity-50" style={{ paddingLeft: (level + 1) * 16 + 34 }}>Pasta vazia</p>}
             {item.children.map(child => (
               <TreeItem
                 key={child.id}
@@ -211,101 +220,8 @@ export const VaultExplorer = ({
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // Build tree structure
-  const tree = useMemo(() => {
-    const root = [];
-    const itemsByPath = new Map();
-    
-    // Add explicitly defined folders (if any)
-    folders.forEach(f => {
-      const folderItem = { ...f, type: 'folder', children: [] };
-      itemsByPath.set(f.path, folderItem);
-    });
-
-    // Link explicitly defined folders to their parents or root
-    folders.forEach(f => {
-      const folderItem = itemsByPath.get(f.path);
-      if (f.parentId) {
-        const parent = itemsByPath.get(f.parentId);
-        if (parent) {
-          parent.children.push(folderItem);
-        } else {
-          root.push(folderItem); // fallback se pai não existir
-        }
-      } else {
-        root.push(folderItem);
-      }
-    });
-
-    const noteItems = new Map(notes.map(note => [note.id, { ...note, type: 'note', children: [] }]));
-    // As subnotas pertencem à árvore da nota principal, não à raiz do Vault.
-    notes.forEach(note => {
-      const path = note.path || '';
-      const noteItem = noteItems.get(note.id);
-      const parent = noteItems.get(note.parentNoteId);
-      let validParent = Boolean(parent && parent.id !== note.id);
-      const visited = new Set([note.id]);
-      let ancestor = parent;
-      while (ancestor) {
-        if (visited.has(ancestor.id)) { validParent = false; break; }
-        visited.add(ancestor.id);
-        ancestor = noteItems.get(ancestor.parentNoteId);
-      }
-      if (validParent) { parent.children.push(noteItem); return; }
-
-      if (!path) {
-        root.push(noteItem);
-      } else {
-        const parts = path.split('/');
-        let currentPath = '';
-        let parentCollection = root;
-
-        for (let i = 0; i < parts.length; i++) {
-          const part = parts[i];
-          currentPath = currentPath ? `${currentPath}/${part}` : part;
-          
-          let folder = itemsByPath.get(currentPath);
-          if (!folder) {
-            folder = {
-              id: `folder-${currentPath}`,
-              name: part,
-              path: currentPath,
-              type: 'folder',
-              children: []
-            };
-            itemsByPath.set(currentPath, folder);
-            parentCollection.push(folder);
-          }
-          
-          if (i === parts.length - 1) {
-            folder.children.push(noteItem);
-          } else {
-            parentCollection = folder.children;
-          }
-        }
-      }
-    });
-
-    // Sort function: folders first, then alphabetically
-    const sortItems = (items) => {
-      items.sort((a, b) => {
-        if (a.type !== b.type) {
-          return a.type === 'folder' ? -1 : 1;
-        }
-        const nameA = (a.name || a.title || '').toLowerCase();
-        const nameB = (b.name || b.title || '').toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
-      items.forEach(item => {
-        if (item.children) {
-          sortItems(item.children);
-        }
-      });
-    };
-
-    sortItems(root);
-    return root;
-  }, [notes, folders]);
+  // Path-based construction keeps explicit and inferred folders at the same depth.
+  const tree = useMemo(() => buildVaultTree(notes, folders), [notes, folders]);
 
   // Aggregate tags using getNoteTags
   const tags = useMemo(() => {
@@ -507,7 +423,7 @@ export const VaultExplorer = ({
       </div>
 
       {/* Main Explorer */}
-      <div className={`flex-1 overflow-y-auto scrollbar-thin py-2 ${rootDragOver ? 'bg-[var(--primary)]/5' : ''}`}>
+      <div role="tree" aria-label="Pastas e notas do Vault" className={`flex-1 overflow-y-auto scrollbar-thin py-2 ${rootDragOver ? 'bg-[var(--primary)]/5' : ''}`}>
         {isFiltering ? (
           displayedNotes.length === 0 ? (
             <div className="px-4 py-8 text-center text-[var(--on-surface-variant)]">
@@ -583,13 +499,15 @@ export const VaultExplorer = ({
               <button 
                 onClick={() => {
                   if (onDeleteMultipleItems) {
-                    const items = Array.from(selectedIds).map(id => {
-                      const note = notes.find(n => n.id === id);
-                      if (note) return { id, type: 'note' };
-                      const folder = folders.find(f => f.id === id);
-                      if (folder) return { id, type: 'folder' };
+                    const findItem = (items, id) => {
+                      for (const item of items) {
+                        if (item.id === id) return item;
+                        const child = findItem(item.children || [], id);
+                        if (child) return child;
+                      }
                       return null;
-                    }).filter(Boolean);
+                    };
+                    const items = Array.from(selectedIds).map(id => findItem(tree, id)).filter(Boolean);
                     onDeleteMultipleItems(items);
                   }
                   handleClearSelection();
@@ -672,6 +590,28 @@ export const VaultExplorer = ({
             style={{ top: contextMenu.y, left: contextMenu.x }}
             className="fixed z-50 min-w-[160px] py-1 bg-[var(--surface)] border border-[var(--outline-variant)] rounded-lg shadow-neo-raised overflow-hidden"
           >
+            {contextMenu.item.type === 'folder' && (
+              <button
+                type="button"
+                onClick={() => {
+                  const folderPath = contextMenu.item.path || '';
+                  setContextMenu(null);
+                  onCreateNote?.(folderPath);
+                }}
+                className="flex items-center w-full px-4 py-2 text-sm text-left hover:bg-[var(--surface-high)] text-[var(--on-surface)]"
+              >
+                <Icon name="note_add" className="w-4 h-4 mr-2 opacity-70" />
+                Nova nota nesta pasta
+              </button>
+            )}
+            {contextMenu.item.type === 'folder' && <button
+              type="button"
+              onClick={() => { onCreateFolder?.(contextMenu.item.path || ''); setContextMenu(null); }}
+              className="flex items-center w-full px-4 py-2 text-sm text-left hover:bg-[var(--surface-high)] text-[var(--on-surface)]"
+            >
+              <Icon name="create_new_folder" className="w-4 h-4 mr-2 opacity-70" />
+              Nova subpasta
+            </button>}
             <button
               onClick={() => {
                 onRenameItem?.(contextMenu.item.id, contextMenu.item.name || contextMenu.item.title);
@@ -684,7 +624,7 @@ export const VaultExplorer = ({
             </button>
             <button
               onClick={() => {
-                onDeleteItem?.(contextMenu.item.id, contextMenu.item.type);
+                onDeleteItem?.(contextMenu.item.id, contextMenu.item.type, contextMenu.item);
                 setContextMenu(null);
               }}
               className="flex items-center w-full px-4 py-2 text-sm text-left text-[var(--error)] hover:bg-[var(--error)]/10"

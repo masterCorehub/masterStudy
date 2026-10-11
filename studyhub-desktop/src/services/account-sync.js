@@ -101,6 +101,7 @@ export function applyEntityDeletionTombstones(state = {}, ...otherStates) {
   if (state.habits?.list) result.habits = { ...state.habits, list: state.habits.list.filter(remove("habit")) };
   if (state.books?.list) result.books = { ...state.books, list: state.books.list.filter(remove("book")) };
   if (state.studyItems) result.studyItems = state.studyItems.filter(remove("study_item"));
+  if (state.vaultFolders) result.vaultFolders = state.vaultFolders.filter(remove("vault_folder"));
   if (state.notes?.list) result.notes = { ...state.notes, list: state.notes.list.filter(remove("study_item")) };
   if (state.dashboardQuickNotes) result.dashboardQuickNotes = state.dashboardQuickNotes.filter(remove("quick_note"));
   if (state.courses) result.courses = state.courses.filter(remove("course"));

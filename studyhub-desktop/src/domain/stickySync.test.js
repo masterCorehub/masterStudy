@@ -17,7 +17,8 @@ test('tarefas iguais alternam somente a selecionada e ignoram código', () => {
 test('nota da aula herda caminho, mantém organização manual e separa notas comuns', () => {
  const courses=[{id:'java',title:'Java',modules:[{id:'fund',title:'Fundamentos',lessons:[{id:'var',title:'Variáveis'}]}]}];
  const note={id:'n',sourceCourseId:'java',sourceModuleId:'fund',sourceLessonId:'var'};
- assert.equal(organizeLessonNote(note,courses).path,'Java/Fundamentos/Variáveis');
+ assert.equal(organizeLessonNote(note,courses).path,'Fundamentos/Variáveis');
+ assert.equal(organizeLessonNote({...note,path:'Java/Fundamentos/Variáveis'},courses).path,'Fundamentos/Variáveis');
  assert.equal(organizeLessonNote({...note,path:'Minha pasta'},courses).path,'Minha pasta');
  assert.equal(isClassNote(note),true); assert.equal(isClassNote({title:'Solta'}),false);
 });
