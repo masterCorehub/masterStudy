@@ -1,19 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
-import { readAuthRedirect } from "../domain/authRedirect";
+import { readAuthRedirect } from "../domain/authRedirect.js";
 import {
   prepareStudyStateForCloud,
   cloudStateSizeBytes,
   STUDY_STATE_SCHEMA_VERSION,
-} from "./account-sync";
+} from "./account-sync.js";
 
-const url = String(import.meta.env.VITE_SUPABASE_URL || "").trim();
+// Os testes de domínio também carregam este módulo fora do Vite.
+const environment = import.meta.env || {};
+
+const url = String(environment.VITE_SUPABASE_URL || "").trim();
 const publishableKey = String(
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  environment.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    environment.VITE_SUPABASE_ANON_KEY ||
     "",
 ).trim();
 const configuredPublicUrl = String(
-  import.meta.env.VITE_PUBLIC_APP_URL || "",
+  environment.VITE_PUBLIC_APP_URL || "",
 ).trim();
 
 export const collaborationCloudConfigured = Boolean(url && publishableKey);

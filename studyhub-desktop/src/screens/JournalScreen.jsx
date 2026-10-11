@@ -1,4 +1,7 @@
+import { JournalMonthView } from "../components/journal/JournalMonthView";
+import { JournalAssistantPanel } from "../components/journal/JournalAssistantPanel";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { unlockJournalSession, lockJournalSession, touchJournalSession, isJournalSessionOpen } from "../domain/journalLock.js";
 import { Icon } from "../ui/Icon";
 import { askWithWebLLM, isWebLlmAvailable } from "../services/webllm";
 import { useStudyStore } from "../store/useStore";
@@ -647,10 +650,15 @@ export function JournalScreen() {
   const [lightboxPhotoId, setLightboxPhotoId] = useState(null);
   const [journalLocked, setJournalLocked] = useState(true);
   const [accountEmail, setAccountEmail] = useState("");
+  const journalUserRef = useRef(null);
+  const lockMinutes = Number(settings.autoLockMinutes ?? 0);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [unlockingJournal, setUnlockingJournal] = useState(false);
   const [showJournalAi, setShowJournalAi] = useState(false);
+  const [journalView, setJournalView] = useState("writing");
+  const [journalFocus, setJournalFocus] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [showJournalDetails, setShowJournalDetails] = useState(false);
   const [journalAiResponse, setJournalAiResponse] = useState("");
   const [journalAiError, setJournalAiError] = useState("");
@@ -811,10 +819,10 @@ export function JournalScreen() {
   };
 
   const openEntry = (entryId) => {
-    if (entryId === editingId) return;
-    if (!canDiscardDraft()) return;
+    if (entryId === editingId) return true;
+    if (!canDiscardDraft()) return false;
     const entry = entries.find((item) => item.id === entryId);
-    if (!entry) return;
+    if (!entry) return false;
     const nextDraft = editableEntry(entry, today);
     setEditingId(entry.id);
     setDraft(nextDraft);
@@ -825,10 +833,11 @@ export function JournalScreen() {
     setPhotoMessage(null);
     setLightboxPhotoId(null);
     setActiveJournalEntry(entry.id);
+    return true;
   };
 
   const startNewEntry = (entryDate = selectedDate || today, type = settings.defaultEntryType) => {
-    if (!canDiscardDraft()) return;
+    if (!canDiscardDraft()) return false;
     const nextDraft = editableEntry(
       createJournalDraft(entryDate, { type: type || "reflection" }),
       entryDate,
@@ -842,6 +851,7 @@ export function JournalScreen() {
     setPhotoMessage(null);
     setLightboxPhotoId(null);
     setActiveJournalEntry(null);
+    return true;
   };
 
   const handleSelectDate = (dateKey) => {
@@ -1509,6 +1519,7 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
     setPasswordError("");
     try {
       await collaborationCloud.signIn({ email: accountEmail, password: passwordInput });
+      unlockJournalSession(journalUserRef.current);
       setJournalLocked(false);
       setPasswordInput("");
     } catch {
@@ -1532,9 +1543,30 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
   }, [dirty, draft, editingId]);
 
   useEffect(() => {
+    if (journalLocked) return;
+    const check = () => {
+      if (!isJournalSessionOpen(journalUserRef.current, lockMinutes)) setJournalLocked(true);
+    };
+    const activity = () => {
+      // Confira antes de renovar, para não reabrir uma sessão vencida após suspensão.
+      if (!isJournalSessionOpen(journalUserRef.current, lockMinutes)) { setJournalLocked(true); return; }
+      touchJournalSession();
+    };
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"];
+    events.forEach(name => window.addEventListener(name, activity, { passive: true }));
+    const timer = setInterval(check, 1000);
+    window.addEventListener("focus", check);
+    return () => { clearInterval(timer); events.forEach(name => window.removeEventListener(name, activity)); window.removeEventListener("focus", check); };
+  }, [journalLocked, lockMinutes]);
+
+  useEffect(() => {
     let mounted = true;
     collaborationCloud.getSession().then((session) => {
-      if (mounted) setAccountEmail(session?.user?.email || "");
+      if (mounted) {
+        journalUserRef.current = session?.user?.id || null;
+        setAccountEmail(session?.user?.email || "");
+        setJournalLocked(!isJournalSessionOpen(session?.user?.id, lockMinutes));
+      }
     }).catch(() => {
       if (mounted) setAccountEmail("");
     });
@@ -1563,603 +1595,61 @@ Responda APENAS com uma lista numerada contendo exatamente 3 itens curtos (uma f
   }
 
   return (
-    <main
-      className="journal-screen flex h-full min-h-0 flex-1 flex-col overflow-hidden"
-      style={{ "--journal-entry-accent": selectedAccent.color }}
-    >
-      <input
-        ref={photoInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        multiple
-        className="hidden"
-        onChange={handleBrowserPhotos}
-      />
+    <main className="journal-screen journal-redesign flex h-full min-h-0 flex-1 flex-col overflow-hidden" style={{ '--journal-entry-accent': selectedAccent.color }}>
+      <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={handleBrowserPhotos} />
       <header className="journal-topbar">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="journal-eyebrow">Espaço pessoal</span>
-            <span className="journal-private-badge"><Icon name="lock" /> Privado</span>
-          </div>
-          <h1>Meu diário</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {dirty ? <span className="hidden text-xs font-semibold text-[color:var(--journal-muted)] sm:inline">Alterações não salvas</span> : null}
-          {saveFeedback ? <span className="hidden items-center gap-1 text-xs font-bold text-[color:var(--success)] sm:flex"><Icon name="cloud_done" className="text-[16px]" /> {saveFeedback}</span> : null}
-          <button type="button" className="journal-outline-button" onClick={() => startNewEntry(today)}>
-            <Icon name="add" />
-            <span className="hidden sm:inline">Nova entrada</span>
-          </button>
-          <button type="button" className="journal-primary-button" onClick={handleSave} disabled={!dirty}>
-            <Icon name="save" />
-            Salvar
-          </button>
-          <button type="button" className="journal-icon-button" aria-label="Mostrar detalhes do diário" aria-expanded={showJournalDetails} onClick={() => setShowJournalDetails(value => !value)}><Icon name="insights" /></button>
+        <div className="journal-view-heading"><h1>Diário</h1><nav className="journal-view-tabs" aria-label="Visualização do Diário"><button className={journalView === 'writing' ? 'is-selected' : ''} aria-pressed={journalView === 'writing'} onClick={() => setJournalView('writing')}><Icon name="edit_note" /> Escrita</button><button className={journalView === 'calendar' ? 'is-selected' : ''} aria-pressed={journalView === 'calendar'} onClick={() => setJournalView('calendar')}><Icon name="calendar_month" /> Calendário</button></nav></div>
+        <div className="journal-top-actions"><span className="journal-save-state" role="status"><Icon name={dirty ? 'edit' : 'check'} />{dirty ? 'Salvando…' : saveFeedback || 'Salvo'}</span>
+          {journalView === 'writing' && <button className="journal-outline-button" aria-pressed={journalFocus} onClick={() => setJournalFocus(value => !value)}><Icon name="side_navigation" />{journalFocus ? 'Mostrar entradas' : 'Foco'}</button>}
+          <button className="journal-primary-button" onClick={() => setAssistantOpen(value => !value)} aria-expanded={assistantOpen}><Icon name="auto_awesome" /> Assistente</button>
+          <button className="journal-outline-button" onClick={() => { if (startNewEntry(today)) setJournalView('writing'); }}><Icon name="add" /> Nova entrada</button>
           <details className="journal-more-actions"><summary aria-label="Mais ações do diário"><Icon name="more_horiz" /></summary><div className="journal-actions-menu">
-          <button type="button" className="journal-outline-button" onClick={sendCurrentEntryToApple} disabled={!draft.content?.trim() || sendingToApple} title="Criar uma entrada no Diário da Apple">
-            <Icon name="menu_book" />
-            <span className="hidden sm:inline">{sendingToApple ? "Enviando…" : "Enviar ao Diário"}</span>
-          </button>
-          <button type="button" className="journal-icon-button" title="Bloquear diário" aria-label="Bloquear diário" onClick={() => setJournalLocked(true)}>
-            <Icon name="lock" />
-          </button>
-          <button type="button" className="journal-outline-button" onClick={handleOpenJournalAi}>
-            <Icon name="auto_awesome" /> <span className="hidden sm:inline">Reflexão IA</span>
-          </button>
-          <button
-            type="button"
-            className={`journal-outline-button flex items-center gap-1.5 ${showImportantQuotesModal ? "border-primary bg-primary/15 text-primary font-bold" : ""}`}
-            onClick={() => setShowImportantQuotesModal((v) => !v)}
-          >
-            <Icon name="star" filled className="text-primary" />
-            <span>Frases importantes</span> ({allQuotesList.length})
-          </button>
+            <label className="journal-lock-choice">Bloquear Diário<select className="journal-filter-select" value={lockMinutes} onChange={event => { touchJournalSession(); updateJournalSettings({ autoLockMinutes: Number(event.target.value) }); }}><option value={0}>Ao fechar o app</option>{[1, 5, 10, 15, 30, 60].map(minutes => <option key={minutes} value={minutes}>Após {minutes} min sem atividade</option>)}</select></label>
+            <button className="journal-outline-button" onClick={() => { lockJournalSession(); setJournalLocked(true); }}><Icon name="lock" /> Bloquear agora</button>
+            <button className="journal-outline-button" onClick={exportCurrentEntry}><Icon name="download" /> Exportar entrada</button>
+            {window.studyhubDesktop?.journal?.sendToApple && <button className="journal-outline-button" onClick={sendCurrentEntryToApple} disabled={!draft.content?.trim() || sendingToApple}><Icon name="menu_book" />{sendingToApple ? 'Enviando…' : 'Enviar ao Diário da Apple'}</button>}
+            <button className="journal-outline-button" onClick={() => setShowImportantQuotesModal(value => !value)}><Icon name="star" /> Frases importantes</button>
+            <button className="journal-outline-button" onClick={() => setShowJournalDetails(value => !value)}><Icon name="insights" /> Detalhes e histórico</button>
           </div></details>
         </div>
       </header>
+      <div className="journal-workspace-scroll">
+      {journalView === 'calendar' ? <JournalMonthView entries={entries} month={month} selectedDate={selectedDate} today={today} onMonthChange={setMonth} onSelectDate={setSelectedDate} onOpen={entryId => { if (openEntry(entryId)) setJournalView('writing'); }} onNew={date => { if (startNewEntry(date)) setJournalView('writing'); }} onReflect={() => setAssistantOpen(true)} /> :
+      <div className={`journal-layout journal-clean-layout ${journalFocus ? 'is-focused' : ''}`}>
+        {!journalFocus && <aside className="journal-history-column"><div className="journal-library-heading"><h2>Suas entradas</h2><span>{entries.length}</span></div>
+          <div className="journal-search-box"><Icon name="search" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar nas suas memórias" aria-label="Buscar no diário" />{query && <button onClick={() => setQuery('')} aria-label="Limpar busca"><Icon name="close" /></button>}</div>
+          <div className="journal-library-filters"><button aria-pressed={!favoritesOnly} className={!favoritesOnly ? 'is-selected' : ''} onClick={() => setFavoritesOnly(false)}>Todas</button><button aria-pressed={favoritesOnly} className={favoritesOnly ? 'is-selected' : ''} onClick={() => setFavoritesOnly(true)}>Favoritas</button></div>
+          <details className="journal-calendar-options"><summary>Mais filtros</summary><div className="grid gap-2"><select className="journal-filter-select" value={moodFilter} onChange={event => setMoodFilter(event.target.value)} aria-label="Filtrar por humor"><option value="all">Todos os humores</option>{JOURNAL_MOODS.map(mood => <option key={mood.id} value={mood.id}>{mood.label}</option>)}</select><select className="journal-filter-select" value={typeFilter} onChange={event => setTypeFilter(event.target.value)} aria-label="Filtrar por tipo"><option value="all">Todos os tipos</option>{JOURNAL_ENTRY_TYPES.map(type => <option key={type.id} value={type.id}>{type.label}</option>)}</select></div></details>
+          <EntryHistory entries={filteredEntries} activeId={editingId} onOpen={openEntry} />
+        </aside>}
+        <section className="journal-editor-scroll"><article className="journal-paper">
+          <div className="journal-paper-header"><div><label className="journal-eyebrow" htmlFor="journal-entry-date">Data da entrada</label><input id="journal-entry-date" type="date" value={draft.entryDate} onChange={event => { const date = event.target.value || today; updateDraft({ entryDate: date }); setSelectedDate(date); setMonth(date.slice(0, 7)); }} className="journal-date-input" /><p className="journal-written-date">{formatDateLong(draft.entryDate)}</p></div><button className={`journal-icon-button ${draft.favorite ? 'is-favorite' : ''}`} aria-label={draft.favorite ? 'Remover dos favoritos' : 'Favoritar entrada'} onClick={() => updateDraft({ favorite: !draft.favorite })}><Icon name="favorite" filled={draft.favorite} /></button></div>
+          <input className="journal-title-input" value={draft.title} maxLength={120} onChange={event => updateDraft({ title: event.target.value })} placeholder="Um título para este momento" aria-label="Título da entrada" />
+          <div className="journal-entry-meta"><span>{moodById.get(draft.mood)?.emoji} {moodById.get(draft.mood)?.label}</span>{(draft.tags || []).slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}</div>
+          {draft.prompt && <div className="journal-used-prompt"><Icon name="lightbulb" /><span>{draft.prompt}</span><button className="journal-icon-button" onClick={() => updateDraft({ prompt: '' })} aria-label="Remover pergunta"><Icon name="close" /></button></div>}
+          <textarea className="journal-writing-area" value={draft.content} onChange={event => updateDraft({ content: event.target.value })} placeholder="Uma lembrança, uma ideia, uma frase. O que ficou do seu dia?" spellCheck aria-label="Texto da entrada" />
+          <div className="journal-writing-footer"><button className="journal-outline-button" onClick={handlePickPhotos} disabled={uploadingPhotos}><Icon name="add_photo_alternate" /> Adicionar foto</button><span>{wordCount} palavras</span><button className="journal-icon-button" onClick={handleSaveQuoteFromSelection} aria-label="Salvar trecho selecionado em Frases importantes" title="Salvar trecho selecionado"><Icon name="star" /></button></div>
+          {(draft.photos?.length > 0 || photoMessage) && <JournalPhotoGallery photos={draft.photos || []} coverPhotoId={draft.coverPhotoId} signedUrls={signedPhotoUrls} uploading={uploadingPhotos} message={photoMessage} onAdd={handlePickPhotos} onOpen={setLightboxPhotoId} onCaptionChange={changePhotoCaption} onSetFeatured={setFeaturedPhoto} onMove={moveJournalPhoto} onRemove={removeJournalPhoto} />}
+          <details className="journal-entry-details"><summary><Icon name="tune" /> Humor e detalhes da entrada</summary>
+            <section className="journal-reflection-section"><div className="journal-section-title"><span>Como você está?</span></div><MoodSelector value={draft.mood} onChange={mood => updateDraft({ mood })} /><div className="grid gap-4 md:grid-cols-2"><label className="journal-range-field"><span>Energia {draft.energy}/5</span><input type="range" min="1" max="5" value={draft.energy} onChange={event => updateDraft({ energy: Number(event.target.value) })} /></label><label className="journal-range-field"><span>Sono {draft.sleepHours}h</span><input type="range" min="0" max="12" step="0.5" value={draft.sleepHours} onChange={event => updateDraft({ sleepHours: Number(event.target.value) })} /></label></div></section>
+            <div className="journal-type-row">{JOURNAL_ENTRY_TYPES.map(type => <button key={type.id} className={draft.type === type.id ? 'is-selected' : ''} onClick={() => updateDraft({ type: type.id })}>{type.label}</button>)}</div>
+            <section className="journal-reflection-section"><div className="journal-section-title"><span>Coisas pelas quais agradeço</span></div>{paddedGratitudes(draft.gratitudes).map((gratitude, index) => <label key={index} className="journal-gratitude-row"><span>{index + 1}</span><input value={gratitude} placeholder="Algo simples que você quer guardar" onChange={event => { const next = paddedGratitudes(draft.gratitudes); next[index] = event.target.value; updateDraft({ gratitudes: next }); }} /></label>)}</section>
+            <section className="grid gap-4 md:grid-cols-2"><label className="journal-text-field"><span>Momento que quero guardar</span><textarea value={draft.highlight} onChange={event => updateDraft({ highlight: event.target.value })} /></label><label className="journal-text-field"><span>Intenção para amanhã</span><textarea value={draft.intention} onChange={event => updateDraft({ intention: event.target.value })} /></label></section>
+            <section className="journal-tags-section"><div><span className="journal-section-title">Tags</span><div className="flex flex-wrap gap-2 mt-2">{(draft.tags || []).map(tag => <button key={tag} className="journal-tag" onClick={() => updateDraft({ tags: draft.tags.filter(item => item !== tag) })}>#{tag}<Icon name="close" /></button>)}<div className="journal-tag-input"><span>#</span><input value={tagInput} onChange={event => setTagInput(event.target.value)} onBlur={addTag} onKeyDown={event => { if (['Enter', ','].includes(event.key)) { event.preventDefault(); addTag(); } }} placeholder="adicionar" aria-label="Adicionar tag" /></div></div></div></section>
+            <div className="flex gap-2">{JOURNAL_ACCENTS.map(accent => <button key={accent.id} className={`journal-accent-swatch ${draft.accent === accent.id ? 'is-selected' : ''}`} style={{ backgroundColor: accent.color }} aria-label={accent.label} aria-pressed={draft.accent === accent.id} onClick={() => updateDraft({ accent: accent.id })} />)}</div>
+            {(draft.aiSummary || draft.aiReflections?.length > 0) && <details className="journal-entry-details"><summary>Reflexões anteriores da IA</summary><div className="journal-assistant-text">{draft.aiSummary || extractSummaryFromConversation(draft.aiReflections)}</div><button className="journal-outline-button" onClick={handleOpenJournalAi}>Abrir conversa anterior</button></details>}
+            <button className="journal-outline-button" onClick={handleDelete}><Icon name="delete" /> Excluir entrada</button>
+          </details>
+          <footer className="journal-editor-footer"><span>{dirty ? 'Salvamento automático em andamento' : 'Entrada salva'}</span><button className="journal-outline-button" onClick={handleSave} disabled={!dirty}><Icon name="save" /> Salvar agora</button></footer>
+        </article></section>
+      </div>}
 
-      <div className={`journal-layout journal-clean-layout ${showJournalDetails ? "has-details" : ""}`}>
-        <aside className="journal-history-column">
-          <details className="journal-calendar-options"><summary>Calendário e filtros</summary><MiniCalendar
-            month={month}
-            entries={entries}
-            selectedDate={selectedDate}
-            onMonthChange={setMonth}
-            onSelectDate={handleSelectDate}
-          />
-
-          </details><div className="journal-search-box">
-            <Icon name="search" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar no diário..."
-              aria-label="Buscar no diário"
-            />
-            {query ? <button type="button" onClick={() => setQuery("")} aria-label="Limpar busca"><Icon name="close" /></button> : null}
-          </div>
-
-          <details className="journal-calendar-options"><summary>Filtrar entradas</summary><div className="grid grid-cols-2 gap-2">
-            <select className="journal-filter-select" value={moodFilter} onChange={(event) => setMoodFilter(event.target.value)} aria-label="Filtrar por humor">
-              <option value="all">Todos os humores</option>
-              {JOURNAL_MOODS.map((mood) => <option key={mood.id} value={mood.id}>{mood.emoji} {mood.label}</option>)}
-            </select>
-            <select className="journal-filter-select" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} aria-label="Filtrar por tipo">
-              <option value="all">Todos os tipos</option>
-              {JOURNAL_ENTRY_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
-            </select>
-          </div>
-          <button
-            type="button"
-            onClick={() => setFavoritesOnly((value) => !value)}
-            className={`journal-favorite-filter ${favoritesOnly ? "is-active" : ""}`}
-          >
-            <Icon name="favorite" filled={favoritesOnly} />
-            Somente favoritos
-            <span>{entries.filter((entry) => entry.favorite).length}</span>
-          </button>
-
-          </details><div className="flex items-center justify-between px-1 pt-1">
-            <span className="journal-eyebrow">Histórico</span>
-            <span className="text-[10px] font-semibold text-[color:var(--journal-muted)]">{filteredEntries.length} entrada(s)</span>
-          </div>
-          <div className="min-h-[220px] flex-1 overflow-y-auto pr-1">
-            <EntryHistory entries={filteredEntries} activeId={editingId} onOpen={openEntry} />
-          </div>
-        </aside>
-
-        {showImportantQuotesModal ? (
-          <ImportantQuotesView
-            quotes={allQuotesList}
-            onAddQuote={(text) => {
-              addImportantQuote(text);
-              setSaveFeedback("Frase salva em Frases Importantes!");
-              setTimeout(() => setSaveFeedback(""), 3000);
-            }}
-            onRemoveQuote={handleRemoveQuoteEverywhere}
-            onClose={() => setShowImportantQuotesModal(false)}
-          />
-        ) : (
-          <section className="journal-editor-scroll">
-            <article className="journal-paper">
-              <div className="journal-paper-accent" />
-              <div className="journal-paper-header">
-                <div className="min-w-0">
-                  <label className="journal-eyebrow" htmlFor="journal-entry-date">Data da entrada</label>
-                  <input
-                    id="journal-entry-date"
-                    type="date"
-                    value={draft.entryDate}
-                    onChange={(event) => {
-                      const date = event.target.value || today;
-                      updateDraft({ entryDate: date });
-                      setSelectedDate(date);
-                      setMonth(date.slice(0, 7));
-                    }}
-                    className="journal-date-input"
-                  />
-                  <p className="mt-1 capitalize text-sm text-[color:var(--journal-muted)]">{formatDateLong(draft.entryDate)}</p>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    title="Exportar como Markdown"
-                    aria-label="Exportar entrada como Markdown"
-                    className="journal-icon-button"
-                    onClick={exportCurrentEntry}
-                  >
-                    <Icon name="download" />
-                  </button>
-                  <button
-                    type="button"
-                    title={draft.favorite ? "Remover dos favoritos" : "Favoritar"}
-                    aria-label={draft.favorite ? "Remover dos favoritos" : "Favoritar"}
-                    className={`journal-icon-button ${draft.favorite ? "is-favorite" : ""}`}
-                    onClick={() => updateDraft({ favorite: !draft.favorite })}
-                  >
-                    <Icon name="favorite" filled={draft.favorite} />
-                  </button>
-                  <button type="button" title="Excluir entrada" aria-label="Excluir entrada" className="journal-icon-button is-danger" onClick={handleDelete}>
-                    <Icon name="delete" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="journal-type-row" aria-label="Tipo de entrada">
-                {JOURNAL_ENTRY_TYPES.map((type) => (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => updateDraft({ type: type.id })}
-                    className={draft.type === type.id ? "is-selected" : ""}
-                  >
-                    <Icon name={type.icon} />
-                    {type.label}
-                  </button>
-                ))}
-              </div>
-
-              <input
-                className="journal-title-input"
-                value={draft.title}
-                maxLength={120}
-                onChange={(event) => updateDraft({ title: event.target.value })}
-                placeholder="Dê um título a este momento..."
-                aria-label="Título da entrada"
-              />
-
-              {draft.prompt ? (
-                <div className="journal-used-prompt">
-                  <Icon name="lightbulb" />
-                  <span><strong>Ponto de partida:</strong> {draft.prompt}</span>
-                  <button type="button" onClick={() => updateDraft({ prompt: "" })} aria-label="Remover pergunta"><Icon name="close" /></button>
-                </div>
-              ) : null}
-
-              <textarea
-                className="journal-writing-area"
-                value={draft.content}
-                onChange={(event) => updateDraft({ content: event.target.value })}
-                placeholder="Respire fundo e escreva sem se julgar. Este espaço é só seu..."
-                spellCheck
-                aria-label="Texto da entrada"
-              />
-              <div className="flex items-center justify-between border-t border-[color:var(--journal-line)] pt-3 text-[11px] font-semibold text-[color:var(--journal-muted)] flex-wrap gap-2">
-                <div className="flex items-center gap-3">
-                  <span>{wordCount} {wordCount === 1 ? "palavra" : "palavras"}</span>
-                  <span>{draft.content.length.toLocaleString("pt-BR")} caracteres</span>
-                </div>
-                <button
-                  type="button"
-                  className="journal-outline-button text-xs py-1 px-2.5 flex items-center gap-1.5 hover:text-primary font-bold"
-                  title="Selecione um trecho do seu texto e clique para salvar em Frases Importantes"
-                  onClick={handleSaveQuoteFromSelection}
-                >
-                  <Icon name="star" filled className="text-primary" /> Salvar em Frases Importantes (⭐)
-                </button>
-              </div>
-
-              {/* Sugestões da IA para continuar escrevendo (sem sair do texto) */}
-              <div className="mt-4 rounded-2xl border border-[color:var(--journal-line)] bg-[color:var(--journal-canvas)]/60 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--journal-line)]/50 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[color:var(--journal-accent)]/15 text-[color:var(--journal-accent)]">
-                      <Icon name="auto_awesome" className="text-[16px]" />
-                    </span>
-                    <span className="text-xs font-bold uppercase tracking-wider text-[color:var(--journal-ink)]">
-                      Sugestões da IA para continuar escrevendo
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {[
-                      { id: "continue", label: "💡 O que escrever?", icon: "edit_note" },
-                      { id: "emotions", label: "🧘 Emoções", icon: "mood" },
-                      { id: "next_steps", label: "🎯 Próximos passos", icon: "flag" },
-                      { id: "complete", label: "📝 Inícios de frase", icon: "extension" },
-                    ].map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        disabled={inlineAiBusy}
-                        onClick={() => handleSelectCategory(cat.id)}
-                        className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
-                          inlineAiCategory === cat.id
-                            ? "bg-[color:var(--journal-accent)] text-white shadow-sm"
-                            : "bg-[color:var(--journal-paper)] text-[color:var(--journal-muted)] hover:bg-[color:var(--journal-accent)]/10 hover:text-[color:var(--journal-ink)]"
-                        }`}
-                      >
-                        <Icon name={cat.icon} className="text-[13px]" />
-                        {cat.label}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      disabled={inlineAiBusy}
-                      onClick={() => fetchInlineSuggestions(inlineAiCategory, false)}
-                      className="flex items-center gap-1.5 rounded-lg bg-[color:var(--journal-accent)] px-3 py-1 text-[11px] font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-50"
-                    >
-                      <Icon name="auto_awesome" className="text-[13px]" />
-                      Gerar sugestões
-                    </button>
-                  </div>
-                </div>
-
-                {inlineAiBusy ? (
-                  <div className="flex items-center justify-center gap-3 py-6 text-xs font-medium text-[color:var(--journal-muted)]">
-                    <Icon name="progress_activity" className="animate-spin text-[18px] text-[color:var(--journal-accent)]" />
-                    Analisando seu relato para gerar ideias de continuação...
-                  </div>
-                ) : inlineAiSuggestions.length > 0 ? (
-                  <div className="mt-3 space-y-3">
-                    <div className="space-y-2">
-                      {inlineAiSuggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          className="group flex items-center justify-between gap-3 rounded-xl border border-[color:var(--journal-line)]/60 bg-[color:var(--journal-paper)] p-3 text-xs leading-relaxed text-[color:var(--journal-ink)] transition-all hover:border-[color:var(--journal-accent)]/40 hover:shadow-sm"
-                        >
-                          <span className="flex-1 font-medium">"{suggestion}"</span>
-                          <button
-                            type="button"
-                            onClick={() => handleInsertSuggestion(suggestion)}
-                            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[color:var(--journal-accent)]/15 px-3 py-1.5 text-[11px] font-bold text-[color:var(--journal-accent)] transition-colors hover:bg-[color:var(--journal-accent)] hover:text-white"
-                          >
-                            <Icon name="add" className="text-[14px]" />
-                            Inserir no texto
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex justify-end pt-1">
-                      <button
-                        type="button"
-                        disabled={inlineAiBusy}
-                        onClick={() => fetchInlineSuggestions(inlineAiCategory, true)}
-                        className="flex items-center gap-1.5 text-[11px] font-bold text-[color:var(--journal-accent)] transition-opacity hover:opacity-80 disabled:opacity-50"
-                      >
-                        <Icon name="refresh" className="text-[14px]" />
-                        Gerar outras sugestões para esta categoria
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-4 text-center">
-                    <p className="text-xs text-[color:var(--journal-muted)]">
-                      Clique abaixo ou em uma categoria acima para receber sugestões de frases e perguntas baseadas no seu relato!
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => fetchInlineSuggestions("continue", true)}
-                      className="mt-2.5 inline-flex items-center gap-2 rounded-xl bg-[color:var(--journal-accent)]/15 px-4 py-2 text-xs font-bold text-[color:var(--journal-accent)] transition-colors hover:bg-[color:var(--journal-accent)] hover:text-white"
-                    >
-                      <Icon name="auto_awesome" className="text-[16px]" />
-                      Gerar sugestões para o texto
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <JournalPhotoGallery
-                photos={draft.photos || []}
-                coverPhotoId={draft.coverPhotoId}
-                signedUrls={signedPhotoUrls}
-                uploading={uploadingPhotos}
-                message={photoMessage}
-                onAdd={handlePickPhotos}
-                onOpen={setLightboxPhotoId}
-                onCaptionChange={changePhotoCaption}
-                onSetFeatured={setFeaturedPhoto}
-                onMove={moveJournalPhoto}
-                onRemove={removeJournalPhoto}
-              />
-
-              <section className="journal-reflection-section">
-                <div className="journal-section-title">
-                  <span><Icon name="mood" /> Como você está?</span>
-                  <span>{moodById.get(draft.mood)?.label}</span>
-                </div>
-                <MoodSelector value={draft.mood} onChange={(mood) => updateDraft({ mood })} />
-                <div className="mt-5 grid gap-5 md:grid-cols-2">
-                  <label className="journal-range-field">
-                    <span><Icon name="bolt" /> Energia <strong>{draft.energy}/5</strong></span>
-                    <input type="range" min="1" max="5" step="1" value={draft.energy} onChange={(event) => updateDraft({ energy: Number(event.target.value) })} />
-                    <small><span>Esgotado</span><span>Cheio de energia</span></small>
-                  </label>
-                  <label className="journal-range-field">
-                    <span><Icon name="bedtime" /> Sono <strong>{draft.sleepHours}h</strong></span>
-                    <input type="range" min="0" max="12" step="0.5" value={draft.sleepHours} onChange={(event) => updateDraft({ sleepHours: Number(event.target.value) })} />
-                    <small><span>Pouco</span><span>Restaurador</span></small>
-                  </label>
-                </div>
-              </section>
-
-              <section className="journal-reflection-section">
-                <div className="journal-section-title">
-                  <span><Icon name="volunteer_activism" /> Três coisas pelas quais agradeço</span>
-                </div>
-                <div className="space-y-2">
-                  {paddedGratitudes(draft.gratitudes).map((gratitude, index) => (
-                    <label key={index} className="journal-gratitude-row">
-                      <span>{index + 1}</span>
-                      <input
-                        value={gratitude}
-                        onChange={(event) => {
-                          const next = paddedGratitudes(draft.gratitudes);
-                          next[index] = event.target.value;
-                          updateDraft({ gratitudes: next });
-                        }}
-                        placeholder={index === 0 ? "Uma pessoa, um momento ou algo simples..." : "Mais uma coisa boa de hoje..."}
-                      />
-                    </label>
-                  ))}
-                </div>
-              </section>
-
-
-
-              <section className="journal-reflection-section">
-                <div className="flex items-center justify-between">
-                  <div className="journal-section-title">
-                    <span><Icon name="auto_awesome" className="text-purple-500" /> Reflexão e Resumo da IA</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="journal-outline-button text-xs py-1 px-2.5 flex items-center gap-1"
-                    onClick={handleOpenJournalAi}
-                  >
-                    <Icon name="chat" /> {(draft.aiSummary || draft.aiReflections?.length) ? "Abrir Conversa IA" : "Pedir Reflexão IA"}
-                  </button>
-                </div>
-
-                {(draft.aiSummary || draft.aiReflections?.length) ? (
-                  <div className="mt-3 rounded-2xl border border-purple-400/30 bg-purple-500/5 p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
-                        <Icon name="psychology" /> Resumo da Conversa com IA
-                      </span>
-                      <button
-                        type="button"
-                        className="journal-icon-button is-danger p-1"
-                        title="Remover reflexão da IA"
-                        onClick={() => updateDraft({ aiSummary: "", aiReflections: [] })}
-                      >
-                        <Icon name="close" />
-                      </button>
-                    </div>
-                    <div
-                      className="campus-ai-markdown journal-ai-markdown text-xs leading-relaxed text-[color:var(--journal-ink)]"
-                      dangerouslySetInnerHTML={{
-                        __html: renderSafeMarkdown(draft.aiSummary || extractSummaryFromConversation(draft.aiReflections)),
-                      }}
-                    />
-                    {draft.aiReflections?.length ? (
-                      <div className="pt-2 text-[11px] font-semibold text-[color:var(--journal-muted)] flex items-center justify-between border-t border-purple-500/10">
-                        <span>{draft.aiReflections.length} mensagem(ns) salvas</span>
-                        <button
-                          type="button"
-                          className="text-purple-600 dark:text-purple-400 hover:underline cursor-pointer flex items-center gap-1 font-bold"
-                          onClick={handleOpenJournalAi}
-                        >
-                          Continuar conversa <Icon name="arrow_forward" className="text-xs" />
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <p className="mt-2 text-xs text-[color:var(--journal-muted)] italic">
-                    Nenhuma reflexão da IA salva nesta entrada. Clique no botão "Reflexão IA" para conversar com o assistente local.
-                  </p>
-                )}
-              </section>
-
-              <section className="grid gap-4 md:grid-cols-2">
-                <label className="journal-text-field">
-                  <span><Icon name="photo_camera" /> Momento que quero guardar</span>
-                  <textarea value={draft.highlight} onChange={(event) => updateDraft({ highlight: event.target.value })} placeholder="O ponto alto do dia..." />
-                </label>
-                <label className="journal-text-field">
-                  <span><Icon name="wb_twilight" /> Intenção para amanhã</span>
-                  <textarea value={draft.intention} onChange={(event) => updateDraft({ intention: event.target.value })} placeholder="Amanhã quero..." />
-                </label>
-              </section>
-
-              <section className="journal-tags-section">
-                <div>
-                  <span className="journal-section-title"><span><Icon name="sell" /> Tags</span></span>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {(draft.tags || []).map((tag) => (
-                      <button key={tag} type="button" className="journal-tag" onClick={() => updateDraft({ tags: draft.tags.filter((item) => item !== tag) })} title="Remover tag">
-                        #{tag} <Icon name="close" />
-                      </button>
-                    ))}
-                    <div className="journal-tag-input">
-                      <span>#</span>
-                      <input
-                        value={tagInput}
-                        onChange={(event) => setTagInput(event.target.value)}
-                        onBlur={addTag}
-                        onKeyDown={(event) => {
-                          if (["Enter", ","].includes(event.key)) {
-                            event.preventDefault();
-                            addTag();
-                          }
-                        }}
-                        placeholder="adicionar"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </section>
-              <div>
-                <span className="journal-section-title"><span><Icon name="palette" /> Cor</span></span>
-                <div className="mt-2 flex gap-2">
-                  {JOURNAL_ACCENTS.map((accent) => (
-                    <button
-                      key={accent.id}
-                      type="button"
-                      title={accent.label}
-                      aria-label={accent.label}
-                      aria-pressed={draft.accent === accent.id}
-                      className={`journal-accent-swatch ${draft.accent === accent.id ? "is-selected" : ""}`}
-                      style={{ backgroundColor: accent.color }}
-                      onClick={() => updateDraft({ accent: accent.id })}
-                    />
-                  ))}
-                </div>
-              </div>
-            </article>
-
-            <footer className="journal-editor-footer">
-              <span><Icon name="info" /> A entrada só será alterada quando você clicar em Salvar.</span>
-              <div className="flex gap-2">
-                {dirty ? <button type="button" className="journal-outline-button" onClick={discardDraft}>Descartar</button> : null}
-                <button type="button" className="journal-primary-button" onClick={handleSave} disabled={!dirty}><Icon name="save" /> Salvar entrada</button>
-              </div>
-            </footer>
-          </section>
-        )}
-
-        {showJournalDetails && <JournalInsights
-          entries={entries}
-          stats={stats}
-          prompt={prompt}
-          onUsePrompt={usePrompt}
-          onNextPrompt={() => setPromptOffset((value) => value + 1)}
-        />}
+      {showJournalDetails && <JournalInsights entries={entries} stats={stats} prompt={prompt} onUsePrompt={usePrompt} onNextPrompt={() => setPromptOffset(value => value + 1)} />}
+      {showImportantQuotesModal && <ImportantQuotesView quotes={allQuotesList} onAddQuote={addImportantQuote} onRemoveQuote={handleRemoveQuoteEverywhere} onClose={() => setShowImportantQuotesModal(false)} />}
       </div>
-      <JournalPhotoLightbox
-        photos={draft.photos || []}
-        activeId={lightboxPhotoId}
-        signedUrls={signedPhotoUrls}
-        onClose={() => setLightboxPhotoId(null)}
-        onChange={setLightboxPhotoId}
-      />
-      {showJournalAi ? (
-        <div className="fixed inset-0 z-[135] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowJournalAi(false); }}>
-          <section className="journal-panel w-full max-w-2xl p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div><span className="journal-eyebrow">Privado e local</span><h2 className="mt-1 text-xl font-black text-[color:var(--journal-ink)]">Reflexão com IA</h2><p className="mt-1 text-sm text-[color:var(--journal-muted)]">Uma leitura cuidadosa do que você escreveu, sem diagnóstico.</p></div>
-              <button type="button" className="journal-icon-button" onClick={() => setShowJournalAi(false)} aria-label="Fechar"><Icon name="close" /></button>
-            </div>
-            <div className="mt-5 rounded-2xl border border-[color:var(--journal-line)] bg-[color:var(--journal-canvas)]/60 p-4 text-xs leading-5 text-[color:var(--journal-muted)]">No aplicativo desktop, a conversa usa o Ollama local. A IA faz perguntas de reflexão, mas não é psicóloga, não diagnostica e não substitui atendimento profissional.</div>
-            {journalAiConversation.length ? <div className="mt-5 max-h-[48vh] space-y-3 overflow-y-auto pr-1">
-              {journalAiConversation.map((message, index) => (
-                <div key={`${message.role}-${index}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`journal-ai-chat-bubble max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-7 ${message.role === "user" ? "is-user whitespace-pre-wrap bg-[color:var(--journal-accent)]/15 text-[color:var(--journal-ink)]" : "is-assistant bg-[color:var(--journal-paper)] text-[color:var(--journal-ink)]"}`}>
-                    <p className="mb-1 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--journal-muted)]">{message.role === "user" ? "Você" : "Reflexão IA"}</p>
-                    {message.role === "user" ? (
-                      message.content
-                    ) : (
-                      <div
-                        className="campus-ai-markdown journal-ai-markdown"
-                        dangerouslySetInnerHTML={{
-                          __html: renderSafeMarkdown(message.content),
-                        }}
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div> : null}
-            {journalAiResponse ? <textarea value={journalAiReply} onChange={(event) => setJournalAiReply(event.target.value)} className="journal-filter-select mt-4 min-h-24 w-full resize-y" placeholder="Responda à pergunta da IA para continuar..." aria-label="Resposta para continuar a reflexão" /> : null}
-            {journalAiError ? <p className="mt-4 rounded-xl bg-red-500/10 p-3 text-xs font-bold text-red-700 dark:text-red-300">{journalAiError}</p> : null}
-            {journalAiBusy && journalAiProgress ? <p className="mt-4 text-xs text-[color:var(--journal-muted)]">{journalAiProgress}</p> : null}
-            <div className="mt-5 flex items-center justify-between gap-2 flex-wrap">
-              {journalAiConversation.length ? (
-                <button
-                  type="button"
-                  className="journal-outline-button text-xs font-bold flex items-center gap-1.5 text-purple-600 dark:text-purple-400"
-                  onClick={() => {
-                    const summary = extractSummaryFromConversation(journalAiConversation);
-                    updateDraft({
-                      aiReflections: journalAiConversation,
-                      aiSummary: summary,
-                    });
-                    handleSave();
-                    setShowJournalAi(false);
-                  }}
-                >
-                  <Icon name="bookmark" /> Salvar no Diário
-                </button>
-              ) : <div />}
-
-              <div className="flex items-center gap-2">
-                <button type="button" className="journal-outline-button" onClick={() => setShowJournalAi(false)}>
-                  Fechar
-                </button>
-                {journalAiResponse ? (
-                  <button
-                    type="button"
-                    className="journal-outline-button"
-                    onClick={() => {
-                      setJournalAiConversation([]);
-                      setJournalAiResponse("");
-                      setJournalAiReply("");
-                      setJournalAiError("");
-                      askJournalAi("");
-                    }}
-                  >
-                    Nova reflexão
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  className="journal-primary-button"
-                  onClick={() => {
-                    const reply = journalAiReply;
-                    setJournalAiReply("");
-                    askJournalAi(reply);
-                  }}
-                  disabled={journalAiBusy || (journalAiResponse && !journalAiReply.trim())}
-                >
-                  <Icon name={journalAiBusy ? "progress_activity" : "auto_awesome"} />
-                  {journalAiBusy ? "Analisando..." : journalAiResponse ? "Continuar conversa" : "Gerar reflexão"}
-                </button>
-              </div>
-            </div>
-          </section>
-        </div>
-      ) : null}
+      {assistantOpen && <div className="journal-assistant-drawer"><JournalAssistantPanel draft={{ ...draft, id: editingId }} entries={entries} month={month} onClose={() => setAssistantOpen(false)} onAppend={text => updateDraft({ content: `${draft.content}${draft.content.trim() ? '\n\n' : ''}${text}` })} onReplace={text => updateDraft({ content: text })} onOpen={id => { if (openEntry(id)) setJournalView('writing'); }} /></div>}
+      <JournalPhotoLightbox photos={draft.photos || []} activeId={lightboxPhotoId} signedUrls={signedPhotoUrls} onClose={() => setLightboxPhotoId(null)} onChange={setLightboxPhotoId} />
+      {showJournalAi && <div className="journal-legacy-reflection"><button className="journal-outline-button" onClick={() => setShowJournalAi(false)}>Fechar conversa anterior</button>{journalAiConversation.map((message, index) => <p key={index}>{message.content}</p>)}</div>}
     </main>
   );
 }

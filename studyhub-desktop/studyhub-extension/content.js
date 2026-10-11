@@ -449,6 +449,8 @@ async function notifyIframePageData() {
 // Escuta postMessage da página
 window.addEventListener("message", (event) => {
   if (!event.data) return;
+  // Somente o iframe da extensão pode comandar o painel e o vídeo.
+  if (event.source !== panelIframe?.contentWindow) return;
   if (event.data.type === "STUDYHUB_GET_PAGE_DATA") {
     notifyIframePageData();
   } else if (event.data.type === "STUDYHUB_SEEK_VIDEO") {
@@ -483,7 +485,11 @@ if (document.readyState === "loading") {
 
 // ─── 5. Mensagens e Comandos IPC da Extensão ─────────────────────────────────
 browserAPI.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === "EXTRACT_PAGE_DATA") {
+  if (request.type === "GET_VIDEO_POSITION") {
+    const video = document.querySelector("video");
+    sendResponse({ seconds: video && Number.isFinite(video.currentTime) ? Math.floor(video.currentTime) : null });
+    return false;
+  } else if (request.type === "EXTRACT_PAGE_DATA") {
     extractPageMetadata().then((data) => {
       sendResponse({ success: true, data });
     });

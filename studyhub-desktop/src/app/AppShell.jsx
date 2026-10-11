@@ -1,3 +1,4 @@
+import { lockJournalSession } from "../domain/journalLock.js";
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { SCREEN_IDS } from "./screenIds";
 import { imageAssets } from "../data/mockData";
@@ -232,8 +233,7 @@ export function AppShell() {
               const normalized = normalizeAcademicStateSnapshot(snapshot.state);
               // Força que a referência seja completamente nova no store
               useStudyStore.setState((state) => ({
-                ...normalized,
-                waterTracker: mergeWaterTrackers(state.waterTracker, normalized.waterTracker),
+                ...mergeStudyStates({}, serializeStudyState(state), normalized).state,
               }));
               useStudyStore.getState().upgradeDashboardStickyNotes?.();
             }
@@ -573,9 +573,8 @@ export function AppShell() {
         if (mounted && snapshot?.state) {
           const normalized = normalizeAcademicStateSnapshot(snapshot.state);
           useStudyStore.setState((state) => ({
-            ...normalized,
-            // localStorage is synchronous; SQLite may still contain an older goal.
-            waterTracker: mergeWaterTrackers(state.waterTracker, normalized.waterTracker),
+            // Une janelas sem substituir edições por uma cópia antiga do banco.
+            ...mergeStudyStates({}, serializeStudyState(state), normalized).state,
           }));
           useStudyStore.getState().upgradeDashboardStickyNotes?.();
         } else if (mounted) {
@@ -625,6 +624,7 @@ export function AppShell() {
     let saving = false;
     let queuedState = null;
     let cloudQueueKey = null;
+    let activeAccountId = null;
 
     const readQueuedCloudState = () => {
       if (!cloudQueueKey) return null;
@@ -678,7 +678,8 @@ export function AppShell() {
         while (mounted && queuedState) {
           const localState = queuedState;
           queuedState = null;
-          let result = await collaborationCloud.saveAccountState(localState, {
+          let submittedState = localState;
+          let result = await collaborationCloud.saveAccountState(submittedState, {
             expectedRevision: cloudRevisionRef.current,
             deviceId: cloudDeviceIdRef.current,
           });
@@ -686,7 +687,7 @@ export function AppShell() {
           if (result?.conflict && result.state) {
             const merged = mergeStudyStates(
               cloudBaselineRef.current,
-              localState,
+              serializeStudyState(useStudyStore.getState()),
               result.state,
             );
             cloudRevisionRef.current = result.revision ?? null;
@@ -695,17 +696,18 @@ export function AppShell() {
             notifyCloud("conflict-resolved", {
               conflicts: merged.conflicts,
             });
-            result = await collaborationCloud.saveAccountState(merged.state, {
+            submittedState = merged.state;
+            result = await collaborationCloud.saveAccountState(submittedState, {
               expectedRevision: cloudRevisionRef.current,
               deviceId: cloudDeviceIdRef.current,
             });
           }
 
           if (result?.applied !== false) {
-            cloudRevisionRef.current = result?.revision ?? null;
-            cloudBaselineRef.current = serializeStudyState(
-              result?.state || localState,
-            );
+            if (result?.revision == null || cloudRevisionRef.current == null || Number(result.revision) >= Number(cloudRevisionRef.current)) {
+              cloudRevisionRef.current = result?.revision ?? null;
+              cloudBaselineRef.current = serializeStudyState(result?.state || submittedState);
+            }
             notifyCloud("saved", {
               revision: cloudRevisionRef.current,
               updatedAt: result?.updated_at || null,
@@ -717,17 +719,19 @@ export function AppShell() {
           }
         }
       } catch (error) {
+        queuedState = serializeStudyState(useStudyStore.getState());
         writeQueuedCloudState(queuedState);
         notifyCloud("error", { error: error?.message || String(error) });
         console.error("masterStudy account save failed:", error);
       } finally {
         saving = false;
-        if (mounted && queuedState) persistQueuedState(queuedState);
+
       }
     };
 
     const syncAccount = async (session) => {
       const generation = ++syncGeneration;
+      activeAccountId = session?.user?.id || null;
       cloudHydratedRef.current = false;
       unsubscribeRealtime?.();
       unsubscribeRealtime = () => {};
@@ -783,6 +787,9 @@ export function AppShell() {
             normalizeAcademicStateSnapshot(row.state),
           );
           const incomingRevision = row.revision ?? null;
+          // Eventos atrasados não podem diminuir a revisão já confirmada.
+          if (incomingRevision != null && cloudRevisionRef.current != null &&
+              Number(incomingRevision) <= Number(cloudRevisionRef.current)) return;
 
           if (row.device_id === cloudDeviceIdRef.current) {
             cloudRevisionRef.current = incomingRevision;
@@ -812,12 +819,17 @@ export function AppShell() {
       );
     };
     collaborationCloud.getSession().then(syncAccount);
-    const unsubscribeAuth = collaborationCloud.onAuthStateChange(syncAccount);
+    const unsubscribeAuth = collaborationCloud.onAuthStateChange((session, event) => {
+      if (event === "SIGNED_OUT") lockJournalSession();
+      // Renovar o token não deve recarregar o estado enquanto a pessoa escreve.
+      if (session?.user?.id === activeAccountId && ['TOKEN_REFRESHED', 'SIGNED_IN'].includes(event)) return;
+      syncAccount(session);
+    });
     const unsubscribeStore = useStudyStore.subscribe((state) => {
       if (!cloudHydratedRef.current || applyingCloudStateRef.current) return;
       window.clearTimeout(saveTimer);
       saveTimer = window.setTimeout(() => {
-        persistQueuedState(state);
+        persistQueuedState(useStudyStore.getState());
       }, 700);
     });
     const forceSync = () => persistQueuedState(useStudyStore.getState());

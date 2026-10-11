@@ -1,3 +1,4 @@
+import { mergeStickyNote } from "../domain/stickySync.js";
 import { mergeWaterTrackers } from "../domain/waterTracker.js";
 
 export const STUDY_STATE_SCHEMA_VERSION = 15;
@@ -102,6 +103,7 @@ export function applyEntityDeletionTombstones(state = {}, ...otherStates) {
   if (state.studyItems) result.studyItems = state.studyItems.filter(remove("study_item"));
   if (state.notes?.list) result.notes = { ...state.notes, list: state.notes.list.filter(remove("study_item")) };
   if (state.dashboardQuickNotes) result.dashboardQuickNotes = state.dashboardQuickNotes.filter(remove("quick_note"));
+  if (state.courses) result.courses = state.courses.filter(remove("course"));
   if (state.stickyNotes) result.stickyNotes = state.stickyNotes.filter(remove("sticky_note"));
   if (state.knowledgeItems) result.knowledgeItems = state.knowledgeItems.filter(remove("knowledge"));
   if (state.flashcardDecks) result.flashcardDecks = state.flashcardDecks.filter(remove("flashcard_deck"));
@@ -154,6 +156,7 @@ function mergeNode(base, local, remote, path, report) {
   }
 
   if (isPlainObject(local) && isPlainObject(remote)) {
+    if (/^stickyNotes\[[^\]]+\]$/.test(path)) return mergeStickyNote(local, remote);
     const localTimestamp = itemTimestamp(local);
     const remoteTimestamp = itemTimestamp(remote);
     if (localTimestamp && remoteTimestamp && localTimestamp !== remoteTimestamp) {
@@ -266,6 +269,11 @@ export function mergeStudyStates(base = {}, local = {}, remote = {}) {
     // Intake from another device must not carry an older goal over a new setting.
     state.waterTracker = mergeWaterTrackers(local.waterTracker, remote.waterTracker);
   }
+  const localSticky = new Map((local.stickyNotes || []).map(note => [String(note.id), note]));
+  state.stickyNotes = state.stickyNotes?.map(note => {
+    const current = localSticky.get(String(note.id));
+    return current ? mergeStickyNote(current, note) : note;
+  });
   Object.assign(state, applyEntityDeletionTombstones(state, base, local, remote));
   // Cloud snapshots omit device files and embedded covers. Absence there is
   // not deletion: retain these fields on surviving books, matched by ID.

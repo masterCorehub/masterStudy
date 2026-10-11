@@ -406,19 +406,22 @@ export const PdfReaderEngine = forwardRef(function PdfReaderEngine(
   }, [updateScale]);
 
   // Smooth scroll to target page in Continuous Mode when currentPage changes externally (TOC / toolbar / bookmark)
+  const restoredDocumentRef = useRef(null);
   useEffect(() => {
     if (!isContinuous || !containerRef.current || !pdfDoc) return;
-    if (currentPage === lastReportedPageRef.current) return;
+    const initialRestore = restoredDocumentRef.current !== pdfDoc;
+    if (!initialRestore && currentPage === lastReportedPageRef.current) return;
 
     const targetEl = document.getElementById(`pdf-page-${currentPage}`);
     if (targetEl && !isScrollingToPageRef.current) {
       isScrollingToPageRef.current = true;
+      restoredDocumentRef.current = pdfDoc;
       lastReportedPageRef.current = currentPage;
-      targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      targetEl.scrollIntoView({ behavior: initialRestore ? "instant" : "smooth", block: "start" });
       const timer = setTimeout(() => {
         isScrollingToPageRef.current = false;
       }, 700);
-      return () => clearTimeout(timer);
+      return () => { clearTimeout(timer); isScrollingToPageRef.current = false; };
     }
   }, [currentPage, isContinuous, pdfDoc]);
 

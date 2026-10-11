@@ -509,9 +509,16 @@ ipcMain.handle("study-db:load", (event) => {
   assertTrustedRenderer(event);
   return loadState(app);
 });
-ipcMain.handle("study-db:save", (event, state) => {
+ipcMain.handle("study-db:save", async (event, state) => {
   assertTrustedRenderer(event);
-  return saveState(app, state);
+  const { mergeStudyStates, applyEntityDeletionTombstones } = await import("../src/services/account-sync.js");
+  const current = loadState(app)?.state || {};
+  // O banco é compartilhado pelas janelas: preserve o texto mais recente.
+  const merged = mergeStudyStates({}, state, current).state;
+  return saveState(app, applyEntityDeletionTombstones({
+    ...state,
+    stickyNotes: merged.stickyNotes || state.stickyNotes,
+  }, current));
 });
 ipcMain.handle("study-db:export", async (event) => {
   assertTrustedRenderer(event);
@@ -2978,6 +2985,32 @@ function startLocalBridgeServer() {
       if (req.url === "/api/captures" && req.method === "GET") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true, captures: pendingKnowledgeCaptures }));
+        return;
+      }
+
+      if (req.url === "/api/ai" && req.method === "POST") {
+        // Apenas extensões podem usar o provedor pago/local por esta ponte.
+        if (!/^(chrome|moz)-extension:\/\//.test(req.headers.origin || "")) {
+          res.writeHead(403); res.end(); return;
+        }
+        let body = "";
+        req.on("data", chunk => { body += chunk; if (Buffer.byteLength(body) > 250_000) req.destroy(); });
+        req.on("end", async () => {
+          try {
+            const payload = JSON.parse(body);
+            if (!Array.isArray(payload.messages) || !payload.messages.length) throw new Error("Informe o conteúdo para a IA.");
+            const result = await require("./ai/ai-provider-service.cjs").chatWithAi(app, {
+              messages: payload.messages.slice(-12).map(message => ({
+                role: ["system", "assistant"].includes(message.role) ? message.role : "user",
+                content: String(message.content || "").slice(0, 100_000),
+              })),
+              format: payload.format === "json" ? "json" : undefined,
+            });
+            res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify(result));
+          } catch (error) {
+            res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: error.message }));
+          }
+        });
         return;
       }
 

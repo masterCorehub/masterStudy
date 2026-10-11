@@ -182,9 +182,14 @@ function BookReaderScreenInner({ onNavigate }) {
 
       setCurrentPage(pageNum);
 
+      if (fileType === "pdf" && book?.id) {
+        // Persiste a navegação antes de sair da tela, sem esperar um timer.
+        updateReaderPosition(book.id, { page: pageNum, percent: readerProgress(pageNum, totalPages), savedAt: Date.now() });
+      }
+
       if (fileType === "epub" && !isReport) epubRef.current?.goToPage(pageNum);
     },
-    [book?.id, totalPages, currentPage, fileType, currentCfi, updateBook],
+    [book?.id, totalPages, fileType, updateReaderPosition],
   );
 
   // Fullscreen toggle handler
@@ -272,23 +277,15 @@ function BookReaderScreenInner({ onNavigate }) {
     setReturnPosition(null);
   }, [book?.id]);
 
-  useEffect(() => {
-    if (!book?.id || totalPages < 1) return;
-    const snapshot = {
-      page: currentPage,
-      cfi: currentCfi,
-      percent: readerProgress(currentPage, totalPages),
-    };
-    const timer = setTimeout(
-      () => updateReaderPosition(book.id, snapshot),
-      400,
-    );
-    return () => {
-      clearTimeout(timer);
-      // Flush on exit as well, so a quick page turn followed by Back is saved.
-      updateReaderPosition(book.id, snapshot);
-    };
-  }, [book?.id, currentPage, currentCfi, totalPages, updateReaderPosition]);
+  const handleEpubPosition = useCallback(({ page, cfi, total }) => {
+    setCurrentCfi(cfi);
+    if (page > 0) setCurrentPage(page);
+    if (book?.id) updateReaderPosition(book.id, {
+      cfi,
+      ...(page > 0 ? { page, percent: readerProgress(page, total) } : {}),
+      savedAt: Date.now(),
+    });
+  }, [book?.id, updateReaderPosition]);
 
   const navigateTo = (item) => {
     setReturnPosition({ page: currentPage, cfi: currentCfi });
@@ -842,6 +839,7 @@ function BookReaderScreenInner({ onNavigate }) {
         {/* Reader engine */}
         {fileType === "pdf" && (
           <PdfReaderEngine
+            key={book.id}
             ref={pdfRef}
             onTocLoaded={setToc}
             filePath={book.filePath}
@@ -861,6 +859,7 @@ function BookReaderScreenInner({ onNavigate }) {
 
         {fileType === "epub" && (
           <EpubReaderEngine
+            key={book.id}
             ref={epubRef}
             filePath={book.filePath}
             currentCfi={currentCfi}
@@ -871,6 +870,7 @@ function BookReaderScreenInner({ onNavigate }) {
             onTextSelected={handleTextSelected}
             onHighlightClick={handleHighlightClick}
             onCfiChanged={setCurrentCfi}
+            onPositionChanged={handleEpubPosition}
             onPageChange={handlePageChange}
             onTocLoaded={setToc}
           />

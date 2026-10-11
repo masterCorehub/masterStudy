@@ -1,3 +1,4 @@
+import { isClassNote } from "../domain/lessonNoteOrganization";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { SCREEN_IDS } from "../app/screenIds";
 import {
@@ -705,7 +706,7 @@ export function CampusFlowNotesScreen({ onNavigate }) {
           : ["csv", "xls", "xlsx"].includes(extension)
             ? "spreadsheet"
             : "file"
-        : item.category === "Nota de aula" ? "class_note" : (item.type || "note");
+        : isClassNote(item) ? "class_note" : (item.type || "note");
     const matchesType = typeFilters[typeKey] !== false;
     const haystack = `${item.title || ""} ${item.content || ""} ${item.description || ""} ${(item.tags || []).join(" ")}`.toLocaleLowerCase("pt-BR");
     const matchesSearch = haystack.includes(search.toLocaleLowerCase("pt-BR"));
@@ -1225,7 +1226,7 @@ export function CampusFlowNotesScreen({ onNavigate }) {
               </button>
               <span className="campus-material-type">{item.sharedWithMe ? "Compartilhado · " : ""}{item.type === "drawing" ? "Desenho" : item.type === "file" ? "Arquivo" : item.category === "Nota de aula" ? "Nota de Aula" : "Nota"}</span>
               <span className="campus-material-icon">
-                <Icon name={item.type === "drawing" ? "draw" : item.type === "file" ? "description" : item.category === "Nota de aula" ? "edit_note" : "notes"} />
+                <Icon name={item.type === "drawing" ? "draw" : item.type === "file" ? "description" : isClassNote(item) ? "edit_note" : "notes"} />
               </span>
               <h2>{item.title || "Sem título"}</h2>
               <p>{cleanText(item.content || item.body || item.description || item.filePath).slice(0, 130) || "Sem prévia disponível."}</p>
