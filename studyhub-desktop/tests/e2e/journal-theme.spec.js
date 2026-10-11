@@ -160,7 +160,9 @@ test("Journal inherits app palettes and preserves saved entries across themes", 
       return {
         ink: style.color, appInk: resolved("--on-surface"),
         accent: resolved("--journal-accent"), appAccent: resolved("--primary"),
-        paper: getComputedStyle(node.querySelector(".journal-paper")).backgroundColor,
+        // In the redesigned editor the writing sheet is transparent by design;
+        // the adjacent history surface is the token-backed paper surface.
+        paper: getComputedStyle(node.querySelector(".journal-history-column")).backgroundColor,
         appPaper: resolved("--surface-container-low"),
         button: getComputedStyle(node.querySelector(".journal-primary-button")).color,
         appButton: resolved("--on-primary"),

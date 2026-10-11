@@ -249,6 +249,11 @@ test("Vault creates nested notes in context and connects inline tags", async ({
     restored.find((note) => note.id === "old-child").parentNoteId,
     "parent",
   );
+  // Standalone sticky-note windows are Electron-only; simulate that bridge
+  // for this browser test so AppShell opens the intended widget screen.
+  await page.addInitScript(() => {
+    window.studyhubDesktop ||= { platform: "darwin" };
+  });
   await page.goto(
     "http://studyhub.test/?screen=sticky_note_widget&standalone=1&noteId=resize-note",
   );
