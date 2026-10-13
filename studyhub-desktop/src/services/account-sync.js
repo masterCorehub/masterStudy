@@ -1,6 +1,7 @@
 import { mergeStickyNote } from "../domain/stickySync.js";
 import { mergeWaterTrackers } from "../domain/waterTracker.js";
 import { mergeHabitCompletion } from "../domain/habitSync.js";
+import { latestReadingPosition } from "../domain/readingPosition.js";
 
 export const STUDY_STATE_SCHEMA_VERSION = 15;
 
@@ -211,7 +212,7 @@ export function serializeStudyState(state = {}) {
 }
 
 export function reconcilePersistedEntities(current = {}, persisted = {}) {
-  const keys = ['courses', 'habits', 'entityDeletionTombstones', 'universalTrash', 'universalHistory'];
+  const keys = ['courses', 'habits', 'books', 'entityDeletionTombstones', 'universalTrash', 'universalHistory'];
   const select = value => Object.fromEntries(keys.filter(key => value[key] !== undefined).map(key => [key, value[key]]));
   // UI defaults must not override persisted navigation during initial hydration.
   return { ...persisted, ...select(mergeStudyStates({}, select(current), select(persisted)).state) };
@@ -294,8 +295,11 @@ export function mergeStudyStates(base = {}, local = {}, remote = {}) {
   // Cloud snapshots omit device files and embedded covers. Absence there is
   // not deletion: retain these fields on surviving books, matched by ID.
   const localBooks = new Map((local.books?.list || []).map(book => [String(book.id), book]));
+  const remoteBooks = new Map((remote.books?.list || []).map(book => [String(book.id), book]));
   for (const book of state.books?.list || []) {
     const previous = localBooks.get(String(book.id));
+    const position = latestReadingPosition(previous, remoteBooks.get(String(book.id)));
+    if (position) book.lastPosition = position;
     if (!previous) continue;
     if (!Object.hasOwn(book, "filePath") && looksLikeLocalValue(previous.filePath)) book.filePath = previous.filePath;
     if (!Object.hasOwn(book, "coverUrl") && /^(?:data:image\/|blob:)/i.test(previous.coverUrl || "")) {

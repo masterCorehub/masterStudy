@@ -41,6 +41,8 @@ export const EpubReaderEngine = forwardRef(function EpubReaderEngine(props, ref)
   callbacks.current = props; // Long-lived EPUB listeners always call the latest React handlers.
   const positionRef = useRef(currentCfi);
   if (currentCfi) positionRef.current = currentCfi;
+  const positionReadyRef = useRef(false);
+  const appliedLayoutRef = useRef(null);
   const turnBusy = useRef(false);
   const searchQueue = useRef(Promise.resolve());
   const [loading, setLoading] = useState(true);
@@ -97,6 +99,7 @@ export const EpubReaderEngine = forwardRef(function EpubReaderEngine(props, ref)
   useEffect(() => {
     let cancelled = false;
     let instance;
+    positionReadyRef.current = false;
     setLoading(true); setError("");
     const load = async () => {
       try {
@@ -114,6 +117,7 @@ export const EpubReaderEngine = forwardRef(function EpubReaderEngine(props, ref)
         });
         renditionRef.current = rendition;
         applyTheme(rendition, callbacks.current.settings);
+        appliedLayoutRef.current = JSON.stringify([callbacks.current.settings, isTwoPage, continuous]);
         // Install hooks BEFORE display; the first chapter needs them too.
         rendition.hooks.content.register(contents => {
           const doc = contents.document;
@@ -146,7 +150,9 @@ export const EpubReaderEngine = forwardRef(function EpubReaderEngine(props, ref)
           });
         });
         const report = loc => {
-          if (cancelled || !loc?.start?.cfi) return;
+          // Opening/restoring can emit a temporary chapter-start location.
+          // It must not replace the saved CFI before display has completed.
+          if (cancelled || !positionReadyRef.current || !loc?.start?.cfi) return;
           positionRef.current = loc.start.cfi;
           callbacks.current.onCfiChanged?.(loc.start.cfi);
           const index = instance.locations.locationFromCfi(loc.start.cfi);
@@ -171,6 +177,8 @@ export const EpubReaderEngine = forwardRef(function EpubReaderEngine(props, ref)
         try { await rendition.display(positionRef.current || undefined); }
         catch (err) { if (!positionRef.current) throw err; await rendition.display(); }
         if (cancelled) return;
+        positionReadyRef.current = true;
+        report(rendition.currentLocation());
         setLoading(false);
         await instance.locations.generate(1600);
         if (cancelled) return;
@@ -206,6 +214,11 @@ export const EpubReaderEngine = forwardRef(function EpubReaderEngine(props, ref)
   useEffect(() => {
     const rendition = renditionRef.current;
     if (!rendition || loading) return;
+    const signature = JSON.stringify([settings, isTwoPage, continuous]);
+    // The initial theme/spread was already applied before restoring the CFI.
+    // Reapplying it on loading=false triggers a second resize/display cycle.
+    if (appliedLayoutRef.current === signature) return;
+    appliedLayoutRef.current = signature;
     const cfi = positionRef.current;
     applyTheme(rendition, settings);
     rendition.spread(isTwoPage && !continuous ? "always" : "none", 1);
@@ -218,7 +231,7 @@ export const EpubReaderEngine = forwardRef(function EpubReaderEngine(props, ref)
       const container = containerRef.current;
       const rendition = renditionRef.current;
       // renderTo starts its manager asynchronously; a resize can arrive first.
-      if (rendition?.manager?.rendered && rendition.manager.stage && container.clientWidth && container.clientHeight) rendition.resize(container.clientWidth, container.clientHeight);
+      if (positionReadyRef.current && rendition?.manager?.rendered && rendition.manager.stage && container.clientWidth && container.clientHeight) rendition.resize(container.clientWidth, container.clientHeight);
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
