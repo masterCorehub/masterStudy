@@ -218,6 +218,11 @@ export function reconcilePersistedEntities(current = {}, persisted = {}) {
   return { ...persisted, ...select(mergeStudyStates({}, select(current), select(persisted)).state) };
 }
 
+export function reconcileQueuedStudyState(current = {}, pending) {
+  // A queue from an earlier session is a merge input, never a replacement.
+  return pending ? mergeStudyStates({}, current, pending).state : serializeStudyState(current);
+}
+
 const LOCAL_PATH_KEYS = new Set([
   "filePath",
   "localPath",

@@ -23,6 +23,7 @@ import { normalizeAcademicStateSnapshot } from "../domain/academic";
 import {
   getCloudDeviceId,
   mergeStudyStates,
+  reconcileQueuedStudyState,
   serializeStudyState,
 } from "../services/account-sync";
 
@@ -744,10 +745,11 @@ export function AppShell() {
       try {
         notifyCloud("loading");
         await waitForDatabase();
+        const pending = readQueuedCloudState();
         const remote = await collaborationCloud.loadAccountState();
         if (!mounted || generation !== syncGeneration) return;
         if (remote?.state && Object.keys(remote.state).length) {
-          const local = serializeStudyState(useStudyStore.getState());
+          const local = reconcileQueuedStudyState(serializeStudyState(useStudyStore.getState()), pending);
           const normalizedRemote = serializeStudyState(
             normalizeAcademicStateSnapshot(remote.state),
           );
@@ -758,6 +760,7 @@ export function AppShell() {
           if (JSON.stringify(merged.state) !== JSON.stringify(normalizedRemote)) {
             await persistQueuedState(merged.state);
           } else {
+            writeQueuedCloudState(null);
             notifyCloud("saved", {
               revision: cloudRevisionRef.current,
               updatedAt: remote.updated_at || null,
@@ -766,10 +769,10 @@ export function AppShell() {
         } else {
           cloudRevisionRef.current = 0;
           cloudBaselineRef.current = {};
-          await persistQueuedState(useStudyStore.getState());
+          const local = reconcileQueuedStudyState(serializeStudyState(useStudyStore.getState()), pending);
+          if (pending) setCloudState(local);
+          await persistQueuedState(local);
         }
-        const pending = readQueuedCloudState();
-        if (pending) await persistQueuedState(pending);
       } catch (error) {
         notifyCloud("error", { error: error?.message || String(error) });
         console.error("masterStudy account synchronization failed:", error);
