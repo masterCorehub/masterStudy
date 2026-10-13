@@ -14,7 +14,7 @@ import { IncomingSharesPanel } from "../components/IncomingSharesPanel";
 import { getLocalDateKey } from "../utils/dateUtils";
 import {
   collaborationCloud,
-  collaborationCloudConfigured,
+  collaborationCloudEnabled,
 } from "../services/collaboration-cloud";
 
 const cleanText = (value = "") =>
@@ -841,7 +841,7 @@ export function CampusFlowNotesScreen({ onNavigate }) {
       if (!path) return;
       const name = path.split(/[\\/]/).pop() || path;
       let cloudFile = null;
-      if (collaborationCloudConfigured && window.studyhubDesktop?.readFileBinary) {
+      if (collaborationCloudEnabled && window.studyhubDesktop?.readFileBinary) {
         const binary = await window.studyhubDesktop.readFileBinary(path);
         const uploadFile = new File([new Uint8Array(binary)], name);
         cloudFile = await collaborationCloud.uploadAccountFile(uploadFile);
@@ -930,7 +930,7 @@ export function CampusFlowNotesScreen({ onNavigate }) {
     setUploading(true);
     setFileMessage("");
     try {
-      if (!collaborationCloudConfigured) {
+      if (!collaborationCloudEnabled) {
         throw new Error("Configure o Supabase para enviar arquivos pela versão web.");
       }
       const cloudFile = await collaborationCloud.uploadAccountFile(file);

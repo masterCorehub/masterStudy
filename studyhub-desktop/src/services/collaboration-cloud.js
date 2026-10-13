@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { browserAccessMode } from "../domain/accessMode.js";
 import { readAuthRedirect } from "../domain/authRedirect.js";
 import {
   prepareStudyStateForCloud,
@@ -20,6 +21,8 @@ const configuredPublicUrl = String(
 ).trim();
 
 export const collaborationCloudConfigured = Boolean(url && publishableKey);
+export const localMode = browserAccessMode(collaborationCloudConfigured) === 'local';
+export const collaborationCloudEnabled = collaborationCloudConfigured && !localMode;
 
 const browserOrigin = () => {
   if (configuredPublicUrl) return configuredPublicUrl.replace(/\/$/, "");
@@ -33,7 +36,8 @@ export const initialAuthRedirect = readAuthRedirect(
   typeof window !== "undefined" ? window.location : {},
 );
 
-const client = collaborationCloudConfigured
+export const collaborationAuthEnabled = collaborationCloudEnabled || (collaborationCloudConfigured && initialAuthRedirect.isRecovery);
+const client = collaborationAuthEnabled
   ? createClient(url, publishableKey, {
       auth: {
         persistSession: true,
@@ -46,7 +50,7 @@ const client = collaborationCloudConfigured
 
 // Recovery emails must work when the request and callback use different origins.
 // This client only sends emails; it neither stores a session nor reads callbacks.
-const recoveryClient = collaborationCloudConfigured
+const recoveryClient = collaborationAuthEnabled
   ? createClient(url, publishableKey, {
       auth: {
         flowType: "implicit",
@@ -60,7 +64,7 @@ const recoveryClient = collaborationCloudConfigured
 
 const assertClient = () => {
   if (!client) {
-    throw new Error("O servidor de colaboração não está configurado.");
+    throw new Error(localMode ? "Ative a sincronização em Conta para usar este recurso." : "O servidor de colaboração não está configurado.");
   }
   return client;
 };
@@ -129,7 +133,7 @@ const requireSession = async (message = "Faça login para continuar.") => {
 };
 
 export const collaborationCloud = {
-  isConfigured: () => collaborationCloudConfigured,
+  isConfigured: () => collaborationCloudEnabled,
 
   getSession: async () => {
     if (!client) return null;

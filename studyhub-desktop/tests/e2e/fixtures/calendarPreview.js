@@ -154,7 +154,7 @@ export const previewState = {
 
 export async function preparePreview(
   page,
-  { theme = "brisa-amber", tray = false, state = previewState } = {},
+  { theme = "brisa-amber", tray = false, state = previewState, authenticated = true, desktop = false, accessMode } = {},
 ) {
   await page.clock.install({ time: new Date(2026, 9, 8, 12) });
   const env = fs.existsSync(".env") ? fs.readFileSync(".env", "utf8") : "";
@@ -193,14 +193,17 @@ export async function preparePreview(
     token_type: "bearer",
   };
   await page.addInitScript(
-    ({ state, authKey, session, tray }) => {
-      if (!localStorage.getItem(authKey))
+    ({ state, authKey, session, tray, authenticated, desktop, accessMode }) => {
+      if (authenticated && !localStorage.getItem(authKey))
         localStorage.setItem(authKey, JSON.stringify(session));
+      if (!authenticated) localStorage.removeItem(authKey);
+      if (accessMode) localStorage.setItem('masterstudy:access-mode', accessMode);
       if (!localStorage.getItem("studyhub-storage-v2"))
         localStorage.setItem(
           "studyhub-storage-v2",
           JSON.stringify({ state, version: 23 }),
         );
+      if (desktop) window.studyhubDesktop = { platform: 'darwin' };
       if (tray) {
         window.trayActions = [];
         window.studyhubDesktop = {
@@ -214,6 +217,9 @@ export async function preparePreview(
       authKey,
       session,
       tray,
+      authenticated,
+      desktop,
+      accessMode,
     },
   );
   // Never read/write a real account. Only the production build is served locally.

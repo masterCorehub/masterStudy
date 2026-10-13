@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   collaborationCloud,
-  collaborationCloudConfigured,
+  collaborationCloudEnabled,
 } from "../services/collaboration-cloud";
 import {
   hasImportedSharedEntity,
@@ -49,7 +49,7 @@ export function IncomingSharesPanel({
   const typeKey = useMemo(() => [...types].sort().join("|"), [types]);
 
   const load = useCallback(async () => {
-    if (!collaborationCloudConfigured) return;
+    if (!collaborationCloudEnabled) return;
     try {
       const session = await collaborationCloud.getSession();
       if (!session?.user) {
@@ -85,7 +85,7 @@ export function IncomingSharesPanel({
     let active = true;
     const connect = async () => {
       await load();
-      if (!active || !collaborationCloudConfigured) return;
+      if (!active || !collaborationCloudEnabled) return;
       const session = await collaborationCloud.getSession().catch(() => null);
       if (!active || !session?.user?.email) return;
       unsubscribeInvitations();
@@ -142,7 +142,7 @@ export function IncomingSharesPanel({
   };
 
   if (
-    !collaborationCloudConfigured ||
+    !collaborationCloudEnabled ||
     (!showEmpty && !visible.length && !message)
   ) return null;
 

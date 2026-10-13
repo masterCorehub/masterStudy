@@ -6,6 +6,12 @@ import { SettingsModal, ALL_SIDEBAR_ITEMS } from "../components/settings/Setting
 import { isPrimaryShortcut, shortcutLabel } from "../utils/keyboardShortcuts";
 import { DEFAULT_SIDEBAR_ORDER } from "../domain/sidebarNavigation";
 
+const SIDEBAR_SECTIONS = [
+  { label: "Organização", keys: ["dashboard", "tasks", "projects"] },
+  { label: "Estudos", keys: ["courses", "books", "materials", "knowledge", "reviews"] },
+  { label: "Pessoal", keys: ["journal", "sticky-notes"] },
+];
+
 export function StandardSidebar({
   activeScreen,
   onNavigate,
@@ -70,6 +76,19 @@ export function StandardSidebar({
     return result;
   }, [sidebarOrder, sidebarHiddenItems]);
 
+  const navSections = useMemo(() => {
+    // Mantém a ordem personalizada dentro de cada grupo e respeita os itens ocultos.
+    const sections = SIDEBAR_SECTIONS.map((section) => ({
+      ...section,
+      items: displayedNavItems.filter((item) => section.keys.includes(item.key)),
+    }));
+    const knownKeys = new Set(SIDEBAR_SECTIONS.flatMap((section) => section.keys));
+    const otherItems = displayedNavItems.filter((item) => !knownKeys.has(item.key));
+    // Evita esconder novos atalhos que ainda não tenham uma categoria definida.
+    if (otherItems.length) sections.push({ label: "Outros", items: otherItems });
+    return sections.filter((section) => section.items.length > 0);
+  }, [displayedNavItems]);
+
   return (
     <>
       <aside
@@ -100,7 +119,16 @@ export function StandardSidebar({
         </div>
 
         <nav aria-label="Navegação principal" className="sidebar-main-nav mt-5 px-2 flex flex-1 flex-col overflow-y-auto">
-          {displayedNavItems.map((item) => {
+          {navSections.map((section, index) => (
+            <section key={section.label} aria-label={section.label}
+              className={index > 0 ? "mt-3 border-t border-[color:var(--outline-variant)] pt-3" : ""}>
+              {!isCompact && (
+                <h2 className="mb-2 flex items-center gap-2 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--primary)]">
+                  <span aria-hidden="true" className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--primary)]" />
+                  {section.label}
+                </h2>
+              )}
+          {section.items.map((item) => {
             const active =
               item.id === activeScreen ||
               (item.id === SCREEN_IDS.TASKS && activeScreen === SCREEN_IDS.TASK_DETAILS) ||
@@ -151,6 +179,8 @@ export function StandardSidebar({
               </button>
             );
           })}
+            </section>
+          ))}
         </nav>
 
         <div className="sidebar-footer px-2 border-t border-[color:var(--outline-variant)] pt-2">
@@ -167,7 +197,6 @@ export function StandardSidebar({
           </div>
 
           {/* Botão Único de Configurações no Rodapé da Sidebar */}
-          <button type="button" title="Resumo dos atalhos" aria-label="Resumo dos atalhos" className="flex items-center gap-2 px-3 py-2 text-xs text-[color:var(--on-surface-variant)]" onClick={() => openSettingsModal("shortcuts")}><Icon name="keyboard" />{!isCompact && "Atalhos"}</button>
           <button
             type="button"
             title={`Configurações (${shortcutLabel("Mod+,")})`}

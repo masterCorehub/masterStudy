@@ -45,6 +45,8 @@ test("Today flow preserves geometry in organization, reorders, persists, restore
 }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  // Wednesday keeps the fixture Monday and Friday inside the rolling range.
+  await page.clock.install({ time: new Date(2026, 9, 7, 12) });
   await page.setViewportSize({ width: 1440, height: 980 });
   await page.addInitScript(
     ({ authKey, session }) => {

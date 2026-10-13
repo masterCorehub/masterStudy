@@ -45,6 +45,8 @@ test("Agenda presence toggles, replaces absence, persists and syncs the class lo
 }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  // The five-day agenda is centered on today; keep fixture Tuesday in range.
+  await page.clock.install({ time: new Date(2026, 9, 7, 12) });
   await page.setViewportSize({ width: 1440, height: 980 });
   await page.addInitScript(
     ({ authKey, session }) => {

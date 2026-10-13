@@ -17,7 +17,7 @@ export function StickyMarkdown({ content = '', onChange, textareaProps = {} }) {
     }).catch(() => { if (!cancelled) setRendered(null); });
     return () => { cancelled = true; };
   }, [content, preview]);
-  return <div className="sticky-markdown flex min-h-0 flex-1 flex-col">
+  return <div className="sticky-markdown flex min-h-0 flex-1 flex-col overflow-hidden">
     <div className="sticky-markdown-toolbar">
       <button type="button" disabled={textareaProps.disabled} aria-label={preview ? 'Editar Markdown' : 'Visualizar Markdown'} aria-pressed={preview} onClick={() => setPreview(value => !value)}><Icon name={preview ? 'edit' : 'visibility'} /><span>{preview ? 'Editar' : 'Visualizar'}</span></button>
       <button type="button" disabled={textareaProps.disabled} onClick={() => { onChange(`${content}${content && !content.endsWith('\n') ? '\n' : ''}- [ ] Nova tarefa`); setPreview(false); }} aria-label="Adicionar tarefa"><Icon name="check_box" /><span>Tarefa</span></button>

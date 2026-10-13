@@ -3,7 +3,7 @@ import { useStudyStore } from "../store/useStore";
 import { Icon } from "../ui/Icon";
 import {
   collaborationCloud,
-  collaborationCloudConfigured,
+  collaborationCloudEnabled,
 } from "../services/collaboration-cloud";
 
 const permissionLabels = {
@@ -44,7 +44,7 @@ export function ShareModal({
   }, [onShared]);
 
   const loadRemoteInvitations = useCallback(async () => {
-    if (!collaborationCloudConfigured) return;
+    if (!collaborationCloudEnabled) return;
     const currentSession = await collaborationCloud.getSession();
     if (!currentSession) return;
     const result = await collaborationCloud.listSentInvitations({
@@ -57,7 +57,7 @@ export function ShareModal({
 
   useEffect(() => {
     let mounted = true;
-    if (collaborationCloudConfigured) {
+    if (collaborationCloudEnabled) {
       collaborationCloud.getSession().then((current) => {
         if (mounted) {
           setSession(current);
@@ -113,7 +113,7 @@ export function ShareModal({
     };
     setBusy(true);
     try {
-      if (collaborationCloudConfigured && session) {
+      if (collaborationCloudEnabled && session) {
         const created = await collaborationCloud.createInvitation({ ...input, payload });
         if (created?.shared_entities) onSharedRef.current?.(created.shared_entities);
         await loadRemoteInvitations();
@@ -134,7 +134,7 @@ export function ShareModal({
     setBusy(true);
     setMessage("");
     try {
-      if (collaborationCloudConfigured && session && remoteInvitations) {
+      if (collaborationCloudEnabled && session && remoteInvitations) {
         await collaborationCloud.revokeInvitation(invite.id);
         await loadRemoteInvitations();
       }
@@ -149,6 +149,16 @@ export function ShareModal({
       setBusy(false);
     }
   };
+
+  if (!collaborationCloudEnabled) return (
+    <div className="campus-task-modal" role="dialog" aria-modal="true" aria-labelledby="local-share-title">
+      <section className="max-w-lg rounded-2xl bg-[var(--surface)] p-6">
+        <h2 id="local-share-title" className="text-xl font-bold">Compartilhamento online</h2>
+        <p className="mt-3">Você está usando o armazenamento local. Ative a sincronização em Conta para compartilhar conteúdos.</p>
+        <button type="button" className="campus-secondary-button mt-5" onClick={onClose}>Fechar</button>
+      </section>
+    </div>
+  );
 
   return (
     <div className="campus-task-modal" role="dialog" aria-modal="true" aria-labelledby="share-title">
@@ -165,11 +175,11 @@ export function ShareModal({
         </header>
 
         <div className="mt-4 flex items-start gap-3 rounded-2xl border border-[color:var(--primary)]/20 bg-[color:var(--primary)]/5 p-4 text-sm">
-          <Icon name={collaborationCloudConfigured && session ? "cloud_done" : "cloud_off"} className="mt-0.5 text-[color:var(--primary)]" />
-          <p>{collaborationCloudConfigured && session ? "Servidor online conectado. Os convites serão sincronizados." : "O convite fica preparado no dispositivo. Configure o servidor e faça login para enviar online."}</p>
+          <Icon name={collaborationCloudEnabled && session ? "cloud_done" : "cloud_off"} className="mt-0.5 text-[color:var(--primary)]" />
+          <p>{collaborationCloudEnabled && session ? "Servidor online conectado. Os convites serão sincronizados." : "O convite fica preparado no dispositivo. Configure o servidor e faça login para enviar online."}</p>
         </div>
 
-        {collaborationCloudConfigured && !session ? (
+        {collaborationCloudEnabled && !session ? (
           <section className="mt-5 rounded-2xl bg-[color:var(--background)] p-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="font-bold">Acesso online</h3>
@@ -221,7 +231,7 @@ export function ShareModal({
 
         <footer>
           <button type="button" onClick={onClose}>Fechar</button>
-          <button className="campus-primary-button" type="submit" disabled={busy || (collaborationCloudConfigured && !session)}><Icon name="send" /> Criar convite</button>
+          <button className="campus-primary-button" type="submit" disabled={busy || (collaborationCloudEnabled && !session)}><Icon name="send" /> Criar convite</button>
         </footer>
       </form>
     </div>

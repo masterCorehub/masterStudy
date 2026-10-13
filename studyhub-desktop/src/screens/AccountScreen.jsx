@@ -8,6 +8,8 @@ import {
 import { useStudyStore } from "../store/useStore";
 import { Icon } from "../ui/Icon";
 import { IncomingSharesPanel } from "../components/IncomingSharesPanel";
+import { changeAccessMode } from "../domain/accessMode";
+import { localMode } from "../services/collaboration-cloud";
 
 const SYNC_LABELS = {
   idle: "Aguardando alterações",
@@ -273,9 +275,22 @@ export function AccountScreen({ required = false, recovery = false, onRecoveryCo
           </aside>
         ) : null}
 
-        {!required ? <><span className="campus-eyebrow">CONTA E SINCRONIZAÇÃO</span><h1 className="mt-2 text-4xl font-black md:text-5xl">Sua conta masterStudy</h1><p className="mt-3 max-w-2xl text-[color:var(--on-surface-variant)]">Seus conteúdos são privados e as alterações são sincronizadas automaticamente entre web e desktop.</p></> : null}
+        {!required ? <><span className="campus-eyebrow">CONTA E SINCRONIZAÇÃO</span><h1 className="mt-2 text-4xl font-black md:text-5xl">{localMode ? 'Seu espaço local' : 'Sua conta masterStudy'}</h1><p className="mt-3 max-w-2xl text-[color:var(--on-surface-variant)]">{localMode ? 'Dados salvos neste dispositivo. Você pode estudar sem conta e sem configurar um servidor.' : 'Seus conteúdos são privados e as alterações são sincronizadas automaticamente entre web e desktop.'}</p></> : null}
 
-        {!collaborationCloudConfigured ? (
+        {mode !== 'recovery' && !localMode && <button type="button" className="campus-secondary-button mt-5" onClick={() => changeAccessMode('local')}>Usar somente neste dispositivo</button>}
+
+        {localMode && mode !== 'recovery' ? (
+          <div className="mt-8 rounded-2xl border border-[var(--outline-variant)] bg-[var(--surface-container-low)] p-5">
+            <h2 className="text-xl font-bold">Modo local ativo</h2>
+            <p className="mt-2 text-sm text-[var(--on-surface-variant)]">Notas, cursos, hábitos, tarefas, livros e Diário ficam neste dispositivo. Use Dados &amp; Backup nas configurações para exportar uma cópia. Arquivos de livros e anexos precisam ser copiados separadamente.</p>
+            {collaborationCloudConfigured ? <>
+              <p className="mt-4 text-sm">Ao ativar a sincronização e entrar, os dados deste dispositivo serão mesclados com os da sua conta. Faça um backup antes se quiser guardar uma cópia separada.</p>
+              <button type="button" className="campus-primary-button mt-4" onClick={() => {
+                if (window.confirm('Ativar sincronização? Após entrar, os dados deste dispositivo serão mesclados com os da conta.')) changeAccessMode('cloud');
+              }}>Ativar sincronização e entrar</button>
+            </> : <p className="mt-4 text-sm text-[var(--on-surface-variant)]">Sincronização opcional indisponível nesta instalação. O modo local funciona normalmente.</p>}
+          </div>
+        ) : !collaborationCloudConfigured ? (
           <div className="mt-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-amber-800 dark:text-amber-200">
             <strong>Servidor ainda não configurado</strong>
             <p className="mt-1 text-sm">Defina VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY para habilitar o acesso.</p>
