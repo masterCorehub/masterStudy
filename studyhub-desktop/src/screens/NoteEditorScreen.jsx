@@ -11,7 +11,7 @@ import { normalizeAcademicData } from "../domain/academic";
 import { shortcutLabel } from "../utils/keyboardShortcuts";
 import {
   collaborationCloud,
-  collaborationCloudConfigured,
+  collaborationCloudEnabled,
 } from "../services/collaboration-cloud";
 import {
   askWithWebLLM,
@@ -159,7 +159,7 @@ export function NoteEditorScreen({ onNavigate }) {
     }
   };
   const isOnlineSharedNote = Boolean(
-    collaborationCloudConfigured && data.sharedEntityId,
+    collaborationCloudEnabled && data.sharedEntityId,
   );
   const selectedAcademicSubject = academic.subjects.find(
     (subject) => subject.id === data.academicSubjectId,

@@ -17,7 +17,7 @@ import { AnimatePresence } from "framer-motion";
 import { isPrimaryShortcut } from "../utils/keyboardShortcuts";
 
 import { useStudyStore } from "../store/useStore";
-import { collaborationCloud, collaborationCloudConfigured } from "../services/collaboration-cloud";
+import { collaborationCloud, collaborationCloudEnabled } from "../services/collaboration-cloud";
 import { mergeWaterTrackers } from "../domain/waterTracker";
 import { normalizeAcademicStateSnapshot } from "../domain/academic";
 import {
@@ -616,7 +616,7 @@ export function AppShell() {
   // and keeps snapshot history. When two devices edit different entities, a
   // three-way merge preserves both changes before retrying the save.
   useEffect(() => {
-    if (!collaborationCloudConfigured) return undefined;
+    if (!collaborationCloudEnabled) return undefined;
     let saveTimer = null;
     let mounted = true;
     let syncGeneration = 0;

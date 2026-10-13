@@ -121,10 +121,9 @@ Use **Node.js 24**, npm, and Git. Run commands from the application package:
 git clone https://github.com/masterCorehub/masterStudy.git
 cd masterStudy/studyhub-desktop
 npm ci
-cp .env.example .env
 ```
 
-Fill in `.env` with your Supabase project URL, public client key, and public app URL as shown in the example. Never place an administrative key in a `VITE_*` variable. See [Supabase setup](studyhub-desktop/supabase/README.md) and [web deployment](studyhub-desktop/WEB.md).
+**No Supabase project, account, or `.env` file is required for local use.** New desktop installations open in local mode. Without Supabase configuration, the browser version also opens locally. Existing signed-in installations keep their account mode.
 
 ```bash
 npm run dev:web # Browser interface.
@@ -132,6 +131,16 @@ npm run dev     # Electron desktop app.
 ```
 
 For local AI, install and run Ollama separately, download a model suitable for your computer, and configure it in the app's AI settings.
+
+### Local storage and optional synchronization
+
+Notes, courses, habits, tasks, library metadata, reading positions, highlights, Sticky Notes and journal entries are saved on the device. The desktop app uses its existing local database; browser data belongs to the current browser profile and can be removed when site data is cleared. External links and optional online AI still require their respective services.
+
+Use **Settings → Data & Backup** to export or restore a JSON backup. Backups include habit completion, book categories, flashcard decks and deletion records. Restore replaces the fields present in the backup. Book files, native attachments and system-keychain credentials are not portable through this JSON file; copy the original files separately and retain the journal password for protected entries.
+
+Cloud synchronization and collaboration are optional. To enable them in your own build, copy `.env.example` to `.env` and fill in the Supabase project URL, public client key and public app URL. Rebuild, open **Account**, and explicitly enable synchronization. Signing in after that choice merges this device's data with the account; export a backup first if you want a separate copy. Switching back to local mode stops cloud subscriptions and authentication refresh on the next app reload.
+
+Never place an administrative key in a `VITE_*` variable. See [Supabase setup](studyhub-desktop/supabase/README.md) and [web deployment](studyhub-desktop/WEB.md).
 
 ## Project structure
 

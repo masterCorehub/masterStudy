@@ -6,6 +6,7 @@ import { AccountScreen } from "../../screens/AccountScreen";
 import { THEMES, getThemeById } from "../../theme/themes";
 import { shortcutLabel } from "../../utils/keyboardShortcuts";
 import { showSystemNotification } from "../../services/system-notifications";
+import { createLocalBackup, readLocalBackup } from "../../domain/localBackup";
 import { DEFAULT_SIDEBAR_ORDER } from "../../domain/sidebarNavigation";
 
 export const ALL_SIDEBAR_ITEMS = [
@@ -171,28 +172,12 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
   const handleExportBackup = () => {
     try {
       const state = useStudyStore.getState();
-      const exportData = {
-        studyItems: state.studyItems || [],
-        academic: state.academic || {},
-        courses: state.courses || [],
-        tasks: state.tasks || {},
-        books: state.books || [],
-        journalEntries: state.journalEntries || [],
-        stickyNotes: state.stickyNotes || [],
-        flashcards: state.flashcards || [],
-        customVaults: state.customVaults || [],
-        vaultFolders: state.vaultFolders || [],
-        appSettings: state.appSettings || {},
-        sidebarOrder: state.sidebarOrder || [],
-        sidebarHiddenItems: state.sidebarHiddenItems || [],
-        exportedAt: new Date().toISOString(),
-        version: "2.5.0",
-      };
+      const exportData = createLocalBackup(state);
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `studyhub-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `masterStudy-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -207,17 +192,9 @@ export function SettingsModal({ isOpen, onClose, initialTab = "sidebar", onNavig
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target.result);
-        if (window.confirm("Deseja restaurar este backup? Os dados atuais serão mesclados.")) {
-          if (parsed.studyItems) useStudyStore.setState({ studyItems: parsed.studyItems });
-          if (parsed.academic) useStudyStore.setState({ academic: parsed.academic });
-          if (parsed.courses) useStudyStore.setState({ courses: parsed.courses });
-          if (parsed.tasks) useStudyStore.setState({ tasks: parsed.tasks });
-          if (parsed.books) useStudyStore.setState({ books: parsed.books });
-          if (parsed.journalEntries) useStudyStore.setState({ journalEntries: parsed.journalEntries });
-          if (parsed.stickyNotes) useStudyStore.setState({ stickyNotes: parsed.stickyNotes });
-          if (parsed.flashcards) useStudyStore.setState({ flashcards: parsed.flashcards });
-          if (parsed.customVaults) useStudyStore.setState({ customVaults: parsed.customVaults });
-          if (parsed.vaultFolders) useStudyStore.setState({ vaultFolders: parsed.vaultFolders });
+        const data = readLocalBackup(parsed);
+        if (window.confirm("Restaurar este backup? Os campos presentes no arquivo substituirão os dados atuais. Arquivos de livros e anexos devem ser copiados separadamente.")) {
+          useStudyStore.setState(data);
           alert("Backup restaurado com sucesso!");
         }
       } catch (err) {

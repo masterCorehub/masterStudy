@@ -5,6 +5,7 @@ import { useStudyStore } from "../store/useStore";
 import { SettingsModal, ALL_SIDEBAR_ITEMS } from "../components/settings/SettingsModal";
 import { isPrimaryShortcut, shortcutLabel } from "../utils/keyboardShortcuts";
 import { DEFAULT_SIDEBAR_ORDER } from "../domain/sidebarNavigation";
+import { localMode } from "../services/collaboration-cloud";
 
 export function StandardSidebar({
   activeScreen,
@@ -167,6 +168,10 @@ export function StandardSidebar({
           </div>
 
           {/* Botão Único de Configurações no Rodapé da Sidebar */}
+          {localMode && <button type="button" onClick={() => openSettingsModal('account')} title="Dados salvos neste dispositivo" className="mb-2 flex items-center gap-2 px-3 py-2 text-xs text-[var(--on-surface-variant)]">
+            <Icon name="computer" className="text-[16px]" />
+            {!isCompact && <span>Modo local</span>}
+          </button>}
           <button type="button" title="Resumo dos atalhos" aria-label="Resumo dos atalhos" className="flex items-center gap-2 px-3 py-2 text-xs text-[color:var(--on-surface-variant)]" onClick={() => openSettingsModal("shortcuts")}><Icon name="keyboard" />{!isCompact && "Atalhos"}</button>
           <button
             type="button"

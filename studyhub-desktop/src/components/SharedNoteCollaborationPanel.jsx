@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   collaborationCloud,
-  collaborationCloudConfigured,
+  collaborationCloudEnabled,
 } from "../services/collaboration-cloud";
 import { Icon } from "../ui/Icon";
 
@@ -25,7 +25,7 @@ export function SharedNoteCollaborationPanel({ note }) {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    if (!collaborationCloudConfigured || !sharedEntityId || note?.sharingRevoked) return;
+    if (!collaborationCloudEnabled || !sharedEntityId || note?.sharingRevoked) return;
     try {
       const [session, result] = await Promise.all([
         collaborationCloud.getSession(),
@@ -77,7 +77,7 @@ export function SharedNoteCollaborationPanel({ note }) {
     }
   };
 
-  if (!collaborationCloudConfigured || !sharedEntityId) return null;
+  if (!collaborationCloudEnabled || !sharedEntityId) return null;
 
   if (note?.sharingRevoked) {
     return (

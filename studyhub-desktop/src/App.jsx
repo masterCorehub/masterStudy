@@ -6,7 +6,8 @@ import { isDarkTheme } from "./theme/themes";
 import { AccountScreen } from "./screens/AccountScreen";
 import {
   collaborationCloud,
-  collaborationCloudConfigured,
+  collaborationAuthEnabled,
+  localMode,
   initialAuthRedirect,
 } from "./services/collaboration-cloud";
 
@@ -49,7 +50,7 @@ export function App() {
   const isDarkMode = useStudyStore((state) => state.isDarkMode);
   const themePreference = useStudyStore((state) => state.themePreference || "brisa-amber");
   const [authState, setAuthState] = useState({
-    loading: collaborationCloudConfigured,
+    loading: collaborationAuthEnabled,
     session: null,
   });
   const guidedReadingPreview =
@@ -83,7 +84,7 @@ export function App() {
   }, [themePreference, isDarkMode]);
 
   useEffect(() => {
-    if (!collaborationCloudConfigured) {
+    if (!collaborationAuthEnabled) {
       setAuthState({ loading: false, session: null });
       return undefined;
     }
@@ -121,7 +122,7 @@ export function App() {
     return <AppLoadingScreen message="Verificando sua conta…" />;
   }
 
-  if (!authState.session || recovering) {
+  if ((!localMode && !authState.session) || recovering) {
     return (
       <ErrorBoundary>
         <AccountScreen
@@ -133,6 +134,7 @@ export function App() {
             target.hash = "";
             window.history.replaceState(null, "", target.pathname + target.search);
             setRecovering(false);
+            if (localMode) window.location.reload();
           }}
         />
       </ErrorBoundary>

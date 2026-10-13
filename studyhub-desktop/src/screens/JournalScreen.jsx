@@ -11,7 +11,7 @@ import { markdownToNoteHtml } from "../domain/aiStudio";
 import { sanitizeGeneratedHtml } from "../utils/sanitizeHtml";
 import {
   collaborationCloud,
-  collaborationCloudConfigured,
+  collaborationCloudEnabled,
 } from "../services/collaboration-cloud";
 import {
   CONSUMED_CONTENT_TYPES,
@@ -700,7 +700,7 @@ export function JournalScreen() {
 
   useEffect(() => {
     const remotePhotos = (draft.photos || []).filter((photo) => photo.cloudObjectPath);
-    if (!remotePhotos.length || !collaborationCloudConfigured) {
+    if (!remotePhotos.length || !collaborationCloudEnabled) {
       setSignedPhotoUrls({});
       return undefined;
     }
@@ -777,7 +777,7 @@ export function JournalScreen() {
   useEffect(() => () => window.clearTimeout(feedbackTimer.current), []);
 
   const removeRemotePhoto = async (photo) => {
-    if (!photo?.cloudObjectPath || !collaborationCloudConfigured) return;
+    if (!photo?.cloudObjectPath || !collaborationCloudEnabled) return;
     try {
       await collaborationCloud.removeAccountFile({
         objectPath: photo.cloudObjectPath,
@@ -1033,7 +1033,7 @@ export function JournalScreen() {
     }
     let cloudFile = null;
     let warning = "";
-    if (collaborationCloudConfigured) {
+    if (collaborationCloudEnabled) {
       try {
         cloudFile = await collaborationCloud.uploadAccountFile(file);
       } catch (error) {
