@@ -1,7 +1,6 @@
 import { mergeStickyNote } from "../domain/stickySync.js";
 import { mergeWaterTrackers } from "../domain/waterTracker.js";
 import { mergeHabitCompletion } from "../domain/habitSync.js";
-import { latestReadingPosition } from "../domain/readingPosition.js";
 
 export const STUDY_STATE_SCHEMA_VERSION = 15;
 
@@ -212,15 +211,10 @@ export function serializeStudyState(state = {}) {
 }
 
 export function reconcilePersistedEntities(current = {}, persisted = {}) {
-  const keys = ['courses', 'habits', 'books', 'entityDeletionTombstones', 'universalTrash', 'universalHistory'];
+  const keys = ['courses', 'habits', 'entityDeletionTombstones', 'universalTrash', 'universalHistory'];
   const select = value => Object.fromEntries(keys.filter(key => value[key] !== undefined).map(key => [key, value[key]]));
   // UI defaults must not override persisted navigation during initial hydration.
   return { ...persisted, ...select(mergeStudyStates({}, select(current), select(persisted)).state) };
-}
-
-export function reconcileQueuedStudyState(current = {}, pending) {
-  // A queue from an earlier session is a merge input, never a replacement.
-  return pending ? mergeStudyStates({}, current, pending).state : serializeStudyState(current);
 }
 
 const LOCAL_PATH_KEYS = new Set([
