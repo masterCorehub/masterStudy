@@ -71,13 +71,6 @@ function StickyCard({ note, autoFocus, onDelete }) {
     if (autoFocus) titleRef.current?.focus();
   }, [autoFocus]);
 
-  useEffect(() => {
-    const textarea = contentRef.current;
-    if (!textarea) return;
-    textarea.style.height = "0px";
-    textarea.style.height = `${Math.max(150, textarea.scrollHeight)}px`;
-  }, [note.content]);
-
   const color = COLOR_BY_ID[note.color] || COLOR_BY_ID.yellow;
 
   const commitUpdate = (updates) => {
@@ -98,7 +91,7 @@ function StickyCard({ note, autoFocus, onDelete }) {
 
   return (
     <article
-      className="sticky-note-themed group relative flex min-h-[270px] break-inside-avoid flex-col rounded-lg border shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      className="sticky-note-themed group relative flex h-[360px] min-h-[270px] break-inside-avoid flex-col overflow-hidden rounded-lg border shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
       style={{ "--note-accent": ({ yellow: "#d5a65b", rose: "#c67f91", blue: "#6d9bb7", green: "#7b9e80", purple: "#a28ab9", slate: "#8d949d" })[note.color] || "#d5a65b" }}
     >
       <div className="flex items-center justify-between border-b border-black/5 px-3 py-2 dark:border-white/10">
@@ -186,7 +179,7 @@ function StickyCard({ note, autoFocus, onDelete }) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col px-4 pb-3 pt-3">
+      <div className="flex min-h-0 flex-1 flex-col px-4 pb-3 pt-3">
         <input
           aria-label="Título da nota"
           className="w-full border-0 bg-transparent p-0 text-base font-black text-[color:var(--on-surface)] placeholder:text-[color:var(--on-surface-variant)]/50 focus:ring-0"

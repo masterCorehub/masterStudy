@@ -9761,6 +9761,23 @@ pre code,
 .sticky-markdown-toolbar button:hover { opacity: 1; background: #88888818; }
 .sticky-markdown-toolbar .material-symbols-outlined { font-size: 15px; }
 .sticky-markdown-preview { flex: 1; min-height: 0; overflow: auto; overflow-wrap: anywhere; white-space: normal; font-size: 13px; line-height: 1.65; user-select: text; }
+/* A bounded flex item scrolls instead of growing beyond its note. */
+.sticky-markdown > textarea,
+.sticky-markdown > .sticky-markdown-preview {
+  flex: 1 1 0%;
+  min-height: 0;
+  height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
+  -webkit-app-region: no-drag;
+}
+.sticky-note-themed > div:first-child,
+.sticky-note-themed input,
+.sticky-note-themed .sticky-markdown + div,
+.sticky-note-widget-screen input,
+.sticky-note-widget-screen .sticky-markdown + div { flex-shrink: 0; }
 .today-resizable-note .sticky-markdown-toolbar { padding: 3px 12px; }
 .today-resizable-note .sticky-markdown-preview { padding: 0 16px 12px; }
 .sticky-markdown-preview :is(h1,h2,h3,h4) { color: inherit; font-weight: 700; line-height: 1.3; margin: .6em 0; }
